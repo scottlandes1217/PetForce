@@ -53,46 +53,53 @@ export default class extends Controller {
   cancel(event) {
     event.preventDefault();
     event.stopPropagation();
-
+  
     console.log("Cancel button clicked. Reverting changes...");
-
+  
+    // Revert changes to the input fields
     this.inputTargets.forEach((input) => {
       const field = input.dataset.field;
-      const valueElement = this.valueTargets.find((el) => el.dataset.field === field);
-      const editButton = this.editButtonTargets.find((el) => el.dataset.field === field);
-
-      input.value = this.currentValues.get(field);
-      valueElement.textContent = this.currentValues.get(field);
-
-      input.style.display = "none";
-      valueElement.style.display = "inline-block";
-      editButton.style.display = "inline-block";
+      const originalValue = this.currentValues.get(field);
+  
+      if (input.tagName === "SELECT" && input.multiple) {
+        // Multi-select fields: reset selected options
+        Array.from(input.options).forEach((option) => {
+          option.selected = originalValue.includes(option.value);
+        });
+      } else {
+        // Single value fields
+        input.value = originalValue;
+      }
     });
-
+  
+    // Update the UI to reflect the reverted changes
+    this.updateUI();
+  
+    // Clear any pending changes and hide buttons
     this.changedFields.clear();
     this.hideSaveButton();
     this.hideCancelButton();
-  }
+  }  
 
   save(event) {
     if (event) event.preventDefault();
-
+  
     if (this.isSaving) {
       console.warn("Save is already in progress. Ignoring duplicate request.");
       return;
     }
-
+  
     this.isSaving = true;
-
+  
     const data = {};
     this.inputTargets.forEach((input) => {
       if (this.changedFields.has(input.dataset.field)) {
         data[input.dataset.field] = input.value;
       }
     });
-
+  
     console.log("Sending data:", data);
-
+  
     fetch(this.url, {
       method: "PATCH",
       headers: {
@@ -112,14 +119,16 @@ export default class extends Controller {
       .then((data) => {
         console.log("Pet updated successfully:", data);
         this.showSuccessMessage(data.success_message || "Pet details updated successfully!");
-
+  
+        // Update currentValues for all saved fields
         this.inputTargets.forEach((input) => {
           const field = input.dataset.field;
           if (this.changedFields.has(field)) {
             this.currentValues.set(field, input.value);
           }
         });
-
+  
+        // Reset the UI
         this.updateUI();
       })
       .catch((error) => {
@@ -129,7 +138,7 @@ export default class extends Controller {
       .finally(() => {
         this.isSaving = false;
       });
-  }
+  }  
 
   triggerPhotoUpload() {
     console.log("Photo upload triggered");
@@ -182,14 +191,25 @@ export default class extends Controller {
       const valueElement = this.valueTargets.find((el) => el.dataset.field === field);
       const editButton = this.editButtonTargets.find((el) => el.dataset.field === field);
   
-      // Update the value display
+      let formattedValue;
+  
       if (input.tagName === "SELECT" && input.multiple) {
         // Handle multi-select fields
         const selectedValues = Array.from(input.selectedOptions).map((option) => option.textContent);
-        valueElement.textContent = selectedValues.join(", ") || "None";
+        formattedValue = selectedValues.join(", ") || "None";
+      } else if (input.tagName === "SELECT") {
+        // Handle single-select dropdowns
+        const selectedOption = input.selectedOptions[0];
+        formattedValue = selectedOption ? selectedOption.textContent : "None";
+      } else if (input.type === "text" || input.tagName === "TEXTAREA") {
+        // Freeform text fields: use raw input value
+        formattedValue = input.value;
       } else {
-        valueElement.textContent = input.value;
+        // Apply humanization for other field types
+        formattedValue = this.humanizeValue(input.value);
       }
+  
+      valueElement.textContent = formattedValue;
   
       // Reset the visibility of the field
       valueElement.style.display = "inline-block";
@@ -204,6 +224,23 @@ export default class extends Controller {
     this.hideSaveButton();
     this.hideCancelButton();
   }  
+  
+  // Helper to humanize values
+  humanizeValue(value) {
+    if (Array.isArray(value)) {
+      return value.map(this.humanizeString).join(", ");
+    }
+    if (typeof value === "string") {
+      return this.humanizeString(value);
+    }
+    return value; // Return as is for other types (e.g., numbers, dates)
+  }
+  
+  humanizeString(str) {
+    return str
+      .replace(/_/g, " ") // Replace underscores with spaces
+      .replace(/\b\w/g, (char) => char.toUpperCase()); // Capitalize each word
+  }   
 
   showSaveButton() {
     if (this.saveButtonTarget) {

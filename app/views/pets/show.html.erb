@@ -37,7 +37,7 @@
   </div>
 
   <!-- Tab Content -->
-  <div class="tab-content" id="details">
+<div class="tab-content" id="details">
   <h2>Details</h2>
 
   <div class="row">
@@ -66,11 +66,12 @@
       <!-- Species -->
       <div class="field-container">
         <strong>Species:</strong>
-        <span class="value" data-field="species" data-edit-field-target="value"><%= @pet.species&.value || "Not set" %></span>
+        <span class="value" data-field="species" data-edit-field-target="value"><%= @pet.species&.value || "None" %></span>
         <button class="edit-button" data-field="species" data-edit-field-target="editButton" data-action="click->edit-field#edit">
           <i class="fas fa-pencil-alt"></i>
         </button>
         <select class="edit-input" data-field="species" data-edit-field-target="input" style="display: none;">
+          <option value="">None</option> <!-- Add a "None" option -->
           <% @organization.organization_fields.species.each do |species_option| %>
             <option value="<%= species_option.value %>" <%= "selected" if @pet.species&.value == species_option.value %>><%= species_option.value %></option>
           <% end %>
@@ -80,7 +81,9 @@
       <!-- Breed -->
       <div class="field-container">
         <strong>Breed:</strong>
-        <span class="value" data-field="breed" data-edit-field-target="value"><%= @pet.breed.join(", ") || "None" %></span>
+        <span class="value" data-field="breed" data-edit-field-target="value">
+          <%= @pet.breed.present? ? @pet.breed.join(", ") : "None" %>
+        </span>
         <button class="edit-button" data-field="breed" data-edit-field-target="editButton" data-action="click->edit-field#edit">
           <i class="fas fa-pencil-alt"></i>
         </button>
@@ -94,7 +97,9 @@
       <!-- Color -->
       <div class="field-container">
         <strong>Color:</strong>
-        <span class="value" data-field="color" data-edit-field-target="value"><%= @pet.color.join(", ") || "None" %></span>
+        <span class="value" data-field="color" data-edit-field-target="value">
+          <%= @pet.color.present? ? @pet.color.join(", ") : "None" %>
+        </span>
         <button class="edit-button" data-field="color" data-edit-field-target="editButton" data-action="click->edit-field#edit">
           <i class="fas fa-pencil-alt"></i>
         </button>
@@ -108,19 +113,21 @@
 
     <!-- Right Column -->
     <div class="col-md-6">
-      <!-- Flags -->
-      <div class="field-container">
-        <strong>Flags:</strong>
-        <span class="value" data-field="flags" data-edit-field-target="value"><%= @pet.flags.join(", ") || "None" %></span>
-        <button class="edit-button" data-field="flags" data-edit-field-target="editButton" data-action="click->edit-field#edit">
-          <i class="fas fa-pencil-alt"></i>
-        </button>
-        <select multiple class="edit-input" data-field="flags" data-edit-field-target="input" style="display: none;">
-          <% @organization.organization_fields.flags.each do |flag_option| %>
-            <option value="<%= flag_option.value %>" <%= "selected" if @pet.flags.include?(flag_option.value) %>><%= flag_option.value %></option>
-          <% end %>
-        </select>
-      </div>
+    <!-- Flags -->
+    <div class="field-container">
+      <strong>Flags:</strong>
+      <span class="value" data-field="flags" data-edit-field-target="value">
+        <%= @pet.flags.present? ? @pet.flags.map(&:humanize).join(", ") : "None" %>
+      </span>
+      <button class="edit-button" data-field="flags" data-edit-field-target="editButton" data-action="click->edit-field#edit">
+        <i class="fas fa-pencil-alt"></i>
+      </button>
+      <select multiple class="edit-input" data-field="flags" data-edit-field-target="input" style="display: none;">
+        <% @organization.organization_fields.flags.each do |flag_option| %>
+          <option value="<%= flag_option.value %>" <%= "selected" if @pet.flags.include?(flag_option.value) %>><%= flag_option.value.humanize %></option>
+        <% end %>
+      </select>
+    </div>
 
       <!-- Microchip -->
       <div class="field-container">

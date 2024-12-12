@@ -127,8 +127,33 @@ class PetsController < ApplicationController
   private
 
   def pet_params
-    params.require(:pet).permit(:name, :breed, :age, :description, :photo, gallery_photos: [])
-  end
+    params.require(:pet).permit(
+      :name,
+      :age,
+      :description,
+      :sex,
+      :weight_lbs,
+      :weight_oz,
+      :date_of_birth,
+      :dob_estimated,
+      :entered_shelter,
+      :left_shelter,
+      :microchip,
+      :dod,
+      :species_id,
+      :unit_id,
+      :location_id,
+      :mother_id,
+      :father_id,
+      :photo,
+      :coat_type,
+      gallery_photos: [],
+      breed: [],
+      color: [],
+      flags: [],
+      size: []
+    )
+  end  
 
   def set_organization
     Rails.logger.info "Finding organization with ID: #{params[:organization_id]}"
