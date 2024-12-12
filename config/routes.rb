@@ -1,4 +1,8 @@
 Rails.application.routes.draw do
+  get 'organization_fields/index'
+  get 'organization_fields/create'
+  get 'organization_fields/update'
+  get 'organization_fields/destroy'
   get 'feed/index'
   # Devise routes for user authentication
   devise_for :users
@@ -6,15 +10,16 @@ Rails.application.routes.draw do
   # Root route for public landing page
   root 'home#index' # Public landing page for unauthenticated users
 
-  # Organizations and nested pets
-  resources :organizations do
-    resources :pets do
-      member do
-        match :gallery, via: [:get, :post, :delete]
-      end
-      resources :posts, only: [:new, :create, :index, :show, :destroy]
+# Organizations and nested pets
+resources :organizations do
+  resources :pets do
+    member do
+      match :gallery, via: [:get, :post, :delete]
     end
-  end  
+    resources :posts, only: [:new, :create, :index, :show, :destroy]
+  end
+  resources :organization_fields, only: [:index, :create, :update, :destroy]
+end
 
   # Feed page
   resources :feed, only: [:index]

@@ -178,21 +178,32 @@ export default class extends Controller {
 
   updateUI() {
     this.inputTargets.forEach((input) => {
-      const valueElement = this.valueTargets.find((el) => el.dataset.field === input.dataset.field);
-      const editButton = this.editButtonTargets.find((el) => el.dataset.field === input.dataset.field);
-
-      if (this.changedFields.has(input.dataset.field)) {
+      const field = input.dataset.field;
+      const valueElement = this.valueTargets.find((el) => el.dataset.field === field);
+      const editButton = this.editButtonTargets.find((el) => el.dataset.field === field);
+  
+      // Update the value display
+      if (input.tagName === "SELECT" && input.multiple) {
+        // Handle multi-select fields
+        const selectedValues = Array.from(input.selectedOptions).map((option) => option.textContent);
+        valueElement.textContent = selectedValues.join(", ") || "None";
+      } else {
         valueElement.textContent = input.value;
-        valueElement.style.display = "inline-block";
-        input.style.display = "none";
+      }
+  
+      // Reset the visibility of the field
+      valueElement.style.display = "inline-block";
+      input.style.display = "none";
+      if (editButton) {
         editButton.style.display = "inline-block";
       }
     });
-
+  
+    // Clear changed fields and hide buttons
+    this.changedFields.clear();
     this.hideSaveButton();
     this.hideCancelButton();
-    this.changedFields.clear();
-  }
+  }  
 
   showSaveButton() {
     if (this.saveButtonTarget) {

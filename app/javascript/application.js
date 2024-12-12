@@ -14,6 +14,9 @@ application.register("post", PostController);
 import PetController from "./controllers/pet_controller";
 application.register("pet", PetController);
 
+import OrganizationFieldsController from "./controllers/organization_fields_controller";
+application.register("organization-fields", OrganizationFieldsController);
+
 // Other imports
 import "@hotwired/turbo-rails";
 import "bootstrap";

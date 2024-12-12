@@ -17,7 +17,7 @@
       <% end %>
     </div>
 
-    <!-- Editable Name and Breed -->
+    <!-- Editable Name -->
     <div class="header-details">
       <div class="field-container name-field-header">
         <span class="value" data-field="name" data-edit-field-target="value"><%= @pet.name %></span>
@@ -25,15 +25,6 @@
           <i class="fas fa-pencil-alt" aria-hidden="true"></i>
         </button>
         <input class="edit-input" type="text" data-field="name" data-edit-field-target="input" value="<%= @pet.name %>" style="display: none;" />
-      </div>
-
-      <div class="field-container">
-        <strong>Breed:</strong>
-        <span class="value" data-field="breed" data-edit-field-target="value"><%= @pet.breed %></span>
-        <button class="edit-button" data-field="breed" data-edit-field-target="editButton" data-action="click->edit-field#edit">
-          <i class="fas fa-pencil-alt" aria-hidden="true"></i>
-        </button>
-        <input class="edit-input" type="text" data-field="breed" data-edit-field-target="input" value="<%= @pet.breed %>" style="display: none;" />
       </div>
     </div>
   </div>
@@ -47,26 +38,118 @@
 
   <!-- Tab Content -->
   <div class="tab-content" id="details">
-    <h2>Details</h2>
-    
-    <div class="field-container">
-      <strong>Age:</strong>
-      <span class="value" data-field="age" data-edit-field-target="value"><%= @pet.age %></span>
-      <button class="edit-button" data-field="age" data-edit-field-target="editButton" data-action="click->edit-field#edit">
-        <i class="fas fa-pencil-alt" aria-hidden="true"></i>
-      </button>
-      <input class="edit-input" type="number" data-field="age" data-edit-field-target="input" value="<%= @pet.age %>" style="display: none;" />
+  <h2>Details</h2>
+
+  <div class="row">
+    <!-- Left Column -->
+    <div class="col-md-6">
+      <!-- Age -->
+      <div class="field-container">
+        <strong>Age:</strong>
+        <span class="value" data-field="age" data-edit-field-target="value"><%= @pet.age || "Not available" %></span>
+      </div>
+
+      <!-- Sex -->
+      <div class="field-container">
+        <strong>Sex:</strong>
+        <span class="value" data-field="sex" data-edit-field-target="value"><%= @pet.sex&.humanize || "Not set" %></span>
+        <button class="edit-button" data-field="sex" data-edit-field-target="editButton" data-action="click->edit-field#edit">
+          <i class="fas fa-pencil-alt"></i>
+        </button>
+        <select class="edit-input" data-field="sex" data-edit-field-target="input" style="display: none;">
+          <% Pet.sexes.keys.each do |sex| %>
+            <option value="<%= sex %>" <%= "selected" if @pet.sex == sex %>><%= sex.humanize %></option>
+          <% end %>
+        </select>
+      </div>
+
+      <!-- Species -->
+      <div class="field-container">
+        <strong>Species:</strong>
+        <span class="value" data-field="species" data-edit-field-target="value"><%= @pet.species&.value || "Not set" %></span>
+        <button class="edit-button" data-field="species" data-edit-field-target="editButton" data-action="click->edit-field#edit">
+          <i class="fas fa-pencil-alt"></i>
+        </button>
+        <select class="edit-input" data-field="species" data-edit-field-target="input" style="display: none;">
+          <% @organization.organization_fields.species.each do |species_option| %>
+            <option value="<%= species_option.value %>" <%= "selected" if @pet.species&.value == species_option.value %>><%= species_option.value %></option>
+          <% end %>
+        </select>
+      </div>
+
+      <!-- Breed -->
+      <div class="field-container">
+        <strong>Breed:</strong>
+        <span class="value" data-field="breed" data-edit-field-target="value"><%= @pet.breed.join(", ") || "None" %></span>
+        <button class="edit-button" data-field="breed" data-edit-field-target="editButton" data-action="click->edit-field#edit">
+          <i class="fas fa-pencil-alt"></i>
+        </button>
+        <select multiple class="edit-input" data-field="breed" data-edit-field-target="input" style="display: none;">
+          <% @organization.organization_fields.breed.each do |breed_option| %>
+            <option value="<%= breed_option.value %>" <%= "selected" if @pet.breed.include?(breed_option.value) %>><%= breed_option.value %></option>
+          <% end %>
+        </select>
+      </div>
+
+      <!-- Color -->
+      <div class="field-container">
+        <strong>Color:</strong>
+        <span class="value" data-field="color" data-edit-field-target="value"><%= @pet.color.join(", ") || "None" %></span>
+        <button class="edit-button" data-field="color" data-edit-field-target="editButton" data-action="click->edit-field#edit">
+          <i class="fas fa-pencil-alt"></i>
+        </button>
+        <select multiple class="edit-input" data-field="color" data-edit-field-target="input" style="display: none;">
+          <% @organization.organization_fields.color.each do |color_option| %>
+            <option value="<%= color_option.value %>" <%= "selected" if @pet.color.include?(color_option.value) %>><%= color_option.value %></option>
+          <% end %>
+        </select>
+      </div>
     </div>
 
-    <div class="field-container">
-      <strong>Description:</strong>
-      <span class="value" data-field="description" data-edit-field-target="value"><%= @pet.description %></span>
-      <button class="edit-button" data-field="description" data-edit-field-target="editButton" data-action="click->edit-field#edit">
-        <i class="fas fa-pencil-alt" aria-hidden="true"></i>
-      </button>
-      <textarea class="edit-input" data-field="description" data-edit-field-target="input" style="display: none;"><%= @pet.description %></textarea>
+    <!-- Right Column -->
+    <div class="col-md-6">
+      <!-- Flags -->
+      <div class="field-container">
+        <strong>Flags:</strong>
+        <span class="value" data-field="flags" data-edit-field-target="value"><%= @pet.flags.join(", ") || "None" %></span>
+        <button class="edit-button" data-field="flags" data-edit-field-target="editButton" data-action="click->edit-field#edit">
+          <i class="fas fa-pencil-alt"></i>
+        </button>
+        <select multiple class="edit-input" data-field="flags" data-edit-field-target="input" style="display: none;">
+          <% @organization.organization_fields.flags.each do |flag_option| %>
+            <option value="<%= flag_option.value %>" <%= "selected" if @pet.flags.include?(flag_option.value) %>><%= flag_option.value %></option>
+          <% end %>
+        </select>
+      </div>
+
+      <!-- Microchip -->
+      <div class="field-container">
+        <strong>Microchip:</strong>
+        <span class="value" data-field="microchip" data-edit-field-target="value"><%= @pet.microchip || "Not available" %></span>
+        <button class="edit-button" data-field="microchip" data-edit-field-target="editButton" data-action="click->edit-field#edit">
+          <i class="fas fa-pencil-alt"></i>
+        </button>
+        <input type="text" class="edit-input" data-field="microchip" data-edit-field-target="input" value="<%= @pet.microchip %>" style="display: none;" />
+      </div>
+
+      <!-- Coat Type -->
+      <div class="field-container">
+        <strong>Coat Type:</strong>
+        <span class="value" data-field="coat_type" data-edit-field-target="value">
+          <%= @pet.coat_type&.humanize || "Not set" %>
+        </span>
+        <button class="edit-button" data-field="coat_type" data-edit-field-target="editButton" data-action="click->edit-field#edit">
+          <i class="fas fa-pencil-alt"></i>
+        </button>
+        <select class="edit-input" data-field="coat_type" data-edit-field-target="input" style="display: none;">
+          <% Pet.coat_types.keys.each do |type| %>
+            <option value="<%= type %>" <%= "selected" if @pet.coat_type == type %>><%= type.humanize %></option>
+          <% end %>
+        </select>
+      </div>
     </div>
   </div>
+</div>
 
   <div class="tab-content" id="feed" style="display: none;">
     <h2>Feed</h2>

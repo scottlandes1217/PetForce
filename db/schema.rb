@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2024_12_08_035028) do
+ActiveRecord::Schema[7.1].define(version: 2024_12_12_082038) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -42,6 +42,15 @@ ActiveRecord::Schema[7.1].define(version: 2024_12_08_035028) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
+  create_table "organization_fields", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.integer "field_type"
+    t.string "value"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["organization_id"], name: "index_organization_fields_on_organization_id"
+  end
+
   create_table "organization_users", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.bigint "organization_id", null: false
@@ -66,12 +75,30 @@ ActiveRecord::Schema[7.1].define(version: 2024_12_08_035028) do
 
   create_table "pets", force: :cascade do |t|
     t.string "name"
-    t.string "breed"
+    t.json "breed"
     t.integer "age"
     t.text "description"
     t.bigint "organization_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "sex", default: 2, null: false
+    t.integer "species_id"
+    t.json "color"
+    t.integer "coat_type"
+    t.integer "size"
+    t.float "weight_lbs"
+    t.float "weight_oz"
+    t.date "entered_shelter"
+    t.date "left_shelter"
+    t.integer "unit_id"
+    t.integer "location_id"
+    t.date "date_of_birth"
+    t.boolean "dob_estimated", default: false
+    t.string "microchip"
+    t.date "dod"
+    t.integer "mother_id"
+    t.integer "father_id"
+    t.json "flags"
     t.index ["organization_id"], name: "index_pets_on_organization_id"
   end
 
@@ -122,6 +149,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_12_08_035028) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "organization_fields", "organizations"
   add_foreign_key "organization_users", "organizations"
   add_foreign_key "organization_users", "users"
   add_foreign_key "pets", "organizations"
