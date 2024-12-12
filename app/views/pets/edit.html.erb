@@ -1,0 +1,29 @@
+<h1>Edit Pet</h1>
+
+<%= form_with model: @pet, url: organization_pet_path(@organization, @pet), local: true do |f| %>
+  <!-- Pass return_to as a hidden field -->
+  <%= hidden_field_tag :return_to, params[:return_to] %>
+
+  <div class="mb-3">
+    <%= f.label :name, "Name", class: "form-label" %>
+    <%= f.text_field :name, class: "form-control" %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :breed, "Breed", class: "form-label" %>
+    <%= f.text_field :breed, class: "form-control" %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :age, "Age", class: "form-label" %>
+    <%= f.number_field :age, class: "form-control" %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :description, "Description", class: "form-label" %>
+    <%= f.text_area :description, class: "form-control" %>
+  </div>
+
+  <%= f.submit "Save Changes", class: "btn btn-primary" %>
+  <%= link_to "Cancel", params[:return_to] || organization_pets_path(@organization), class: "btn btn-secondary" %>
+<% end %>

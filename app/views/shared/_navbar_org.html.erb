@@ -1,0 +1,64 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <div class="container-fluid">
+    <!-- Brand -->
+    <a class="navbar-brand" href="<%= root_path %>">PetForce</a>
+
+    <!-- Toggler for mobile view -->
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- Navbar content -->
+    <div class="collapse navbar-collapse" id="navbarNavDropdown">
+      <!-- Left-aligned links -->
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+          <%= link_to "Home", @organization.present? ? organization_path(@organization) : root_path, class: "nav-link" %>
+        </li>
+        <% if @organization.present? %>
+          <li class="nav-item">
+            <%= link_to "Pets", organization_pets_path(@organization), class: "nav-link" %>
+          </li>
+        <% else %>
+          <!-- Debugging fallback -->
+          <li class="nav-item text-danger">
+            <small>No organization set</small>
+          </li>
+        <% end %>
+        <li class="nav-item">
+          <%= link_to "Feed", feed_index_path, class: "nav-link" %>
+        </li>
+      </ul>
+
+      <!-- Right-aligned user dropdown -->
+      <ul class="navbar-nav ms-auto">
+        <% if user_signed_in? %>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <!-- Circle icon -->
+              <span class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center" style="width: 40px; height: 40px; font-size: 1rem;">
+                <i class="bi bi-person"></i>
+              </span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+              <li><%= link_to "Edit Profile", edit_user_registration_path, class: "dropdown-item" %></li>
+              <% if current_user.shelter_staff? || current_user.admin? %>
+                <li><%= link_to "Edit Organization", edit_organization_path(@organization), class: "dropdown-item" %></li>
+              <% end %>
+              <% if current_user.admin? || (current_user.shelter_staff? && current_user.organizations.size > 1) %>
+              <li><%= link_to "Switch Organizations", organizations_path, class: "dropdown-item" %></li>
+            <% end %>
+              <li>
+                <%= link_to "Log Out", destroy_user_session_path, method: :delete, class: "dropdown-item" %>
+              </li>
+            </ul>
+          </li>
+        <% else %>
+          <li class="nav-item">
+            <%= link_to "Log In", new_user_session_path, class: "nav-link" %>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  </div>
+</nav>

@@ -1,0 +1,13 @@
+<h1>Feed</h1>
+
+<div id="feed-container" data-controller="feed">
+  <div data-feed-target="posts">
+    <%= render @posts, partial: "posts/post", as: :post %>
+  </div>
+  <div id="loading-indicator" data-feed-target="loadingIndicator" style="display: none; text-align: center; font-weight: bold;">
+    Loading...
+  </div>
+  <div id="no-more-posts" style="display: none; text-align: center; margin-top: 20px; font-weight: bold;">
+    No more posts to display.
+  </div>
+</div>
