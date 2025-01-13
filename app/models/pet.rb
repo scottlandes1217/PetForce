@@ -15,37 +15,18 @@ class Pet < ApplicationRecord
   validates :name, presence: true
   validates :weight_lbs, :weight_oz, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
 
-  # Accessor for multi-select defaults
-  # Accessor for multi-select fields
+  # Ensure breed, color, and flags are always arrays
   def breed
-    super.is_a?(Array) ? super : JSON.parse(super || '[]')
-  rescue JSON::ParserError
-    []
-  end
-  
-  def breed=(value)
-    super(value.is_a?(Array) ? value.to_json : value)
+    super || []
   end
 
   def color
-    super.is_a?(Array) ? super : JSON.parse(super || '[]')
-  rescue JSON::ParserError
-    []
+    super || []
   end
-  
-  def color=(value)
-    super(value.is_a?(Array) ? value.to_json : value)
-  end
-  
+
   def flags
-    super.is_a?(Array) ? super : JSON.parse(super || '[]')
-  rescue JSON::ParserError
-    []
+    super || []
   end
-  
-  def flags=(value)
-    super(value.is_a?(Array) ? value.to_json : value)
-  end 
 
   # Enums
   enum sex: { male: 0, female: 1, unknown: 2 }

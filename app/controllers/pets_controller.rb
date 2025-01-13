@@ -74,19 +74,21 @@ class PetsController < ApplicationController
       return
     end
   
-    # Handle other updates
+    # Handle other updates (for fields like dob_estimated, species, breed, etc.)
     if @pet.update(pet_params)
+      Rails.logger.info "Pet updated successfully: #{@pet.inspect}"
       respond_to do |format|
         format.html { redirect_to organization_pet_path(@organization, @pet), notice: 'Pet was successfully updated.' }
         format.json { render json: { success_message: "Pet updated successfully!" }, status: :ok }
       end
     else
+      Rails.logger.error "Failed to update pet: #{@pet.errors.full_messages}"
       respond_to do |format|
         format.html { render :edit, status: :unprocessable_entity }
         format.json { render json: { error: @pet.errors.full_messages }, status: :unprocessable_entity }
       end
     end
-  end  
+  end
 
   def destroy
     @pet.destroy
@@ -135,7 +137,6 @@ class PetsController < ApplicationController
       :weight_lbs,
       :weight_oz,
       :date_of_birth,
-      :dob_estimated,
       :entered_shelter,
       :left_shelter,
       :microchip,
@@ -152,9 +153,14 @@ class PetsController < ApplicationController
       color: [],
       flags: [],
       size: []
-    )
-  end  
-
+    ).tap do |whitelisted|
+      whitelisted[:dob_estimated] = params[:pet][:dob_estimated].present? ? true : false
+      whitelisted[:breed] = Array(params[:pet][:breed]) # Force breed to be an array
+      whitelisted[:color] = Array(params[:pet][:color]) # Force color to be an array
+      whitelisted[:flags] = Array(params[:pet][:flags]) # Force flags to be an array
+    end
+  end
+  
   def set_organization
     Rails.logger.info "Finding organization with ID: #{params[:organization_id]}"
     @organization = Organization.find_by(id: params[:organization_id])

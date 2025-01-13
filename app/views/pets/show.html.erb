@@ -37,126 +37,224 @@
   </div>
 
   <!-- Tab Content -->
-<div class="tab-content" id="details">
-  <h2>Details</h2>
+  <div class="tab-content" id="details">
+    <h2>Details</h2>
 
-  <div class="row">
-    <!-- Left Column -->
-    <div class="col-md-6">
-      <!-- Age -->
-      <div class="field-container">
-        <strong>Age:</strong>
-        <span class="value" data-field="age" data-edit-field-target="value"><%= @pet.age || "Not available" %></span>
+    <div class="row">
+      <!-- Left Column -->
+      <div class="col-md-6">
+        <!-- Age -->
+        <div class="field-container">
+          <strong>Age:</strong>
+          <span class="value" data-field="age" data-edit-field-target="value"><%= @pet.age || "Not available" %></span>
+        </div>
+
+        <!-- Date of Birth and DOB Estimated -->
+<div class="field-container">
+  <strong>Date of Birth:</strong>
+  <span class="value" data-field="dob" data-edit-field-target="value">
+    <%= @pet.date_of_birth&.strftime("%B %d, %Y") || "Not set" %> (<%= @pet.dob_estimated ? "Estimated" : "Exact" %>)
+  </span>
+  <button class="edit-button" data-field="dob" data-group="dob" data-edit-field-target="editButton" data-action="click->edit-field#edit">
+    <i class="fas fa-pencil-alt"></i>
+  </button>
+  <div class="edit-input-group" data-group="dob" style="display: none;">
+    <input type="date" class="edit-input" data-field="date_of_birth" data-group="dob" data-edit-field-target="input" value="<%= @pet.date_of_birth %>" />
+    <label>
+      <input type="hidden" name="dob_estimated" value="false" />
+      <input type="checkbox" name="dob_estimated" value="true" data-field="dob_estimated" data-group="dob" data-edit-field-target="input" <%= @pet.dob_estimated ? "checked" : "" %> />
+      Estimated
+    </label>
+  </div>
+</div>
+        
+        <!-- Weight -->
+<div class="field-container">
+  <strong>Weight:</strong>
+  <span class="value" data-field="weight" data-edit-field-target="value">
+    <%= @pet.formatted_weight || "Not Set" %>
+  </span>
+  <button class="edit-button" data-field="weight" data-group="weight" data-edit-field-target="editButton" data-action="click->edit-field#edit">
+    <i class="fas fa-pencil-alt"></i>
+  </button>
+  <div class="edit-input-group" data-group="weight" style="display: none;">
+    <input type="number" class="edit-input" data-field="weight_lbs" data-group="weight" data-edit-field-target="input" value="<%= @pet.weight_lbs %>" placeholder="Lbs" />
+    <input type="number" class="edit-input" data-field="weight_oz" data-group="weight" data-edit-field-target="input" value="<%= @pet.weight_oz %>" placeholder="Oz" />
+  </div>
+</div>
+
+        <!-- Sex -->
+        <div class="field-container">
+          <strong>Sex:</strong>
+          <span class="value" data-field="sex" data-edit-field-target="value"><%= @pet.sex&.humanize || "Not Set" %></span>
+          <button class="edit-button" data-field="sex" data-edit-field-target="editButton" data-action="click->edit-field#edit">
+            <i class="fas fa-pencil-alt"></i>
+          </button>
+          <select class="edit-input" data-field="sex" data-edit-field-target="input" style="display: none;">
+            <% Pet.sexes.keys.each do |sex| %>
+              <option value="<%= sex %>" <%= "selected" if @pet.sex == sex %>><%= sex.humanize %></option>
+            <% end %>
+          </select>
+        </div>
+
+        <!-- Species -->
+        <div class="field-container">
+          <strong>Species:</strong>
+          <span class="value" data-field="species_id" data-edit-field-target="value">
+            <%= @pet.species&.value&.titleize || "None" %>
+          </span>
+          <button class="edit-button" data-field="species_id" data-edit-field-target="editButton" data-action="click->edit-field#edit">
+            <i class="fas fa-pencil-alt"></i>
+          </button>
+          <select class="edit-input" data-field="species_id" data-edit-field-target="input" style="display: none;">
+            <option value="">None</option>
+            <% @organization.organization_fields.species.each do |species_option| %>
+              <option value="<%= species_option.id %>" <%= "selected" if @pet.species_id == species_option.id %>><%= species_option.value.titleize %></option>
+            <% end %>
+          </select>
+        </div>
+
+        <!-- Breed -->
+        <div class="field-container">
+          <strong>Breed:</strong>
+          <span class="value" data-field="breed" data-edit-field-target="value">
+            <%= @pet.breed.present? ? @pet.breed.map { |b| OrganizationField.find_by(id: b)&.value&.titleize }.compact.join(", ") : "Not Set" %>
+          </span>
+          <button class="edit-button" data-field="breed" data-edit-field-target="editButton" data-action="click->edit-field#edit">
+            <i class="fas fa-pencil-alt"></i>
+          </button>
+          <select multiple class="edit-input" data-field="breed" data-edit-field-target="input" style="display: none;">
+            <% @organization.organization_fields.breed.each do |breed_option| %>
+              <option value="<%= breed_option.id %>" <%= "selected" if @pet.breed.include?(breed_option.id) %>><%= breed_option.value.titleize %></option>
+            <% end %>
+          </select>
+        </div>
+
+        <!-- Color -->
+        <div class="field-container">
+          <strong>Color:</strong>
+          <span class="value" data-field="color" data-edit-field-target="value">
+            <%= @pet.color.present? ? @pet.color.map(&:titleize).join(", ") : "None" %>
+          </span>
+          <button class="edit-button" data-field="color" data-edit-field-target="editButton" data-action="click->edit-field#edit">
+            <i class="fas fa-pencil-alt"></i>
+          </button>
+          <select multiple class="edit-input" data-field="color" data-edit-field-target="input" style="display: none;">
+            <% @organization.organization_fields.color.each do |color_option| %>
+              <option value="<%= color_option.value %>" <%= "selected" if @pet.color.include?(color_option.value) %>><%= color_option.value.titleize %></option>
+            <% end %>
+          </select>
+        </div>
+
+        <!-- Coat Type -->
+        <div class="field-container">
+          <strong>Coat Type:</strong>
+          <span class="value" data-field="coat_type" data-edit-field-target="value">
+            <%= @pet.coat_type&.humanize || "Not Set" %>
+          </span>
+          <button class="edit-button" data-field="coat_type" data-edit-field-target="editButton" data-action="click->edit-field#edit">
+            <i class="fas fa-pencil-alt"></i>
+          </button>
+          <select class="edit-input" data-field="coat_type" data-edit-field-target="input" style="display: none;">
+            <% Pet.coat_types.keys.each do |type| %>
+              <option value="<%= type %>" <%= "selected" if @pet.coat_type == type %>><%= type.humanize %></option>
+            <% end %>
+          </select>
+        </div>
       </div>
 
-      <!-- Sex -->
-      <div class="field-container">
-        <strong>Sex:</strong>
-        <span class="value" data-field="sex" data-edit-field-target="value"><%= @pet.sex&.humanize || "Not set" %></span>
-        <button class="edit-button" data-field="sex" data-edit-field-target="editButton" data-action="click->edit-field#edit">
-          <i class="fas fa-pencil-alt"></i>
-        </button>
-        <select class="edit-input" data-field="sex" data-edit-field-target="input" style="display: none;">
-          <% Pet.sexes.keys.each do |sex| %>
-            <option value="<%= sex %>" <%= "selected" if @pet.sex == sex %>><%= sex.humanize %></option>
-          <% end %>
-        </select>
-      </div>
+      <!-- Right Column -->
+      <div class="col-md-6">
+        <!-- Flags -->
+        <div class="field-container">
+          <strong>Flags:</strong>
+          <span class="value" data-field="flags" data-edit-field-target="value">
+            <%= @pet.flags.present? ? @pet.flags.map(&:titleize).join(", ") : "Not Set" %>
+          </span>
+          <button class="edit-button" data-field="flags" data-edit-field-target="editButton" data-action="click->edit-field#edit">
+            <i class="fas fa-pencil-alt"></i>
+          </button>
+          <select multiple class="edit-input" data-field="flags" data-edit-field-target="input" style="display: none;">
+            <% @organization.organization_fields.flags.each do |flag_option| %>
+              <option value="<%= flag_option.value %>" <%= "selected" if @pet.flags.include?(flag_option.value) %>><%= flag_option.value.titleize %></option>
+            <% end %>
+          </select>
+        </div>
 
-      <!-- Species -->
-      <div class="field-container">
-        <strong>Species:</strong>
-        <span class="value" data-field="species" data-edit-field-target="value"><%= @pet.species&.value || "None" %></span>
-        <button class="edit-button" data-field="species" data-edit-field-target="editButton" data-action="click->edit-field#edit">
-          <i class="fas fa-pencil-alt"></i>
-        </button>
-        <select class="edit-input" data-field="species" data-edit-field-target="input" style="display: none;">
-          <option value="">None</option> <!-- Add a "None" option -->
-          <% @organization.organization_fields.species.each do |species_option| %>
-            <option value="<%= species_option.value %>" <%= "selected" if @pet.species&.value == species_option.value %>><%= species_option.value %></option>
-          <% end %>
-        </select>
-      </div>
+        <!-- Entered Shelter -->
+        <div class="field-container">
+          <strong>Entered Shelter:</strong>
+          <span class="value" data-field="entered_shelter" data-edit-field-target="value">
+            <%= @pet.entered_shelter&.strftime("%B %d, %Y") || "Not Set" %>
+          </span>
+          <button class="edit-button" data-field="entered_shelter" data-edit-field-target="editButton" data-action="click->edit-field#edit">
+            <i class="fas fa-pencil-alt"></i>
+          </button>
+          <input type="date" class="edit-input" data-field="entered_shelter" data-edit-field-target="input" value="<%= @pet.entered_shelter %>" style="display: none;" />
+        </div>
 
-      <!-- Breed -->
-      <div class="field-container">
-        <strong>Breed:</strong>
-        <span class="value" data-field="breed" data-edit-field-target="value">
-          <%= @pet.breed.present? ? @pet.breed.join(", ") : "None" %>
-        </span>
-        <button class="edit-button" data-field="breed" data-edit-field-target="editButton" data-action="click->edit-field#edit">
-          <i class="fas fa-pencil-alt"></i>
-        </button>
-        <select multiple class="edit-input" data-field="breed" data-edit-field-target="input" style="display: none;">
-          <% @organization.organization_fields.breed.each do |breed_option| %>
-            <option value="<%= breed_option.value %>" <%= "selected" if @pet.breed.include?(breed_option.value) %>><%= breed_option.value %></option>
-          <% end %>
-        </select>
-      </div>
+        <!-- Left Shelter -->
+        <div class="field-container">
+          <strong>Left Shelter:</strong>
+          <span class="value" data-field="left_shelter" data-edit-field-target="value">
+            <%= @pet.left_shelter&.strftime("%B %d, %Y") || "Not Set" %>
+          </span>
+          <button class="edit-button" data-field="left_shelter" data-edit-field-target="editButton" data-action="click->edit-field#edit">
+            <i class="fas fa-pencil-alt"></i>
+          </button>
+          <input type="date" class="edit-input" data-field="left_shelter" data-edit-field-target="input" value="<%= @pet.left_shelter %>" style="display: none;" />
+        </div>
 
-      <!-- Color -->
-      <div class="field-container">
-        <strong>Color:</strong>
-        <span class="value" data-field="color" data-edit-field-target="value">
-          <%= @pet.color.present? ? @pet.color.join(", ") : "None" %>
-        </span>
-        <button class="edit-button" data-field="color" data-edit-field-target="editButton" data-action="click->edit-field#edit">
-          <i class="fas fa-pencil-alt"></i>
-        </button>
-        <select multiple class="edit-input" data-field="color" data-edit-field-target="input" style="display: none;">
-          <% @organization.organization_fields.color.each do |color_option| %>
-            <option value="<%= color_option.value %>" <%= "selected" if @pet.color.include?(color_option.value) %>><%= color_option.value %></option>
-          <% end %>
-        </select>
-      </div>
-    </div>
+        <!-- Microchip -->
+        <div class="field-container">
+          <strong>Microchip:</strong>
+          <span class="value" data-field="microchip" data-edit-field-target="value"><%= @pet.microchip || "Not available" %></span>
+          <button class="edit-button" data-field="microchip" data-edit-field-target="editButton" data-action="click->edit-field#edit">
+            <i class="fas fa-pencil-alt"></i>
+          </button>
+          <input type="text" class="edit-input" data-field="microchip" data-edit-field-target="input" value="<%= @pet.microchip %>" style="display: none;" />
+        </div>
 
-    <!-- Right Column -->
-    <div class="col-md-6">
-    <!-- Flags -->
-    <div class="field-container">
-      <strong>Flags:</strong>
-      <span class="value" data-field="flags" data-edit-field-target="value">
-        <%= @pet.flags.present? ? @pet.flags.map(&:humanize).join(", ") : "None" %>
-      </span>
-      <button class="edit-button" data-field="flags" data-edit-field-target="editButton" data-action="click->edit-field#edit">
-        <i class="fas fa-pencil-alt"></i>
-      </button>
-      <select multiple class="edit-input" data-field="flags" data-edit-field-target="input" style="display: none;">
-        <% @organization.organization_fields.flags.each do |flag_option| %>
-          <option value="<%= flag_option.value %>" <%= "selected" if @pet.flags.include?(flag_option.value) %>><%= flag_option.value.humanize %></option>
-        <% end %>
-      </select>
-    </div>
+        <!-- Location & Unit -->
+<div class="field-container">
+  <strong>Location & Unit:</strong>
+  <span class="value" data-field="location_unit" data-edit-field-target="value">
+    <%= [@pet.location&.value, @pet.unit&.value].compact.join(" - ") || "Not Set" %>
+  </span>
+  <button class="edit-button" data-field="location_unit" data-group="location_unit" data-edit-field-target="editButton" data-action="click->edit-field#edit">
+    <i class="fas fa-pencil-alt"></i>
+  </button>
+  <div class="edit-input-group" data-group="location_unit" style="display: none;">
+    <select class="edit-input" data-field="location_id" data-group="location_unit" data-edit-field-target="input">
+      <option value="">None</option>
+      <% @organization.organization_fields.location.each do |location_option| %>
+        <option value="<%= location_option.id %>" <%= "selected" if @pet.location_id == location_option.id %>><%= location_option.value %></option>
+      <% end %>
+    </select>
 
-      <!-- Microchip -->
-      <div class="field-container">
-        <strong>Microchip:</strong>
-        <span class="value" data-field="microchip" data-edit-field-target="value"><%= @pet.microchip || "Not available" %></span>
-        <button class="edit-button" data-field="microchip" data-edit-field-target="editButton" data-action="click->edit-field#edit">
-          <i class="fas fa-pencil-alt"></i>
-        </button>
-        <input type="text" class="edit-input" data-field="microchip" data-edit-field-target="input" value="<%= @pet.microchip %>" style="display: none;" />
-      </div>
+    <select class="edit-input" data-field="unit_id" data-group="location_unit" data-edit-field-target="input">
+      <option value="">None</option>
+      <% @organization.organization_fields.unit.each do |unit_option| %>
+        <option value="<%= unit_option.id %>" <%= "selected" if @pet.unit_id == unit_option.id %>><%= unit_option.value %></option>
+      <% end %>
+    </select>
+  </div>
+</div>
 
-      <!-- Coat Type -->
-      <div class="field-container">
-        <strong>Coat Type:</strong>
-        <span class="value" data-field="coat_type" data-edit-field-target="value">
-          <%= @pet.coat_type&.humanize || "Not set" %>
-        </span>
-        <button class="edit-button" data-field="coat_type" data-edit-field-target="editButton" data-action="click->edit-field#edit">
-          <i class="fas fa-pencil-alt"></i>
-        </button>
-        <select class="edit-input" data-field="coat_type" data-edit-field-target="input" style="display: none;">
-          <% Pet.coat_types.keys.each do |type| %>
-            <option value="<%= type %>" <%= "selected" if @pet.coat_type == type %>><%= type.humanize %></option>
-          <% end %>
-        </select>
+        <!-- Date of Death -->
+        <div class="field-container">
+          <strong>Date of Death:</strong>
+          <span class="value" data-field="dod" data-edit-field-target="value">
+            <%= @pet.dod&.strftime("%B %d, %Y") || "Not Set" %>
+          </span>
+          <button class="edit-button" data-field="dod" data-edit-field-target="editButton" data-action="click->edit-field#edit">
+            <i class="fas fa-pencil-alt"></i>
+          </button>
+          <input type="date" class="edit-input" data-field="dod" data-edit-field-target="input" value="<%= @pet.dod %>" style="display: none;" />
+        </div>
       </div>
     </div>
   </div>
-</div>
 
   <div class="tab-content" id="feed" style="display: none;">
     <h2>Feed</h2>
@@ -170,14 +268,12 @@
 
   <div class="tab-content" id="gallery" style="display: none;">
     <h2>Photo Gallery</h2>
-  
     <%= form_with model: @pet, url: gallery_organization_pet_path(@organization, @pet), method: :post, local: true, multipart: true do |f| %>
       <div class="form-group">
         <input type="file" name="pet[gallery_photos][]" multiple="true" class="form-control"
               data-pet-target="uploadInput" data-action="change->pet#uploadInputChanged">
       </div>
     <% end %>
-  
     <div class="gallery-container">
       <% @pet.gallery_photos.each do |photo| %>
         <div class="gallery-item">
@@ -189,7 +285,6 @@
       <% end %>
     </div>
   </div>
-
 
   <!-- Modal for Selecting/Uploading Image -->
   <div id="imageModal" class="modal" data-pet-target="imageModal" style="display: none;">
@@ -219,7 +314,7 @@
       </div>
     </div>
   </div>
-  
+
   <div class="button-container" style="display:none">
     <button id="save-button" class="btn btn-primary" data-edit-field-target="saveButton" data-action="click->edit-field#save" style="display: none;">Save Changes</button>
     <button id="cancel-button" class="btn btn-secondary" data-edit-field-target="cancelButton" data-action="click->edit-field#cancel" style="display: none;">Cancel</button>

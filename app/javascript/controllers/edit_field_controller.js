@@ -27,27 +27,58 @@ export default class extends Controller {
   edit(event) {
     event.preventDefault();
     event.stopPropagation();
-
+  
+    const group = event.target.dataset.group;
     const field = event.target.dataset.field;
-    const valueElement = this.valueTargets.find((el) => el.dataset.field === field);
-    const inputElement = this.inputTargets.find((el) => el.dataset.field === field);
-
-    valueElement.style.display = "none";
-    inputElement.style.display = "inline-block";
-    inputElement.focus();
-    event.target.style.display = "none";
-
-    this.showCancelButton();
-
-    inputElement.addEventListener("input", () => {
-      if (inputElement.value !== this.currentValues.get(field)) {
-        this.changedFields.add(field);
-        this.showSaveButton();
-      } else {
-        this.changedFields.delete(field);
-        this.hideSaveButton();
-      }
-    });
+  
+    if (group) {
+      const valueElement = this.valueTargets.find((el) => el.dataset.field === group);
+      const groupContainer = this.element.querySelector(`.edit-input-group[data-group="${group}"]`);
+  
+      if (valueElement) valueElement.style.display = "none";
+      if (groupContainer) groupContainer.style.display = "flex"; // Show grouped inputs again
+  
+      event.target.style.display = "none"; // Hide edit button
+      this.showCancelButton();
+  
+      // Track changes in grouped inputs
+      const inputElements = this.inputTargets.filter((el) => el.dataset.group === group);
+      inputElements.forEach((inputElement) => {
+        const eventType = inputElement.type === "checkbox" || inputElement.tagName === "SELECT" ? "change" : "input";
+        inputElement.addEventListener(eventType, () => {
+          const changedValues = inputElements.map((el) => (el.type === "checkbox" ? el.checked : el.value));
+          const originalValues = inputElements.map((el) => this.currentValues.get(el.dataset.field));
+  
+          if (JSON.stringify(changedValues) !== JSON.stringify(originalValues)) {
+            this.changedFields.add(group);
+            this.showSaveButton();
+          } else {
+            this.changedFields.delete(group);
+            this.hideSaveButton();
+          }
+        });
+      });
+    } else {
+      const valueElement = this.valueTargets.find((el) => el.dataset.field === field);
+      const inputElement = this.inputTargets.find((el) => el.dataset.field === field);
+  
+      if (valueElement) valueElement.style.display = "none";
+      if (inputElement) inputElement.style.display = "inline-block";
+  
+      inputElement.focus();
+      event.target.style.display = "none"; // Hide edit button
+      this.showCancelButton();
+  
+      inputElement.addEventListener("input", () => {
+        if (inputElement.value !== this.currentValues.get(field)) {
+          this.changedFields.add(field);
+          this.showSaveButton();
+        } else {
+          this.changedFields.delete(field);
+          this.hideSaveButton();
+        }
+      });
+    }
   }
 
   cancel(event) {
@@ -56,19 +87,23 @@ export default class extends Controller {
   
     console.log("Cancel button clicked. Reverting changes...");
   
-    // Revert changes to the input fields
     this.inputTargets.forEach((input) => {
       const field = input.dataset.field;
+      const group = input.dataset.group;
       const originalValue = this.currentValues.get(field);
   
-      if (input.tagName === "SELECT" && input.multiple) {
-        // Multi-select fields: reset selected options
-        Array.from(input.options).forEach((option) => {
-          option.selected = originalValue.includes(option.value);
-        });
-      } else {
-        // Single value fields
-        input.value = originalValue;
+      if (!group || event.target.dataset.group === group) {
+        if (input.tagName === "SELECT" && input.multiple) {
+          // Multi-select fields: reset selected options
+          Array.from(input.options).forEach((option) => {
+            option.selected = originalValue.includes(option.value);
+          });
+        } else if (input.type === "checkbox") {
+          input.checked = originalValue === "true";
+        } else {
+          // Single value fields
+          input.value = originalValue;
+        }
       }
     });
   
@@ -79,7 +114,7 @@ export default class extends Controller {
     this.changedFields.clear();
     this.hideSaveButton();
     this.hideCancelButton();
-  }  
+  }
 
   save(event) {
     if (event) event.preventDefault();
@@ -92,13 +127,28 @@ export default class extends Controller {
     this.isSaving = true;
   
     const data = {};
+  
     this.inputTargets.forEach((input) => {
-      if (this.changedFields.has(input.dataset.field)) {
-        data[input.dataset.field] = input.value;
+      const field = input.dataset.field;
+  
+      if (input.type === "checkbox") {
+        data[field] = input.checked;
+      } else if (input.tagName === "SELECT" && input.multiple) {
+        data[field] = Array.from(input.selectedOptions).map((option) => option.value);
+      } else if (input.type === "date" && input.value) {
+        // Check if date input is not empty, then convert to ISO string
+        const date = new Date(input.value);
+        if (!isNaN(date)) {
+          data[field] = date.toISOString().split("T")[0]; // Send as YYYY-MM-DD
+        } else {
+          console.warn(`Invalid date value for field ${field}:`, input.value);
+        }
+      } else {
+        data[field] = input.value;
       }
     });
   
-    console.log("Sending data:", data);
+    console.log("Sending data to server:", data);
   
     fetch(this.url, {
       method: "PATCH",
@@ -123,7 +173,11 @@ export default class extends Controller {
         // Update currentValues for all saved fields
         this.inputTargets.forEach((input) => {
           const field = input.dataset.field;
-          if (this.changedFields.has(field)) {
+          if (input.tagName === "SELECT" && input.multiple) {
+            this.currentValues.set(field, Array.from(input.selectedOptions).map((option) => option.value));
+          } else if (input.type === "checkbox") {
+            this.currentValues.set(field, input.checked.toString()); // Convert to string for consistent comparison
+          } else {
             this.currentValues.set(field, input.value);
           }
         });
@@ -138,7 +192,7 @@ export default class extends Controller {
       .finally(() => {
         this.isSaving = false;
       });
-  }  
+  }
 
   triggerPhotoUpload() {
     console.log("Photo upload triggered");
@@ -188,42 +242,83 @@ export default class extends Controller {
   updateUI() {
     this.inputTargets.forEach((input) => {
       const field = input.dataset.field;
-      const valueElement = this.valueTargets.find((el) => el.dataset.field === field);
-      const editButton = this.editButtonTargets.find((el) => el.dataset.field === field);
+      const group = input.dataset.group;
   
-      let formattedValue;
+      if (group) {
+        const valueElement = this.valueTargets.find((el) => el.dataset.field === group);
+        const groupContainer = this.element.querySelector(`.edit-input-group[data-group="${group}"]`);
+        const editButton = this.editButtonTargets.find((el) => el.dataset.field === group);
   
-      if (input.tagName === "SELECT" && input.multiple) {
-        // Handle multi-select fields
-        const selectedValues = Array.from(input.selectedOptions).map((option) => option.textContent);
-        formattedValue = selectedValues.join(", ") || "None";
-      } else if (input.tagName === "SELECT") {
-        // Handle single-select dropdowns
-        const selectedOption = input.selectedOptions[0];
-        formattedValue = selectedOption ? selectedOption.textContent : "None";
-      } else if (input.type === "text" || input.tagName === "TEXTAREA") {
-        // Freeform text fields: use raw input value
-        formattedValue = input.value;
+        if (valueElement && groupContainer) {
+          let formattedValue;
+  
+          if (group === "dob") {
+            const dateOfBirth = this.currentValues.get("date_of_birth");
+            const dobEstimated = this.currentValues.get("dob_estimated") === "true" ? "Estimated" : "Exact";
+  
+            if (dateOfBirth) {
+              // Format as local date without timezone shift
+              const localDate = new Date(dateOfBirth + "T00:00:00");
+              formattedValue = localDate.toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric"
+              }) + ` (${dobEstimated})`;
+            } else {
+              formattedValue = "Not Set";
+            }
+          } else if (group === "weight") {
+            const weightLbs = this.currentValues.get("weight_lbs") || 0;
+            const weightOz = this.currentValues.get("weight_oz") || 0;
+            formattedValue = `${weightLbs} lbs ${weightOz} oz`;
+          } else if (group === "location_unit") {
+            const locationId = this.currentValues.get("location_id");
+            const unitId = this.currentValues.get("unit_id");
+            const locationOption = groupContainer.querySelector(`select[data-field="location_id"] option[value="${locationId}"]`);
+            const unitOption = groupContainer.querySelector(`select[data-field="unit_id"] option[value="${unitId}"]`);
+            formattedValue = [locationOption?.textContent, unitOption?.textContent].filter(Boolean).join(" - ") || "Not Set";
+          }
+  
+          valueElement.textContent = formattedValue;
+          valueElement.style.display = "inline-block";
+          groupContainer.style.display = "none";
+  
+          if (editButton) editButton.style.display = "inline-block";
+        }
       } else {
-        // Apply humanization for other field types
-        formattedValue = this.humanizeValue(input.value);
-      }
+        const valueElement = this.valueTargets.find((el) => el.dataset.field === field);
+        const editButton = this.editButtonTargets.find((el) => el.dataset.field === field);
   
-      valueElement.textContent = formattedValue;
+        if (valueElement) {
+          let formattedValue = input.value || "Not Set";
   
-      // Reset the visibility of the field
-      valueElement.style.display = "inline-block";
-      input.style.display = "none";
-      if (editButton) {
-        editButton.style.display = "inline-block";
+          if (field === "species_id") {
+            // Show species text instead of ID
+            const selectedOption = input.querySelector(`option[value="${input.value}"]`);
+            formattedValue = selectedOption ? selectedOption.textContent : "Not Set";
+          }
+  
+          if (["sex", "coat_type", "color"].includes(field)) {
+            formattedValue = this.humanizeString(formattedValue);
+          }
+  
+          if (input.type === "checkbox") {
+            formattedValue = input.checked ? "Yes" : "No";
+          }
+  
+          valueElement.textContent = formattedValue;
+          valueElement.style.display = "inline-block";
+          input.style.display = "none";
+        }
+  
+        if (editButton) editButton.style.display = "inline-block";
       }
     });
   
-    // Clear changed fields and hide buttons
     this.changedFields.clear();
     this.hideSaveButton();
     this.hideCancelButton();
-  }  
+  }
   
   // Helper to humanize values
   humanizeValue(value) {
