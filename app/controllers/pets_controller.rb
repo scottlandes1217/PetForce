@@ -15,7 +15,7 @@ class PetsController < ApplicationController
   end
 
   def show
-    @posts = @pet.posts.includes(images_attachments: :blob) # Ensure images are loaded with posts
+    @posts = @pet.posts.includes(images_attachments: :blob)
   end
 
   def new
@@ -24,7 +24,6 @@ class PetsController < ApplicationController
 
   def create
     @pet = @organization.pets.build(pet_params)
-
     if @pet.save
       respond_to do |format|
         format.html { redirect_to organization_pets_path(@organization), notice: 'Pet was successfully added.' }
@@ -46,23 +45,16 @@ class PetsController < ApplicationController
   def update
     Rails.logger.info "Params received for update: #{params.inspect}"
 
-    # Handle photo upload (sets @pet.photo and also attaches to gallery)
+    # 1) Handle new photo upload for main header
     if params[:pet] && params[:pet][:photo]
       uploaded_photo = params[:pet][:photo]
       @pet.photo.attach(uploaded_photo)
-      @pet.gallery_photos.attach(uploaded_photo)
+      @pet.gallery_photos.attach(uploaded_photo)  # Add to gallery if desired
 
       if @pet.photo.attached?
-        # ADDED: Re-render the updated gallery partial
-        gallery_html = render_to_string(
-          partial: "pets/gallery_items",
-          locals: { pet: @pet, organization: @organization }
-        )
-
         render json: {
           photo_url: url_for(@pet.photo),
-          success_message: "Photo updated successfully!",
-          gallery_html: gallery_html  # ADDED
+          success_message: "Photo updated successfully!"
         }, status: :ok
       else
         render json: { error: "Failed to attach photo" }, status: :unprocessable_entity
@@ -70,22 +62,14 @@ class PetsController < ApplicationController
       return
     end
 
-    # Handle selecting an existing gallery image as the main photo
+    # 2) Handle selecting an existing gallery image as main header
     if params[:gallery_image_id]
       gallery_photo = ActiveStorage::Blob.find_signed(params[:gallery_image_id]) rescue nil
       if gallery_photo
         @pet.photo.attach(gallery_photo)
-
-        # ADDED: Re-render the updated gallery partial
-        gallery_html = render_to_string(
-          partial: "pets/gallery_items",
-          locals: { pet: @pet, organization: @organization }
-        )
-
         render json: {
           photo_url: url_for(@pet.photo),
-          success_message: "Photo updated successfully!",
-          gallery_html: gallery_html  # ADDED
+          success_message: "Photo updated successfully!"
         }, status: :ok
       else
         render json: { error: "Invalid gallery image" }, status: :unprocessable_entity
@@ -93,26 +77,15 @@ class PetsController < ApplicationController
       return
     end
 
-    # Handle other updates (dob_estimated, species, breed, etc.)
+    # 3) Handle normal field updates (dob_estimated, breed, location, etc.)
     if @pet.update(pet_params)
       Rails.logger.info "Pet updated successfully: #{@pet.inspect}"
-
       respond_to do |format|
         format.html do
           redirect_to organization_pet_path(@organization, @pet), notice: 'Pet was successfully updated.'
         end
-
         format.json do
-          # ADDED: Re-render the updated gallery partial in case breed, color, etc. changed
-          gallery_html = render_to_string(
-            partial: "pets/gallery_items",
-            locals: { pet: @pet, organization: @organization }
-          )
-
-          render json: {
-            success_message: "Pet updated successfully!",
-            gallery_html: gallery_html  # ADDED
-          }, status: :ok
+          render json: { success_message: "Pet updated successfully!" }, status: :ok
         end
       end
     else
@@ -134,21 +107,20 @@ class PetsController < ApplicationController
   end
 
   def gallery
-    # POST => Upload new photos
+    # POST => Upload new gallery photos
     if request.post?
       if params[:pet] && params[:pet][:gallery_photos]
-        # We'll store the signed IDs of newly attached photos
         newly_uploaded_ids = []
   
+        # Attach each photo & record the signed ID
         params[:pet][:gallery_photos].each do |photo|
           attached = @pet.gallery_photos.attach(photo)
-          # If attach succeeded, store the signed ID of the newly attached blob
           if attached.last
             newly_uploaded_ids << attached.last.blob.signed_id
           end
         end
   
-        # Re-render both partials
+        # Re-render partials
         main_html = render_to_string(
           partial: "pets/gallery_items",
           locals: { pet: @pet, organization: @organization }
@@ -160,15 +132,15 @@ class PetsController < ApplicationController
   
         render json: {
           message: "Photos uploaded successfully.",
-          html: main_html,         # For the main gallery
-          modal_html: modal_html,  # For the modal gallery
-          newly_uploaded_ids: newly_uploaded_ids # For auto-selecting the new images
+          html: main_html,
+          modal_html: modal_html,
+          newly_uploaded_ids: newly_uploaded_ids
         }, status: :ok
       else
         render json: { error: "No photos were selected." }, status: :unprocessable_entity
       end
   
-    # DELETE => Remove a photo
+    # DELETE => Remove a gallery photo
     elsif request.delete?
       photo = @pet.gallery_photos.find_by(id: params[:photo_id])
       if photo
@@ -196,7 +168,7 @@ class PetsController < ApplicationController
       head :method_not_allowed
     end
   end
-  
+
   private
 
   def pet_params
@@ -219,40 +191,35 @@ class PetsController < ApplicationController
       :father_id,
       :photo,
       :coat_type,
+      :size,
       gallery_photos: [],
       breed: [],
       color: [],
-      flags: [],
-      size: []
+      flags: []
     ).tap do |whitelisted|
       whitelisted[:dob_estimated] = params[:pet][:dob_estimated].present? ? true : false
-      whitelisted[:breed]  = Array(params[:pet][:breed])  # Force breed to array
-      whitelisted[:color]  = Array(params[:pet][:color])  # Force color to array
-      whitelisted[:flags]  = Array(params[:pet][:flags])  # Force flags to array
+      whitelisted[:breed]  = Array(params[:pet][:breed])
+      whitelisted[:color]  = Array(params[:pet][:color])
+      whitelisted[:flags]  = Array(params[:pet][:flags])
     end
   end
 
   def set_organization
-    Rails.logger.info "Finding organization with ID: #{params[:organization_id]}"
     @organization = Organization.find_by(id: params[:organization_id])
     unless @organization
-      Rails.logger.error "Organization not found"
       redirect_to root_path, alert: "Organization not found"
     end
   end
 
   def set_pet
-    Rails.logger.info "Finding pet with ID: #{params[:id]} for organization ID: #{params[:organization_id]}"
     @pet = @organization.pets.find_by(id: params[:id])
     unless @pet
-      Rails.logger.error "Pet not found"
       redirect_to organization_pets_path(@organization), alert: "Pet not found"
     end
   end
 
   def authorize_staff_or_admin!
     unless current_user.admin? || (current_user.shelter_staff? && current_user.organizations.include?(@organization))
-      Rails.logger.error "User not authorized: #{current_user.inspect}"
       redirect_to root_path, alert: 'Not authorized to perform this action.'
     end
   end
