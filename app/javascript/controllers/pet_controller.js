@@ -15,9 +15,11 @@ export default class extends Controller {
       const newTab = this.getActiveTabFromHash();
       this.showTab(newTab);
     });
-  } 
+  }
 
-  // Tab Switching Methods
+  /* -----------------------------------------
+   * TAB SWITCHING
+   * ----------------------------------------- */
   switchTab(event) {
     const tab = event.currentTarget.dataset.tab;
     this.showTab(tab);
@@ -42,15 +44,30 @@ export default class extends Controller {
     return window.location.hash.replace("#", "");
   }
 
-  // Open the modal
+  /* -----------------------------------------
+   * MODAL OPEN/CLOSE
+   * ----------------------------------------- */
   openImageModal() {
     if (this.imageModalTarget) {
       this.imageModalTarget.style.display = "block";
       console.log("Image modal opened");
+  
+      // 1) Unmark any previously selected gallery item
+      if (this.selectedGalleryImage) {
+        const prevDiv = this.galleryTarget.querySelector(
+          `.gallery-item[data-photo-id="${this.selectedGalleryImage}"]`
+        );
+        if (prevDiv) {
+          prevDiv.classList.remove("selected");
+        }
+        this.selectedGalleryImage = null;
+      }
+  
+      // 2) Clear the preview section
+      this.clearPreview();
     }
   }
 
-  // Close the modal
   closeImageModal() {
     if (this.imageModalTarget) {
       this.imageModalTarget.style.display = "none";
@@ -58,42 +75,44 @@ export default class extends Controller {
     }
   }
 
-  // Select an image from the gallery
+  /* -----------------------------------------
+   * SELECT A GALLERY IMAGE (for main photo)
+   * ----------------------------------------- */
   selectImageFromGallery(event) {
+    console.log("selectImageFromGallery called!");
     const photoId = event.currentTarget.dataset.photoId;
+    const photoUrl = event.currentTarget.dataset.photoUrl;
 
     if (!photoId) {
       console.error("No photo ID found for selected image.");
       return;
     }
 
-    // Clear previously selected gallery image
+    // Unmark previous selection
     if (this.selectedGalleryImage) {
-      const previousItem = this.galleryTarget.querySelector(
+      const prevDiv = this.galleryTarget.querySelector(
         `.gallery-item[data-photo-id="${this.selectedGalleryImage}"]`
       );
-      if (previousItem) {
-        previousItem.classList.remove("selected");
-      }
+      if (prevDiv) prevDiv.classList.remove("selected");
     }
 
-    // Set new selected image and mark it
+    // Mark this new selection
     this.selectedGalleryImage = photoId;
     event.currentTarget.classList.add("selected");
-    console.log("Selected gallery image:", photoId);
 
-    // Clear uploaded image since a gallery image is selected
+    // Clear any uploaded file reference
     this.uploadedImageFile = null;
 
-    // Clear the preview section and add the selected gallery image
+    // Show a preview
     this.clearPreview();
-    this.addImageToPreview(event.currentTarget.dataset.photoUrl, "Selected Gallery Image");
+    this.addImageToPreview(photoUrl, "Selected Gallery Image");
   }
 
-  // Handle file upload
+  /* -----------------------------------------
+   * UPLOAD PHOTOS -> Re-render partial
+   * ----------------------------------------- */
   uploadInputChanged(event) {
     const files = event.target.files;
-  
     if (!files.length) {
       console.error("No files selected.");
       return;
@@ -101,12 +120,11 @@ export default class extends Controller {
   
     const formData = new FormData();
     Array.from(files).forEach((file) => {
-      formData.append("pet[gallery_photos][]", file); // Append each file
+      formData.append("pet[gallery_photos][]", file);
     });
   
-    // Correctly construct the gallery endpoint URL
-    const formAction = `${this.element.dataset.url}/gallery`; // Appends /gallery to the base dataset URL
-  
+    // e.g., "/organizations/1/pets/42/gallery"
+    const formAction = `${this.element.dataset.url}/gallery`;
     console.log("Uploading photos to:", formAction);
   
     fetch(formAction, {
@@ -117,49 +135,72 @@ export default class extends Controller {
       },
     })
       .then((response) => {
-        if (response.ok) {
-          return response.json();
-        } else {
-          throw new Error("Failed to upload photos.");
-        }
+        if (!response.ok) throw new Error("Failed to upload photos.");
+        return response.json();
       })
       .then((data) => {
         console.log("Photos uploaded successfully");
   
-        // Dynamically update the gallery with new photos
+        // 1) Update the main gallery
         const galleryContainer = document.querySelector(".gallery-container");
-        data.uploaded_photos.forEach((photoUrl) => {
-          const newGalleryItem = document.createElement("div");
-          newGalleryItem.className = "gallery-item";
+        if (galleryContainer && data.html) {
+          galleryContainer.innerHTML = data.html;
+        }
   
-          const img = document.createElement("img");
-          img.src = photoUrl;
-          img.className = "gallery-photo";
+        // 2) Update the modal gallery
+        if (this.hasGalleryTarget && data.modal_html) {
+          this.galleryTarget.innerHTML = data.modal_html;
+        }
   
-          newGalleryItem.appendChild(img);
-          galleryContainer.appendChild(newGalleryItem);
-        });
+        // 3) Auto-select newly uploaded photos in the modal
+        if (this.hasGalleryTarget && data.newly_uploaded_ids?.length > 0) {
+          // For simplicity, just auto-select the last uploaded photo
+          const latestId = data.newly_uploaded_ids[data.newly_uploaded_ids.length - 1];
   
-        // Clear the file input after upload
+          const newItem = this.galleryTarget.querySelector(
+            `.gallery-item[data-photo-id="${latestId}"]`
+          );
+          if (newItem) {
+            // Unselect previously selected image
+            if (this.selectedGalleryImage) {
+              const prevDiv = this.galleryTarget.querySelector(
+                `.gallery-item[data-photo-id="${this.selectedGalleryImage}"]`
+              );
+              if (prevDiv) prevDiv.classList.remove("selected");
+            }
+  
+            // Mark and preview the new photo
+            this.selectedGalleryImage = latestId;
+            newItem.classList.add("selected");
+  
+            this.clearPreview();
+            const photoUrl = newItem.dataset.photoUrl;
+            this.addImageToPreview(photoUrl, "Newly Uploaded Photo");
+          }
+        }
+  
+        // Clear the file input
         event.target.value = "";
   
-        // Ensure the hash stays on the gallery tab
+        // Optionally switch to the "gallery" tab
         this.updateHash("gallery");
         this.showTab("gallery");
       })
       .catch((error) => {
         console.error("Error uploading photos:", error);
       });
-  }    
+  }
 
-  // Add the selected or uploaded image to the preview section
+  /* -----------------------------------------
+   * SHOW PREVIEW FOR SELECTED IMAGE
+   * ----------------------------------------- */
   addImageToPreview(imageSrc, altText) {
     if (!this.selectedImagesTarget) {
       console.error('Missing target element "selectedImages" for "pet" controller');
       return;
     }
 
-    this.selectedImagesTarget.innerHTML = ""; // Clear any existing preview
+    this.selectedImagesTarget.innerHTML = ""; // Clear old preview
 
     const img = document.createElement("img");
     img.src = imageSrc;
@@ -169,30 +210,30 @@ export default class extends Controller {
     this.selectedImagesTarget.appendChild(img);
   }
 
-  // Clear the preview section
   clearPreview() {
     if (this.selectedImagesTarget) {
       this.selectedImagesTarget.innerHTML = "";
     }
   }
 
-  // Add the selected image (gallery or uploaded) to the form and close the modal
+  /* -----------------------------------------
+   * ADD SELECTED IMAGE -> Update Main Photo
+   * ----------------------------------------- */
   addSelectedImage(event) {
     event.preventDefault();
-  
     if (!this.selectedGalleryImage && !this.uploadedImageFile) {
       console.error("No image selected or uploaded.");
       return;
     }
   
     const formData = new FormData();
-  
     if (this.selectedGalleryImage) {
       formData.append("gallery_image_id", this.selectedGalleryImage);
     } else if (this.uploadedImageFile) {
       formData.append("pet[photo]", this.uploadedImageFile);
     }
   
+    // PATCH to /pets/:id
     fetch(this.element.dataset.url, {
       method: "PATCH",
       body: formData,
@@ -201,36 +242,16 @@ export default class extends Controller {
       },
     })
       .then((response) => {
-        if (response.ok) {
-          return response.json();
-        } else {
-          throw new Error("Failed to update photo.");
-        }
+        if (!response.ok) throw new Error("Failed to update photo.");
+        return response.json();
       })
       .then((data) => {
         if (data.photo_url) {
-          console.log(data.success_message);
-  
-          // Update the header image
+          console.log(data.success_message || "Photo updated successfully!");
+          // Update the main header image
           const headerPhoto = document.querySelector(".pet-photo");
           if (headerPhoto) {
             headerPhoto.src = data.photo_url;
-          }
-  
-          // Add the uploaded photo to the gallery if it was uploaded
-          if (this.uploadedImageFile) {
-            const galleryContainer = document.querySelector(".gallery-container");
-            if (galleryContainer) {
-              const newGalleryItem = document.createElement("div");
-              newGalleryItem.className = "gallery-item";
-  
-              const img = document.createElement("img");
-              img.src = data.photo_url;
-              img.className = "gallery-photo";
-  
-              newGalleryItem.appendChild(img);
-              galleryContainer.appendChild(newGalleryItem);
-            }
           }
         } else {
           console.error("No photo URL returned from server.");
@@ -242,87 +263,23 @@ export default class extends Controller {
   
     this.closeImageModal();
   }
-  
-  uploadPhotos(event) {
-    event.preventDefault();
-  
-    const form = event.target.closest("form");
-    const formData = new FormData(form);
-    const formAction = form.getAttribute("action");
-  
-    fetch(formAction, {
-      method: "POST",
-      body: formData,
-      headers: {
-        "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content,
-      },
-    })
-      .then((response) => {
-        if (response.ok) {
-          return response.json();
-        } else {
-          throw new Error("Failed to upload photos.");
-        }
-      })
-      .then((data) => {
-        console.log("Photos uploaded successfully");
-  
-        // Dynamically update the gallery with new photos
-        const galleryContainer = document.querySelector(".gallery-container");
-        data.uploaded_photos.forEach((photoUrl) => {
-          const newGalleryItem = document.createElement("div");
-          newGalleryItem.className = "gallery-item";
-  
-          const img = document.createElement("img");
-          img.src = photoUrl;
-          img.className = "gallery-photo";
-  
-          newGalleryItem.appendChild(img);
-          galleryContainer.appendChild(newGalleryItem);
-        });
-  
-        // Clear the file input after upload
-        form.reset();
-  
-        // Ensure the hash stays on the gallery tab
-        this.updateHash("gallery");
-        this.showTab("gallery");
-      })
-      .catch((error) => {
-        console.error("Error uploading photos:", error);
-      });
-  }   
 
-  // Add the uploaded image to the gallery automatically
-  addToGallery(file) {
-    const img = document.createElement("img");
-    img.src = URL.createObjectURL(file);
-    img.alt = "New Gallery Image";
-    img.classList.add("gallery-photo");
-
-    const galleryContainer = document.querySelector(".gallery-container");
-    const imgWrapper = document.createElement("div");
-    imgWrapper.classList.add("gallery-item");
-    imgWrapper.appendChild(img);
-
-    galleryContainer.appendChild(imgWrapper);
-    console.log("Uploaded image added to the gallery.");
-  }
-
+  /* -----------------------------------------
+   * DELETE PHOTO -> Re-render partial
+   * ----------------------------------------- */
   deletePhoto(event) {
     event.preventDefault();
-  
+
     const deleteButton = event.currentTarget;
-    const form = deleteButton.closest("form"); // Get the enclosing form
-    const formAction = form.getAttribute("action"); // Extract the form action URL
-  
+    const form = deleteButton.closest("form"); 
+    const formAction = form.getAttribute("action"); // e.g. /pets/:id/gallery?photo_id=123
+
     console.log("Form action URL:", formAction);
-  
     if (!formAction) {
       console.error("No form action URL found for the delete button.");
       return;
     }
-  
+
     fetch(formAction, {
       method: "DELETE",
       headers: {
@@ -331,15 +288,25 @@ export default class extends Controller {
       },
     })
       .then((response) => {
-        if (response.ok) {
-          console.log("Photo deleted successfully");
-          form.closest(".gallery-item").remove(); // Remove the gallery item
-        } else {
-          console.error("Failed to delete the gallery photo.");
+        if (!response.ok) throw new Error("Failed to delete the gallery photo.");
+        return response.json();
+      })
+      .then((data) => {
+        console.log("Photo deleted successfully");
+
+        // Update main gallery
+        const galleryContainer = document.querySelector(".gallery-container");
+        if (galleryContainer && data.html) {
+          galleryContainer.innerHTML = data.html;
+        }
+
+        // Update modal gallery
+        if (this.hasGalleryTarget && data.modal_html) {
+          this.galleryTarget.innerHTML = data.modal_html;
         }
       })
       .catch((error) => {
         console.error("Error deleting photo:", error);
       });
-  }    
+  }
 }

@@ -59,7 +59,6 @@
             <% if @pet.date_of_birth.present? %>
               <%= @pet.date_of_birth.strftime("%B %d, %Y") %> 
               (<%= @pet.age %> years)
-              <!-- NOTE: Removed ", Estimated" to avoid duplication with JS -->
             <% else %>
               Not set
             <% end %>
@@ -447,35 +446,22 @@
       </div>
     <% end %>
     <div class="gallery-container">
-      <% @pet.gallery_photos.each do |photo| %>
-        <div class="gallery-item">
-          <%= image_tag photo, class: "gallery-photo" %>
-          <%= button_to "Delete", 
-                gallery_organization_pet_path(@organization, @pet, photo_id: photo.id), 
-                method: :delete, 
-                data: { action: "click->pet#deletePhoto" }, 
-                class: "btn btn-danger", 
-                form: { "data-photo-id": photo.id } %>
-        </div>
-      <% end %>
+      <!-- Use the partial for the main gallery -->
+      <%= render partial: "pets/gallery_items", 
+                 locals: { pet: @pet, organization: @organization } %>
     </div>
   </div>
 
-  <!-- Modal for Selecting/Uploading Image -->
+  <!-- Modal for Selecting/Uploading Header Image -->
   <div id="imageModal" class="modal" data-pet-target="imageModal" style="display: none;">
     <div class="modal-content">
       <h2>Choose or Upload Image</h2>
       <div>
         <h3>Choose from Gallery</h3>
+        <!-- Use the same partial, but pass `modal: true` to show thumbnails and selection attributes -->
         <div class="gallery" data-pet-target="gallery">
-          <% @pet.gallery_photos.each do |photo| %>
-            <div class="gallery-item" 
-                 data-photo-id="<%= photo.blob.signed_id %>" 
-                 data-photo-url="<%= polymorphic_url(photo, only_path: true) %>" 
-                 data-action="click->pet#selectImageFromGallery">
-              <%= image_tag photo, class: "gallery-thumbnail" %>
-            </div>
-          <% end %>
+          <%= render partial: "pets/gallery_items_modal", 
+                     locals: { pet: @pet, organization: @organization, modal: true } %>
         </div>
       </div>
       <div>
