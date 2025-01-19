@@ -1,32 +1,35 @@
-import { Controller } from "@hotwired/stimulus";
+import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static values = { postId: Number };
+  sendReaction(event) {
+    event.preventDefault()
 
-  react(event) {
-    const reactionType = event.target.dataset.reactionType;
+    const button = event.currentTarget
+    const postId = button.dataset.postId
+    const reactionType = button.dataset.reactionType
 
-    fetch(`/posts/${this.postIdValue}/reactions`, {
+    fetch(`/posts/${postId}/react?reaction_type=${reactionType}`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
         "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content,
       },
-      body: JSON.stringify({ reaction_type: reactionType }),
     })
       .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to add reaction.");
-        }
-        return response.json();
+        if (!response.ok) throw new Error("Failed to set reaction.")
+        return response.json()
       })
       .then((data) => {
-        alert(data.message);
-        // Optionally reload or update the DOM to reflect the new reaction
+        console.log("Reaction updated successfully!")
+
+        // `data.updated_html` is the entire updated post partial.
+        // Replace the old <div id="post-XX"> with this new HTML
+        const postElem = document.querySelector(`#post-${postId}`)
+        if (postElem && data.updated_html) {
+          postElem.outerHTML = data.updated_html
+        }
       })
-      .catch((error) => {
-        console.error(error);
-        alert("Something went wrong!");
-      });
+      .catch((err) => {
+        console.error("Error setting reaction:", err)
+      })
   }
 }

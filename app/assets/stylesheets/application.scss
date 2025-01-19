@@ -41,52 +41,6 @@
   background-color: #17a2b8; /* Teal */
 }
 
-//Feed CSS//
-
-#feed-container {
-  max-width: 800px; /* Restrict feed width */
-  margin: 0 auto; /* Center the feed */
-  padding: 16px;
-  background-color: #f3f4f6; /* Subtle background */
-  border-radius: 8px; /* Rounded edges */
-}
-
-.post {
-  background: #fff; /* White background for posts */
-  border: 1px solid #ddd; /* Light border for separation */
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 16px; /* Spacing between posts */
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Slight shadow for depth */
-}
-
-.post-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.post-header strong {
-  font-size: 16px;
-  color: #333;
-}
-
-.post-header span {
-  font-size: 12px;
-  color: #666;
-}
-
-.post-body {
-  margin-bottom: 12px;
-  font-size: 14px;
-  color: #444;
-}
-
-.post-images {
-  margin-top: 12px;
-}
-
 .carousel {
   border-radius: 8px; /* Rounded edges for carousel */
   overflow: hidden;

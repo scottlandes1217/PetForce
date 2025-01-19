@@ -8,6 +8,9 @@ application.register("edit-field", EditFieldController);
 import FeedController from "./controllers/feed_controller";
 application.register("feed", FeedController);
 
+import ReactionController from "./controllers/reaction_controller";
+application.register("reaction", ReactionController);
+
 import PostController from "./controllers/post_controller";
 application.register("post", PostController);
 

@@ -74,6 +74,30 @@ end
     end
   end
 
+  def react
+    @post = Post.find(params[:id])
+    reaction_type = params[:reaction_type]
+  
+    reaction = @post.reactions.find_or_initialize_by(user: current_user)
+  
+    if reaction.persisted? && reaction.reaction_type == reaction_type
+      # The user clicked the same reaction; remove it
+      reaction.destroy
+      # Return updated post partial
+      updated_post_html = render_to_string(partial: "posts/post", locals: { post: @post })
+      render json: { updated_html: updated_post_html }, status: :ok
+    else
+      # User either has no reaction yet or clicked a different one
+      reaction.reaction_type = reaction_type
+      if reaction.save
+        updated_post_html = render_to_string(partial: "posts/post", locals: { post: @post })
+        render json: { updated_html: updated_post_html }, status: :ok
+      else
+        render json: { error: "Unable to set reaction", errors: reaction.errors.full_messages }, status: :unprocessable_entity
+      end
+    end
+  end
+
   private
 
   def set_pet

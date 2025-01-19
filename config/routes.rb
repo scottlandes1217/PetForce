@@ -21,6 +21,7 @@ resources :organizations do
   resources :organization_fields, only: [:index, :create, :update, :destroy]
 end
 
+
   # Feed page
   resources :feed, only: [:index]
 
@@ -41,6 +42,10 @@ end
 
   # Posts namespace for feed and reactions
   resources :posts do
+    # Existing nested routes for reactions, etc.
     resources :reactions, only: [:create, :destroy]
+  
+    # Add this line for the custom "react" action on a specific post
+    post :react, on: :member
   end
 end

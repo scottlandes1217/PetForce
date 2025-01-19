@@ -1,12 +1,18 @@
 class ReactionsController < ApplicationController
     before_action :authenticate_user!
   
-    def create
-      @reaction = Reaction.find_or_initialize_by(
-        user_id: current_user.id,
-        post_id: params[:post_id],
-        reaction_type: params[:reaction_type]
-      )
+    def create_or_update
+      post = Post.find(params[:post_id])
+      # Find or build the user's reaction
+      reaction = post.reactions.find_or_initialize_by(user_id: current_user.id)
+      reaction.reaction_type = params[:reaction_type]
+  
+      if reaction.save
+        redirect_to post_path(post), notice: "Reaction updated."
+      else
+        redirect_to post_path(post), alert: reaction.errors.full_messages.to_sentence
+      end
+    end
   
       if @reaction.persisted?
         render json: { message: "You have already reacted with #{params[:reaction_type]}." }, status: :unprocessable_entity
