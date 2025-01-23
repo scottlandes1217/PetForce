@@ -13,4 +13,9 @@ class OrganizationField < ApplicationRecord
 
   validates :field_type, presence: true
   validates :value, presence: true, uniqueness: { scope: [:organization_id, :field_type] }
+  
+  validates :priority, numericality: { only_integer: true }, allow_nil: true
+
+  # Active Storage for managing icon uploads
+  has_one_attached :icon
 end
