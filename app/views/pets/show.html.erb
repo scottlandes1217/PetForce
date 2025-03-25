@@ -42,6 +42,7 @@
     <button class="tab-link active" data-tab="details" data-action="click->pet#switchTab">Details</button>
     <button class="tab-link" data-tab="feed" data-action="click->pet#switchTab">Feed</button>
     <button class="tab-link" data-tab="gallery" data-action="click->pet#switchTab">Gallery</button>
+    <button class="tab-link" data-tab="tasks" data-action="click->pet#switchTab">Tasks</button>
   </div>
 
   <!-- Tab Content: DETAILS -->
@@ -451,6 +452,13 @@
                  locals: { pet: @pet, organization: @organization } %>
     </div>
   </div>
+
+    <!-- Tab Content: TASKS -->
+    <div class="tab-content" id="tasks" style="display: none;">
+      <h2>Tasks</h2>
+      <%= link_to "Create Task", new_organization_pet_task_path(@organization, @pet), class: "btn btn-primary mb-3" %>
+      <%= render partial: "tasks/tasks", locals: { tasks: @pet.tasks } %>
+    </div>
 
   <!-- Modal for Selecting/Uploading Header Image -->
   <div id="imageModal" class="modal" data-pet-target="imageModal" style="display: none;">

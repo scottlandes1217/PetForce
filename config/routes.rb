@@ -17,6 +17,7 @@ resources :organizations do
       match :gallery, via: [:get, :post, :delete]
     end
     resources :posts, only: [:new, :create, :index, :show, :destroy]
+    resources :tasks, only: [:index, :new, :create, :edit, :update, :destroy]
   end
   resources :organization_fields, only: [:index, :create, :update, :destroy]
 end

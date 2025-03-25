@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_01_23_044351) do
+ActiveRecord::Schema[7.1].define(version: 2025_01_26_014104) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -134,6 +134,21 @@ ActiveRecord::Schema[7.1].define(version: 2025_01_23_044351) do
     t.index ["user_id"], name: "index_reactions_on_user_id"
   end
 
+  create_table "tasks", force: :cascade do |t|
+    t.string "status", default: "Scheduled", null: false
+    t.string "subject", null: false
+    t.text "description"
+    t.bigint "pet_id", null: false
+    t.datetime "completed_at"
+    t.datetime "start_time"
+    t.integer "duration_minutes"
+    t.string "task_type"
+    t.string "flag_list", default: [], array: true
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["pet_id"], name: "index_tasks_on_pet_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
@@ -161,5 +176,6 @@ ActiveRecord::Schema[7.1].define(version: 2025_01_23_044351) do
   add_foreign_key "posts", "users"
   add_foreign_key "reactions", "posts"
   add_foreign_key "reactions", "users"
+  add_foreign_key "tasks", "pets"
   add_foreign_key "users", "organizations"
 end

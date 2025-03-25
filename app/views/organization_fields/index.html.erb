@@ -1,4 +1,4 @@
-<div data-controller="organization-fields" class="container my-5">
+<div data-controller="organization-fields" data-organization-id="<%= @organization.id %>" class="container my-5">
 
   <h2 class="mb-4">Manage Customizable Fields</h2>
 
@@ -25,7 +25,7 @@
                 <th scope="col">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="flags-list">
               <% @organization_fields.where(field_type: field_type).order(priority: :asc).each do |field| %>
                 <tr data-field-id="<%= field.id %>">
                   <td>

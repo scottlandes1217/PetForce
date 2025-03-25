@@ -4,6 +4,7 @@ class Pet < ApplicationRecord
   has_one_attached :photo
   has_many :posts, dependent: :destroy
   has_many_attached :gallery_photos
+  has_many :tasks, dependent: :destroy
 
   belongs_to :species, class_name: "OrganizationField", optional: true
   belongs_to :unit, class_name: "OrganizationField", optional: true
