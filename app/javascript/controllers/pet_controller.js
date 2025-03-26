@@ -5,7 +5,7 @@ export default class extends Controller {
 
   connect() {
     console.log("Pet controller connected");
-    const activeTab = this.getActiveTabFromHash() || "details";
+    const activeTab = this.getActiveTabFromQuery() || this.getActiveTabFromHash() || "details";
     this.showTab(activeTab);
     this.selectedGalleryImage = null;
     this.uploadedImageFile = null;
@@ -38,6 +38,11 @@ export default class extends Controller {
 
   updateHash(tab) {
     history.replaceState(null, null, `#${tab}`);
+  }
+
+  getActiveTabFromQuery() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('tab');
   }
 
   getActiveTabFromHash() {

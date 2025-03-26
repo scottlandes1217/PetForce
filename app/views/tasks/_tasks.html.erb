@@ -24,8 +24,19 @@
         <td><%= task.duration_minutes %></td>
         <td><%= task.completed_at&.strftime("%B %d, %Y %H:%M") || "N/A" %></td>
         <td>
-          <%= link_to "Edit", edit_organization_pet_task_path(task.pet.organization, task.pet, task), class: "btn btn-sm btn-primary" %>
-          <%= link_to "Delete", organization_pet_task_path(task.pet.organization, task.pet, task), method: :delete, data: { confirm: "Are you sure?" }, class: "btn btn-sm btn-danger" %>
+          <%= link_to "View", organization_pet_task_path(task.pet.organization, task.pet, task), class: "btn btn-sm btn-primary" %>
+          <% unless task.status == "Completed" %>
+            <%= button_to "Complete", 
+                organization_pet_task_path(task.pet.organization, task.pet, task),
+                method: :patch,
+                params: { task: { status: "Completed", completed_at: Time.current } },
+                class: "btn btn-sm btn-success" %>
+          <% end %>
+          <%= button_to "Delete", 
+              organization_pet_task_path(task.pet.organization, task.pet, task),
+              method: :delete,
+              class: "btn btn-sm btn-danger",
+              form: { data: { turbo_confirm: "Are you sure?" } } %>
         </td>
       </tr>
     <% end %>

@@ -2,7 +2,6 @@ class Task < ApplicationRecord
     STATUSES = %w[Scheduled Pending On-Hold Overdue Completed].freeze
   
     belongs_to :pet
-    has_and_belongs_to_many :flags, class_name: 'OrganizationField', join_table: 'flags_tasks'
   
     validates :status, inclusion: { in: STATUSES }
     validates :subject, presence: true
