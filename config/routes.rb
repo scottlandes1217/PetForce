@@ -20,7 +20,10 @@ Rails.application.routes.draw do
 resources :organizations do
   resources :pets do
     member do
-      match :gallery, via: [:get, :post, :delete]
+      get :feed
+      post :gallery
+      delete :gallery
+      get :tasks
     end
     resources :posts, only: [:new, :create, :index, :show, :destroy]
     resources :tasks, only: [:index, :new, :create, :edit, :update, :destroy, :show]

@@ -1,19 +1,38 @@
 import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
-  static targets = ["imageModal", "uploadInput", "selectedImages", "gallery"];
+  static targets = ["imageModal", "uploadInput", "selectedImages", "gallery", "selectedFiles"];
 
   connect() {
     console.log("Pet controller connected");
-    const activeTab = this.getActiveTabFromQuery() || this.getActiveTabFromHash() || "details";
-    this.showTab(activeTab);
+    // Initialize the active tab from localStorage or default to 'details'
+    const activeTab = localStorage.getItem('petActiveTab') || 'details';
+    
+    // Immediately switch to the saved tab
+    const tabButton = document.querySelector(`[data-tab="${activeTab}"]`);
+    if (tabButton) {
+      // Show the content first
+      const content = document.getElementById(activeTab);
+      if (content) {
+        content.style.display = "block";
+      }
+      
+      // Then update the button state
+      document.querySelectorAll(".tab-link").forEach((link) => {
+        link.classList.remove("active");
+      });
+      tabButton.classList.add("active");
+    }
+
     this.selectedGalleryImage = null;
-    this.uploadedImageFile = null;
+    this.uploadedImageFiles = null;
   
     // Monitor hash changes for dynamic tab updates
     window.addEventListener("hashchange", () => {
       const newTab = this.getActiveTabFromHash();
-      this.showTab(newTab);
+      if (newTab) {
+        this.showTab(newTab);
+      }
     });
   }
 
@@ -21,32 +40,69 @@ export default class extends Controller {
    * TAB SWITCHING
    * ----------------------------------------- */
   switchTab(event) {
-    const tab = event.currentTarget.dataset.tab;
-    this.showTab(tab);
-    this.updateHash(tab);
+    const tabId = event.currentTarget.dataset.tab;
+    console.log("Switching to tab:", tabId);
+
+    // Store the active tab in localStorage
+    localStorage.setItem('petActiveTab', tabId);
+
+    // Hide all tab contents
+    document.querySelectorAll(".tab-content").forEach((content) => {
+      content.style.display = "none";
+    });
+
+    // Remove active class from all tab links
+    document.querySelectorAll(".tab-link").forEach((link) => {
+      link.classList.remove("active");
+    });
+
+    // Show the selected tab content
+    const selectedContent = document.getElementById(tabId);
+    if (selectedContent) {
+      selectedContent.style.display = "block";
+      
+      // If it's a lazy-loaded tab, ensure the turbo frame is loaded
+      const turboFrame = selectedContent.querySelector("turbo-frame");
+      if (turboFrame && !turboFrame.src) {
+        turboFrame.src = turboFrame.dataset.src;
+      }
+    }
+
+    // Add active class to the clicked tab link
+    event.currentTarget.classList.add("active");
   }
 
   showTab(tab) {
+    // Hide all tab contents first
     document.querySelectorAll(".tab-content").forEach((content) => {
-      content.style.display = content.id === tab ? "block" : "none";
+      content.style.display = "none";
     });
 
+    // Update tab links
     document.querySelectorAll(".tab-link").forEach((link) => {
       link.classList.toggle("active", link.dataset.tab === tab);
     });
+
+    // Show the selected tab content
+    const selectedContent = document.getElementById(tab);
+    if (selectedContent) {
+      selectedContent.style.display = "block";
+      
+      // If it's a lazy-loaded tab, ensure the turbo frame is loaded
+      const turboFrame = selectedContent.querySelector("turbo-frame");
+      if (turboFrame && !turboFrame.src) {
+        turboFrame.src = turboFrame.dataset.src;
+      }
+    }
   }
 
   updateHash(tab) {
     history.replaceState(null, null, `#${tab}`);
   }
 
-  getActiveTabFromQuery() {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('tab');
-  }
-
   getActiveTabFromHash() {
-    return window.location.hash.replace("#", "");
+    const hash = window.location.hash.replace("#", "");
+    return hash || "details";
   }
 
   /* -----------------------------------------
@@ -106,7 +162,7 @@ export default class extends Controller {
     event.currentTarget.classList.add("selected");
 
     // Clear any uploaded file reference
-    this.uploadedImageFile = null;
+    this.uploadedImageFiles = null;
 
     // Show a preview
     this.clearPreview();
@@ -114,15 +170,19 @@ export default class extends Controller {
   }
 
   /* -----------------------------------------
-   * UPLOAD PHOTOS -> Re-render partial
+   * FILE UPLOAD HANDLING
    * ----------------------------------------- */
+  triggerFileInput() {
+    this.uploadInputTarget.click();
+  }
+
   uploadInputChanged(event) {
     const files = event.target.files;
     if (!files.length) {
       console.error("No files selected.");
       return;
     }
-  
+
     const formData = new FormData();
     Array.from(files).forEach((file) => {
       formData.append("pet[gallery_photos][]", file);
@@ -146,50 +206,19 @@ export default class extends Controller {
       .then((data) => {
         console.log("Photos uploaded successfully");
   
-        // 1) Update the main gallery
+        // Update the main gallery
         const galleryContainer = document.querySelector(".gallery-container");
         if (galleryContainer && data.html) {
           galleryContainer.innerHTML = data.html;
         }
   
-        // 2) Update the modal gallery
+        // Update the modal gallery if it exists
         if (this.hasGalleryTarget && data.modal_html) {
           this.galleryTarget.innerHTML = data.modal_html;
         }
   
-        // 3) Auto-select newly uploaded photos in the modal
-        if (this.hasGalleryTarget && data.newly_uploaded_ids?.length > 0) {
-          // For simplicity, just auto-select the last uploaded photo
-          const latestId = data.newly_uploaded_ids[data.newly_uploaded_ids.length - 1];
-  
-          const newItem = this.galleryTarget.querySelector(
-            `.gallery-item[data-photo-id="${latestId}"]`
-          );
-          if (newItem) {
-            // Unselect previously selected image
-            if (this.selectedGalleryImage) {
-              const prevDiv = this.galleryTarget.querySelector(
-                `.gallery-item[data-photo-id="${this.selectedGalleryImage}"]`
-              );
-              if (prevDiv) prevDiv.classList.remove("selected");
-            }
-  
-            // Mark and preview the new photo
-            this.selectedGalleryImage = latestId;
-            newItem.classList.add("selected");
-  
-            this.clearPreview();
-            const photoUrl = newItem.dataset.photoUrl;
-            this.addImageToPreview(photoUrl, "Newly Uploaded Photo");
-          }
-        }
-  
         // Clear the file input
         event.target.value = "";
-  
-        // Optionally switch to the "gallery" tab
-        this.updateHash("gallery");
-        this.showTab("gallery");
       })
       .catch((error) => {
         console.error("Error uploading photos:", error);
@@ -204,8 +233,6 @@ export default class extends Controller {
       console.error('Missing target element "selectedImages" for "pet" controller');
       return;
     }
-
-    this.selectedImagesTarget.innerHTML = ""; // Clear old preview
 
     const img = document.createElement("img");
     img.src = imageSrc;
@@ -226,7 +253,7 @@ export default class extends Controller {
    * ----------------------------------------- */
   addSelectedImage(event) {
     event.preventDefault();
-    if (!this.selectedGalleryImage && !this.uploadedImageFile) {
+    if (!this.selectedGalleryImage && !this.uploadedImageFiles) {
       console.error("No image selected or uploaded.");
       return;
     }
@@ -234,8 +261,10 @@ export default class extends Controller {
     const formData = new FormData();
     if (this.selectedGalleryImage) {
       formData.append("gallery_image_id", this.selectedGalleryImage);
-    } else if (this.uploadedImageFile) {
-      formData.append("pet[photo]", this.uploadedImageFile);
+    } else if (this.uploadedImageFiles) {
+      this.uploadedImageFiles.forEach((file) => {
+        formData.append("pet[gallery_photos][]", file);
+      });
     }
   
     // PATCH to /pets/:id
@@ -276,20 +305,19 @@ export default class extends Controller {
     event.preventDefault();
 
     const deleteButton = event.currentTarget;
-    const form = deleteButton.closest("form"); 
-    const formAction = form.getAttribute("action"); // e.g. /pets/:id/gallery?photo_id=123
-
-    console.log("Form action URL:", formAction);
-    if (!formAction) {
-      console.error("No form action URL found for the delete button.");
+    const photoId = deleteButton.dataset.photoId;
+    if (!photoId) {
+      console.error("No photo ID found for deletion.");
       return;
     }
+
+    const formAction = `${this.element.dataset.url}/gallery?photo_id=${photoId}`;
+    console.log("Deleting photo at:", formAction);
 
     fetch(formAction, {
       method: "DELETE",
       headers: {
         "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content,
-        "Content-Type": "application/json",
       },
     })
       .then((response) => {

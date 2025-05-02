@@ -169,6 +169,14 @@ class PetsController < ApplicationController
     end
   end
 
+  def feed
+    render partial: 'feed'
+  end
+
+  def tasks
+    render partial: 'tasks'
+  end
+
   private
 
   def pet_params

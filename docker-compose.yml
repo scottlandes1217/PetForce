@@ -10,8 +10,14 @@ services:
       - REDIS_URL=redis://redis:6379/1
       - DATABASE_URL=postgresql://postgres:password@db:5432/petforce_development
     command: >
-      bash -c "bundle exec rails db:create db:migrate &&
+      bash -c "rm -f tmp/pids/server.pid &&
+               bundle exec rails db:create db:migrate &&
                bundle exec rails server -b 0.0.0.0"
+    volumes:
+      - .:/rails
+      - bundle_cache:/usr/local/bundle
+      - node_modules:/rails/node_modules
+      - tmp:/rails/tmp
     depends_on:
       - redis
       - db
@@ -23,6 +29,11 @@ services:
       - RAILS_ENV=development
       - REDIS_URL=redis://redis:6379/1
       - DATABASE_URL=postgresql://postgres:password@db:5432/petforce_development
+    volumes:
+      - .:/rails
+      - bundle_cache:/usr/local/bundle
+      - node_modules:/rails/node_modules
+      - tmp:/rails/tmp
     depends_on:
       - redis
       - db
@@ -43,4 +54,7 @@ services:
 
 volumes:
   redis_data:
-  postgres_data: 
+  postgres_data:
+  bundle_cache:
+  node_modules:
+  tmp: 

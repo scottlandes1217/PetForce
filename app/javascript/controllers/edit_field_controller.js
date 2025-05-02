@@ -371,7 +371,17 @@ edit(event) {
 
           const locText = locOption?.textContent?.trim() || "";
           const unitText = unitOption?.textContent?.trim() || "";
-          displayVal = locText && unitText ? `${locText} - ${unitText}` : locText || unitText || "Not Set";
+
+          // Only show values if they're not "Not Set"
+          if (locText === "Not Set" && unitText === "Not Set") {
+            displayVal = "Not Set";
+          } else if (locText === "Not Set") {
+            displayVal = unitText;
+          } else if (unitText === "Not Set") {
+            displayVal = locText;
+          } else {
+            displayVal = `${locText} - ${unitText}`;
+          }
         }
 
         // Multi-select
