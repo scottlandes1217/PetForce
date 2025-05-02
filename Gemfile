@@ -79,3 +79,9 @@ gem "dotenv-rails", "~> 3.1"
 group :development, :test do
   gem 'faker'
 end
+
+gem 'whenever', require: false
+
+# Background job processing
+gem 'sidekiq'
+gem 'redis'

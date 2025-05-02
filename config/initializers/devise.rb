@@ -14,7 +14,7 @@ Devise.setup do |config|
   # confirmation, reset password and unlock tokens in the database.
   # Devise will use the `secret_key_base` as its `secret_key`
   # by default. You can change it below and use your own secret key.
-  # config.secret_key = 'f145857ceae9c2bdbdfb68f748020e7b9169f4c7faca67614a8025eb04dc68d1516b6cb6f78da91e5c063a7f8355d96ad3ff3a027a433b8a55ce4a3f1362b216'
+  config.secret_key = 'e631e278957525d878ba7406d68b48e6d547a6a4f00e074b81604ad124ed614c597d90dbe7b636a3ef1c7c665652c02c3b032e41f66f93c78cbc74e61adaac09'
 
   # ==> Controller configuration
   # Configure the parent class to the devise controllers.
@@ -109,7 +109,7 @@ Devise.setup do |config|
   # This can reduce the time taken to boot the app but if your application
   # requires the Devise mappings to be loaded during boot time the application
   # won't boot properly.
-  # config.reload_routes = true
+  config.reload_routes = true
 
   # ==> Configuration for :database_authenticatable
   # For bcrypt, this is the cost for hashing the password and defaults to 12. If

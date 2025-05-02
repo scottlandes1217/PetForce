@@ -21,7 +21,15 @@ module PetForce
     # These settings can be overridden in specific environments using the files
     # in config/environments, which are processed later.
     #
-    # config.time_zone = "Central Time (US & Canada)"
-    # config.eager_load_paths << Rails.root.join("extras")
+    config.time_zone = 'Pacific Time (US & Canada)'
+    config.active_record.default_timezone = :local
+    
+    # Ensure routes are loaded
+    config.eager_load = true
+    config.enable_reloading = true
+    config.autoloader = :zeitwerk
+
+    # Configure Sidekiq
+    config.active_job.queue_adapter = :sidekiq
   end
 end
