@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_01_26_014104) do
+ActiveRecord::Schema[7.1].define(version: 2025_05_06_065631) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -75,6 +75,13 @@ ActiveRecord::Schema[7.1].define(version: 2025_01_26_014104) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "organizations_users", id: false, force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.bigint "user_id", null: false
+    t.index ["organization_id", "user_id"], name: "index_organizations_users_on_organization_id_and_user_id"
+    t.index ["user_id", "organization_id"], name: "index_organizations_users_on_user_id_and_organization_id"
+  end
+
   create_table "pets", force: :cascade do |t|
     t.string "name"
     t.json "breed"
@@ -101,7 +108,9 @@ ActiveRecord::Schema[7.1].define(version: 2025_01_26_014104) do
     t.integer "mother_id"
     t.integer "father_id"
     t.json "flags"
+    t.bigint "owner_id"
     t.index ["organization_id"], name: "index_pets_on_organization_id"
+    t.index ["owner_id"], name: "index_pets_on_owner_id"
   end
 
   create_table "post_attachments", force: :cascade do |t|
@@ -157,8 +166,16 @@ ActiveRecord::Schema[7.1].define(version: 2025_01_26_014104) do
     t.datetime "remember_created_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "role"
+    t.integer "role", default: 0, null: false
     t.bigint "organization_id"
+    t.string "first_name"
+    t.string "last_name"
+    t.integer "impersonated_by_id"
+    t.integer "sign_in_count"
+    t.datetime "current_sign_in_at"
+    t.datetime "last_sign_in_at"
+    t.string "current_sign_in_ip"
+    t.string "last_sign_in_ip"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["organization_id"], name: "index_users_on_organization_id"
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
@@ -170,6 +187,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_01_26_014104) do
   add_foreign_key "organization_users", "organizations"
   add_foreign_key "organization_users", "users"
   add_foreign_key "pets", "organizations"
+  add_foreign_key "pets", "users", column: "owner_id"
   add_foreign_key "post_attachments", "posts"
   add_foreign_key "posts", "organizations"
   add_foreign_key "posts", "pets"

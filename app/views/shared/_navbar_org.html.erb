@@ -1,15 +1,23 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
   <div class="container-fluid">
     <!-- Brand -->
-    <a class="navbar-brand" href="<%= root_path %>">PetForce</a>
+    <% if @organization.present? %>
+      <%= link_to organization_path(@organization), class: "navbar-brand" do %>
+        <%= @organization.name %>
+      <% end %>
+    <% else %>
+      <%= link_to root_path, class: "navbar-brand" do %>
+        PetForce
+      <% end %>
+    <% end %>
 
     <!-- Toggler for mobile view -->
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
 
     <!-- Navbar content -->
-    <div class="collapse navbar-collapse" id="navbarNavDropdown">
+    <div class="collapse navbar-collapse" id="navbarNav">
       <!-- Left-aligned links -->
       <ul class="navbar-nav me-auto">
         <li class="nav-item">
@@ -17,12 +25,7 @@
         </li>
         <% if @organization.present? %>
           <li class="nav-item">
-            <%= link_to "Pets", organization_pets_path(@organization), class: "nav-link" %>
-          </li>
-        <% else %>
-          <!-- Debugging fallback -->
-          <li class="nav-item text-danger">
-            <small>No organization set</small>
+            <%= link_to "Pets", organization_pets_path(@organization), class: "nav-link #{current_page?(organization_pets_path(@organization)) ? 'active' : ''}" %>
           </li>
         <% end %>
         <li class="nav-item">
@@ -31,29 +34,42 @@
       </ul>
 
       <!-- Right-aligned user dropdown -->
-      <ul class="navbar-nav ms-auto">
+      <ul class="navbar-nav">
         <% if user_signed_in? %>
+          <% if current_user.impersonated? %>
+            <li class="nav-item">
+              <div class="alert alert-warning mb-0 me-3 py-1">
+                Impersonating: <%= current_user.email %>
+                <%= button_to "Stop Impersonating", stop_impersonating_user_path(current_user), method: :delete, class: "btn btn-warning btn-sm ms-2" %>
+              </div>
+            </li>
+          <% end %>
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-              <!-- Circle icon -->
-              <span class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center" style="width: 40px; height: 40px; font-size: 1rem;">
-                <i class="bi bi-person"></i>
-              </span>
+            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <%= current_user.email %>
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-            <li><%= link_to "Edit Profile", edit_user_registration_path, class: "dropdown-item" %></li>
-            <% if current_user.shelter_staff? || current_user.admin? %>
-              <li><%= link_to "Edit Organization", edit_organization_path(@organization), class: "dropdown-item" %></li>
-              <li><%= link_to "Manage Fields", organization_organization_fields_path(@organization), class: "dropdown-item" %></li>
-            <% end %>
-            <% if current_user.admin? || (current_user.shelter_staff? && current_user.organizations.size > 1) %>
-              <li><%= link_to "Switch Organizations", organizations_path, class: "dropdown-item" %></li>
-            <% end %>
-            <li>
-              <%= link_to "Log Out", destroy_user_session_path, method: :delete, class: "dropdown-item" %>
-            </li>
-          </ul>
-          
+              <% if current_user.admin? %>
+                <li><%= link_to "Edit Profile", edit_user_path(current_user), class: "dropdown-item" %></li>
+              <% elsif current_user.shelter_staff? %>
+                <li><%= link_to "Edit Profile", edit_user_path(current_user), class: "dropdown-item" %></li>
+              <% else %>
+                <li><%= link_to "Edit Profile", edit_user_path(current_user), class: "dropdown-item" %></li>
+              <% end %>
+              <% if current_user.shelter_staff? || current_user.admin? %>
+                <% if @organization.present? %>
+                  <li><%= link_to "Edit Organization", edit_organization_path(@organization), class: "dropdown-item" %></li>
+                  <li><%= link_to "Manage Fields", organization_organization_fields_path(@organization), class: "dropdown-item" %></li>
+                <% end %>
+              <% end %>
+              <% if current_user.admin? || (current_user.shelter_staff? && current_user.organizations.size > 1) %>
+                <li><%= link_to "Switch Organizations", organizations_path, class: "dropdown-item" %></li>
+              <% end %>
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <%= button_to "Sign Out", destroy_user_session_path, method: :delete, class: "dropdown-item", form: { data: { turbo: false } } %>
+              </li>
+            </ul>
           </li>
         <% else %>
           <li class="nav-item">

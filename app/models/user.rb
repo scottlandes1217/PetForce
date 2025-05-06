@@ -1,37 +1,116 @@
 class User < ApplicationRecord
-  devise :database_authenticatable, :registerable, :recoverable, :rememberable, :validatable
+  # Include default devise modules. Others available are:
+  # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
+  devise :database_authenticatable,
+         :recoverable, :rememberable, :validatable,
+         :trackable, :timeoutable
 
-  ROLES = %w[admin shelter_staff normal_user].freeze
+  # Associations
+  has_many :owned_pets, class_name: 'Pet', foreign_key: 'owner_id'
+  has_and_belongs_to_many :organizations
 
-  has_many :organization_users, dependent: :destroy
-  has_many :organizations, through: :organization_users
-  has_many :posts, dependent: :destroy
-  has_many :reactions, dependent: :destroy
+  # Enums
+  enum role: {
+    basic_user: 0,
+    shelter_staff: 1,
+    admin: 2
+  }
 
-  validates :role, presence: true, inclusion: { in: ROLES }
-  validate :ensure_shelter_staff_has_organizations
+  # Validations
+  validates :email, presence: true, uniqueness: true
+  validates :first_name, presence: true
+  validates :last_name, presence: true
+  validates :role, presence: true
+  validate :validate_organizations_based_on_role
 
-  def admin?
-    role == 'admin'
+  # Callbacks
+  before_validation :set_default_role, on: :create
+
+  # Scopes
+  scope :search_by_name, ->(query) {
+    where("CONCAT(first_name, ' ', last_name) ILIKE ?", "%#{query}%")
+  }
+
+  # Methods
+  def full_name
+    "#{first_name} #{last_name}"
   end
 
-  def shelter_staff?
-    role == 'shelter_staff'
+  def can_impersonate?(other_user)
+    admin? && other_user != self
   end
 
-  def normal_user?
-    role == 'normal_user'
+  def impersonate!(target_user)
+    return false unless can_impersonate?(target_user)
+    # Set the impersonated_by_id on the target user to the current admin's ID
+    target_user.update(impersonated_by_id: id)
+  end
+
+  def stop_impersonating!
+    # Find and update any users being impersonated by this admin
+    User.where(impersonated_by_id: id).update_all(impersonated_by_id: nil)
+  end
+
+  def impersonated?
+    impersonated_by_id.present?
+  end
+
+  def true_user
+    return nil unless impersonated?
+    User.find_by(id: impersonated_by_id)
+  end
+
+  # Override Devise's authentication methods to add logging
+  def self.find_for_authentication(conditions)
+    Rails.logger.debug "=== Finding User for Authentication ==="
+    Rails.logger.debug "Conditions: #{conditions.inspect}"
+    Rails.logger.debug "Email from conditions: #{conditions[:email]}"
+    Rails.logger.debug "Email downcased: #{conditions[:email]&.downcase}"
+    Rails.logger.debug "Current database: #{connection.current_database}"
+    Rails.logger.debug "Connection config: #{connection_db_config.inspect}"
+    
+    # Use case-insensitive email matching
+    if conditions[:email].present?
+      # First try a direct SQL query
+      direct_result = connection.execute("SELECT * FROM users WHERE LOWER(email) = LOWER('#{conditions[:email]}')").to_a
+      Rails.logger.debug "Direct SQL result: #{direct_result.inspect}"
+      
+      # Then try ActiveRecord
+      user = where("LOWER(email) = ?", conditions[:email].downcase).first
+      Rails.logger.debug "SQL Query: #{where("LOWER(email) = ?", conditions[:email].downcase).to_sql}"
+      Rails.logger.debug "Found user: #{user.inspect}"
+      Rails.logger.debug "User exists?: #{user.present?}"
+      Rails.logger.debug "User role: #{user&.role}"
+      Rails.logger.debug "User email: #{user&.email}"
+      Rails.logger.debug "User encrypted password: #{user&.encrypted_password}"
+    else
+      Rails.logger.debug "No email provided in conditions"
+      user = super
+    end
+    
+    user
+  end
+
+  def valid_password?(password)
+    Rails.logger.debug "=== Validating Password ==="
+    Rails.logger.debug "User: #{email}"
+    Rails.logger.debug "Current encrypted password: #{encrypted_password}"
+    Rails.logger.debug "Password being validated: #{password}"
+    result = super
+    Rails.logger.debug "Password validation result: #{result}"
+    Rails.logger.debug "Password validation errors: #{errors.full_messages.join(', ')}" if errors.any?
+    result
   end
 
   private
 
-  def ensure_shelter_staff_has_organizations
-    if shelter_staff? && organizations.empty?
-      errors.add(:organizations, 'must be assigned for shelter staff')
-    end
+  def set_default_role
+    self.role ||= :basic_user
+  end
 
-    if admin? && organizations.exists?
-      errors.add(:organizations, 'cannot be assigned for admin users')
+  def validate_organizations_based_on_role
+    if shelter_staff? && organizations.empty?
+      errors.add(:organizations, "must be selected for shelter staff")
     end
   end
 end

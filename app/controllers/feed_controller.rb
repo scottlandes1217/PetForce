@@ -1,4 +1,6 @@
 class FeedController < ApplicationController
+  before_action :set_organization
+
   def index
     @posts = Post.includes(:user, :pet, post_attachments: { file_attachment: :blob })
                  .order(created_at: :desc)
@@ -13,6 +15,17 @@ class FeedController < ApplicationController
           next_page: @posts.next_page
         }
       end
+    end
+  end
+
+  private
+
+  def set_organization
+    if current_user.shelter_staff?
+      @organization = current_user.organizations.first
+    elsif current_user.admin?
+      # For admin users, try to get the organization from the session
+      @organization = Organization.find_by(id: session[:organization_id]) if session[:organization_id]
     end
   end
 end

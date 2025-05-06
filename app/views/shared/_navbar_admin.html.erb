@@ -1,37 +1,42 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
   <div class="container-fluid">
-    <a class="navbar-brand" href="<%= root_path %>">PetForce</a>
+    <!-- Brand -->
+    <%= link_to admin_home_path, class: "navbar-brand" do %>
+      PetForce Admin
+    <% end %>
 
     <!-- Toggler for mobile view -->
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
 
-    <div class="collapse navbar-collapse" id="navbarNavDropdown">
+    <!-- Navbar content -->
+    <div class="collapse navbar-collapse" id="navbarNav">
       <!-- Left-aligned links -->
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+      <ul class="navbar-nav me-auto">
         <li class="nav-item">
-          <a class="nav-link" href="<%= root_path %>">Home</a>
+          <%= link_to "Dashboard", admin_home_path, class: "nav-link #{current_page?(admin_home_path) ? 'active' : ''}" %>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="<%= organizations_path %>">Organizations</a>
+          <%= link_to "Organizations", organizations_path, class: "nav-link #{current_page?(organizations_path) ? 'active' : ''}" %>
+        </li>
+        <li class="nav-item">
+          <%= link_to "Users", users_path, class: "nav-link #{current_page?(users_path) ? 'active' : ''}" %>
         </li>
       </ul>
 
       <!-- Right-aligned user dropdown -->
-      <ul class="navbar-nav ms-auto">
+      <ul class="navbar-nav">
         <% if user_signed_in? %>
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-              <!-- Circle icon -->
-              <span class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center" style="width: 40px; height: 40px; font-size: 1rem;">
-                <i class="bi bi-person"></i>
-              </span>
+            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <%= current_user.email %>
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-              <li><%= link_to "Edit Profile", edit_user_registration_path, class: "dropdown-item" %></li>
+              <li><%= link_to "Edit Profile", edit_user_path(current_user), class: "dropdown-item" %></li>
+              <li><hr class="dropdown-divider"></li>
               <li>
-                <%= link_to "Log Out", destroy_user_session_path, method: :delete, class: "dropdown-item" %>
+                <%= button_to "Sign Out", destroy_user_session_path, method: :delete, class: "dropdown-item", form: { data: { turbo: false } } %>
               </li>
             </ul>
           </li>

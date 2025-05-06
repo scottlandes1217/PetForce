@@ -1,14 +1,21 @@
 class OrganizationsController < ApplicationController
   before_action :authenticate_user!
   before_action :authorize_admin!, only: [:new, :create, :edit, :update, :destroy]
+  before_action :authorize_access!, only: [:index, :show]
 
   def index
     @query = params[:query]
+    base_organizations = if current_user.admin?
+                          Organization.all
+                        else
+                          current_user.organizations
+                        end
+
     @organizations = if @query.present?
-                        Organization.where("name ILIKE :query OR city ILIKE :query OR state ILIKE :query OR street_address ILIKE :query OR zip ILIKE :query", query: "%#{@query}%")
-                      else
-                        Organization.all
-                      end
+                      base_organizations.where("name ILIKE :query OR city ILIKE :query OR state ILIKE :query OR street_address ILIKE :query OR zip ILIKE :query", query: "%#{@query}%")
+                    else
+                      base_organizations
+                    end
     @organizations = @organizations.order(:name).page(params[:page]).per(10)
   end
 
@@ -55,6 +62,12 @@ class OrganizationsController < ApplicationController
 
   def authorize_admin!
     redirect_to root_path, alert: 'Not authorized' unless current_user.admin?
+  end
+
+  def authorize_access!
+    unless current_user.admin? || current_user.shelter_staff?
+      redirect_to root_path, alert: 'Not authorized to view organizations'
+    end
   end
 
   def organization_params

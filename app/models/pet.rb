@@ -1,6 +1,7 @@
 class Pet < ApplicationRecord
   # Associations
   belongs_to :organization
+  belongs_to :owner, class_name: 'User', optional: true
   has_one_attached :photo
   has_many :posts, dependent: :destroy
   has_many_attached :gallery_photos
@@ -12,9 +13,17 @@ class Pet < ApplicationRecord
   belongs_to :mother, class_name: "Pet", optional: true
   belongs_to :father, class_name: "Pet", optional: true
 
+  # Attribute types
+  attribute :status, :string
+
   # Validations
   validates :name, presence: true
   validates :weight_lbs, :weight_oz, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
+  validates :species, presence: true
+  validates :breed, presence: true
+  validates :age, presence: true, numericality: { greater_than_or_equal_to: 0 }
+  validates :description, presence: true
+  validates :status, presence: true
 
   # Ensure breed, color, and flags are always arrays
   def breed
@@ -33,6 +42,12 @@ class Pet < ApplicationRecord
   enum sex: { male: 0, female: 1, unknown: 2 }
   enum coat_type: { rough: 0, short: 1, long: 2, hairless: 3, corded: 4, curly: 5 }
   enum size: { small: 0, medium: 1, large: 2, x_large: 3 }
+  enum status: {
+    available: 'available',
+    adopted: 'adopted',
+    pending: 'pending',
+    unavailable: 'unavailable'
+  }
 
   # Age calculation
   def age
