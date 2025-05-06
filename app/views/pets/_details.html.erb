@@ -218,34 +218,47 @@
 
   <!-- Right Column -->
   <div class="col-md-6">
-    <!-- Flags (Multi-select) -->
+    <!-- Location -->
     <div class="field-container">
-      <strong>Flags:</strong>
-      <span class="value" data-field="flags" data-edit-field-target="value">
-        <% if @pet.flags.present? && @pet.flags.any? %>
-          <%= @pet.flags.map(&:titleize).join(", ") %>
-        <% else %>
-          Not Set
-        <% end %>
+      <span class="label">Location:</span>
+      <span class="value" data-field="location" data-edit-field-target="value">
+        <%= @pet.location&.value || "Not set" %>
       </span>
       <button class="edit-button" 
-              data-field="flags" 
+              data-field="location" 
               data-edit-field-target="editButton" 
               data-action="click->edit-field#edit">
-        <i class="fas fa-pencil-alt"></i>
+        <i class="fas fa-pencil-alt" aria-hidden="true"></i>
       </button>
-      <select multiple 
-              class="edit-input" 
-              data-field="flags" 
+      <select class="edit-input" 
+              data-field="location" 
               data-edit-field-target="input" 
               style="display: none;">
-        <% @organization.organization_fields.flags.each do |flag_option| %>
-          <option value="<%= flag_option.value %>" 
-                  <%= "selected" if @pet.flags.include?(flag_option.value) %>>
-            <%= flag_option.value.titleize %>
+        <option value="">Select Location</option>
+        <% @organization.organization_fields.where(field_type: :location).each do |field| %>
+          <option value="<%= field.id %>" <%= 'selected' if @pet.location_id == field.id %>>
+            <%= field.value %>
           </option>
         <% end %>
       </select>
+    </div>
+
+    <!-- Description -->
+    <div class="field-container">
+      <span class="label">Description:</span>
+      <span class="value" data-field="description" data-edit-field-target="value">
+        <%= @pet.description || "Not set" %>
+      </span>
+      <button class="edit-button" 
+              data-field="description" 
+              data-edit-field-target="editButton" 
+              data-action="click->edit-field#edit">
+        <i class="fas fa-pencil-alt" aria-hidden="true"></i>
+      </button>
+      <textarea class="edit-input" 
+                data-field="description" 
+                data-edit-field-target="input" 
+                style="display: none;"><%= @pet.description %></textarea>
     </div>
 
     <!-- Entered Shelter (Single date) -->

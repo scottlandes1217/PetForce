@@ -9,8 +9,10 @@ class Task < ApplicationRecord
     validates :subject, presence: true
     validates :duration_minutes, numericality: { only_integer: true, greater_than_or_equal_to: 0 }, allow_nil: true
 
+    before_save :clean_flag_list
     after_save :schedule_status_update, if: :should_schedule_update?
     after_destroy :cancel_scheduled_job
+    after_save :sync_flags_with_pet
 
     after_create do
       Rails.logger.info "Task #{id}: Created with status #{status}"
@@ -47,7 +49,7 @@ class Task < ApplicationRecord
 
       if new_status && new_status != status
         Rails.logger.info "Task #{id}: Changing status from #{status} to #{new_status}"
-        update_column(:status, new_status)
+        update(status: new_status)
         
         # If we just changed to Pending, schedule the Overdue check
         if new_status == 'Pending'
@@ -60,6 +62,42 @@ class Task < ApplicationRecord
     end
 
     private
+
+    def clean_flag_list
+      self.flag_list = flag_list.reject(&:blank?) if flag_list.present?
+    end
+
+    def sync_flags_with_pet
+      return unless saved_change_to_status? || saved_change_to_flag_list?
+
+      # Get the current flags for this task
+      current_flags = flag_list || []
+
+      # Check if we should add or remove flags
+      if %w[Pending Overdue].include?(status)
+        # Add flags to pet if they don't exist
+        pet.flags = (pet.flags + current_flags).uniq
+        Rails.logger.info "Task #{id}: Adding flags #{current_flags} to pet #{pet.id}"
+      elsif %w[Completed On-Hold Scheduled].include?(status)
+        # Remove flags from pet if no other tasks need them
+        current_flags.each do |flag|
+          # Only remove if no other active tasks have this flag
+          unless pet.tasks.where.not(id: id)
+                          .where(status: %w[Pending Overdue])
+                          .where("flag_list @> ARRAY[?]::varchar[]", [flag])
+                          .exists?
+            pet.flags = pet.flags - [flag]
+            Rails.logger.info "Task #{id}: Removing flag #{flag} from pet #{pet.id}"
+          end
+        end
+      end
+
+      # Save the pet if flags were changed
+      if pet.changed?
+        Rails.logger.info "Task #{id}: Saving pet #{pet.id} with flags #{pet.flags}"
+        pet.save
+      end
+    end
 
     def should_schedule_update?
       Rails.logger.info "Task #{id}: Checking if should schedule update"
