@@ -13,6 +13,7 @@ class Task < ApplicationRecord
     after_save :schedule_status_update, if: :should_schedule_update?
     after_destroy :cancel_scheduled_job
     after_save :sync_flags_with_pet
+    after_destroy :cleanup_flags
 
     after_create do
       Rails.logger.info "Task #{id}: Created with status #{status}"
@@ -39,17 +40,24 @@ class Task < ApplicationRecord
       new_status = case status
                    when 'Scheduled'
                      if now >= start_time.in_time_zone
+                       Rails.logger.info "Task #{id}: Changing from Scheduled to Pending because now (#{now}) >= start_time (#{start_time.in_time_zone})"
                        'Pending'
                      end
                    when 'Pending'
                      if now >= end_time
+                       Rails.logger.info "Task #{id}: Changing from Pending to Overdue because now (#{now}) >= end_time (#{end_time})"
                        'Overdue'
                      end
                    end
 
       if new_status && new_status != status
         Rails.logger.info "Task #{id}: Changing status from #{status} to #{new_status}"
-        update(status: new_status)
+        
+        # Update the status directly in the database to avoid callbacks
+        update_column(:status, new_status)
+        
+        # Manually trigger the sync_flags_with_pet method
+        sync_flags_with_pet
         
         # If we just changed to Pending, schedule the Overdue check
         if new_status == 'Pending'
@@ -63,12 +71,39 @@ class Task < ApplicationRecord
 
     private
 
+    def cleanup_flags
+      Rails.logger.info "Task #{id}: cleanup_flags called after deletion"
+      # Get the pet's current flags
+      current_pet_flags = Array(pet.flags)
+      # Get the flags that were on this task
+      task_flags = flag_list || []
+      
+      # For each flag that was on this task, check if it should be removed
+      task_flags.each do |flag|
+        # Only remove if no other active tasks have this flag
+        unless pet.tasks.where.not(id: id)
+                        .where(status: %w[Pending Overdue])
+                        .where("flag_list @> ARRAY[?]::varchar[]", [flag])
+                        .exists?
+          Rails.logger.info "Task #{id}: Removing flag #{flag} from pet #{pet.id} after deletion"
+          new_flags = current_pet_flags - [flag]
+          pet.update_column(:flags, new_flags)
+          Rails.logger.info "Task #{id}: Updated pet flags in database: #{pet.reload.flags.inspect}"
+        end
+      end
+    end
+
     def clean_flag_list
-      self.flag_list = flag_list.reject(&:blank?) if flag_list.present?
+      self.flag_list = Array(flag_list).reject(&:blank?)
     end
 
     def sync_flags_with_pet
-      return unless saved_change_to_status? || saved_change_to_flag_list?
+      Rails.logger.info "Task #{id}: sync_flags_with_pet called"
+      Rails.logger.info "Task #{id}: Current status: #{status}"
+      Rails.logger.info "Task #{id}: Current flags: #{flag_list.inspect}"
+      Rails.logger.info "Task #{id}: Pet current flags: #{pet.flags.inspect}"
+      Rails.logger.info "Task #{id}: Status changed? #{saved_change_to_status?}"
+      Rails.logger.info "Task #{id}: Flag list changed? #{saved_change_to_flag_list?}"
 
       # Get the current flags for this task
       current_flags = flag_list || []
@@ -76,26 +111,28 @@ class Task < ApplicationRecord
       # Check if we should add or remove flags
       if %w[Pending Overdue].include?(status)
         # Add flags to pet if they don't exist
-        pet.flags = (pet.flags + current_flags).uniq
-        Rails.logger.info "Task #{id}: Adding flags #{current_flags} to pet #{pet.id}"
+        new_flags = (Array(pet.flags) + current_flags).uniq
+        Rails.logger.info "Task #{id}: Adding flags. Current pet flags: #{pet.flags.inspect}"
+        Rails.logger.info "Task #{id}: New flags to add: #{current_flags.inspect}"
+        Rails.logger.info "Task #{id}: Final flags will be: #{new_flags.inspect}"
+        
+        # Update the pet's flags directly in the database
+        pet.update_column(:flags, new_flags)
+        Rails.logger.info "Task #{id}: Updated pet flags in database: #{pet.reload.flags.inspect}"
       elsif %w[Completed On-Hold Scheduled].include?(status)
-        # Remove flags from pet if no other tasks need them
+        # Remove flags from pet if no other active tasks need them
         current_flags.each do |flag|
           # Only remove if no other active tasks have this flag
           unless pet.tasks.where.not(id: id)
                           .where(status: %w[Pending Overdue])
                           .where("flag_list @> ARRAY[?]::varchar[]", [flag])
                           .exists?
-            pet.flags = pet.flags - [flag]
             Rails.logger.info "Task #{id}: Removing flag #{flag} from pet #{pet.id}"
+            new_flags = Array(pet.flags) - [flag]
+            pet.update_column(:flags, new_flags)
+            Rails.logger.info "Task #{id}: Updated pet flags in database: #{pet.reload.flags.inspect}"
           end
         end
-      end
-
-      # Save the pet if flags were changed
-      if pet.changed?
-        Rails.logger.info "Task #{id}: Saving pet #{pet.id} with flags #{pet.flags}"
-        pet.save
       end
     end
 
@@ -141,7 +178,9 @@ class Task < ApplicationRecord
     def cancel_scheduled_job
       # Cancel any pending jobs for this task
       Sidekiq::ScheduledSet.new.each do |job|
-        job.delete if job.args.first&.dig('_aj_globalid')&.include?("Task/#{id}")
+        if job.args.first.is_a?(Hash) && job.args.first['_aj_globalid']&.include?("Task/#{id}")
+          job.delete
+        end
       end
     end
 end

@@ -33,7 +33,7 @@
 
   <div class="form-group">
     <%= f.label :flag_list, "Task Flags" %>
-    <%= f.collection_select :flag_list, @organization.organization_fields.flags, :value, :value, {}, { multiple: true, class: "form-control" } %>
+    <%= f.collection_select :flag_list, @organization.organization_fields.where(field_type: :flags), :value, :value, {}, { multiple: true, class: "form-control" } %>
   </div>
 
   <%= f.submit "Create Task", class: "btn btn-primary mt-3" %>

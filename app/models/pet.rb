@@ -15,6 +15,7 @@ class Pet < ApplicationRecord
 
   # Attribute types
   attribute :status, :string
+  attribute :flags, :json, default: []
 
   # Validations
   validates :name, presence: true
