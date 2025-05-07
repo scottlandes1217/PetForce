@@ -210,3 +210,38 @@ input[type="file"]::-webkit-file-upload-button + * {
 input[type="file"]::file-selector-button + * {
   display: none;
 }
+
+/* Task Status Badge Styles */
+.table .status .task-status-badge {
+  display: inline-block;
+  padding: 0.5em 1em;
+  font-size: 1em;
+  font-weight: 500;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: 0.25rem;
+  color: white;
+}
+
+.table .status .task-status-badge.scheduled {
+  background-color: #17a2b8;
+}
+
+.table .status .task-status-badge.pending {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.table .status .task-status-badge.overdue {
+  background-color: #dc3545;
+}
+
+.table .status .task-status-badge.completed {
+  background-color: #28a745;
+}
+
+.table .status .task-status-badge.cancelled {
+  background-color: #6c757d;
+}

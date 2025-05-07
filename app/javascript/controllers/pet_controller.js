@@ -7,22 +7,7 @@ export default class extends Controller {
     console.log("Pet controller connected");
     // Initialize the active tab from localStorage or default to 'details'
     const activeTab = localStorage.getItem('petActiveTab') || 'details';
-    
-    // Immediately switch to the saved tab
-    const tabButton = document.querySelector(`[data-tab="${activeTab}"]`);
-    if (tabButton) {
-      // Show the content first
-      const content = document.getElementById(activeTab);
-      if (content) {
-        content.style.display = "block";
-      }
-      
-      // Then update the button state
-      document.querySelectorAll(".tab-link").forEach((link) => {
-        link.classList.remove("active");
-      });
-      tabButton.classList.add("active");
-    }
+    this.showTab(activeTab);
 
     this.selectedGalleryImage = null;
     this.uploadedImageFiles = null;
@@ -36,13 +21,20 @@ export default class extends Controller {
     });
   }
 
+  disconnect() {
+    // Clean up any event listeners if needed
+  }
+
   /* -----------------------------------------
    * TAB SWITCHING
    * ----------------------------------------- */
   switchTab(event) {
     const tabId = event.currentTarget.dataset.tab;
     console.log("Switching to tab:", tabId);
+    this.showTab(tabId);
+  }
 
+  showTab(tabId) {
     // Store the active tab in localStorage
     localStorage.setItem('petActiveTab', tabId);
 
@@ -68,31 +60,10 @@ export default class extends Controller {
       }
     }
 
-    // Add active class to the clicked tab link
-    event.currentTarget.classList.add("active");
-  }
-
-  showTab(tab) {
-    // Hide all tab contents first
-    document.querySelectorAll(".tab-content").forEach((content) => {
-      content.style.display = "none";
-    });
-
-    // Update tab links
-    document.querySelectorAll(".tab-link").forEach((link) => {
-      link.classList.toggle("active", link.dataset.tab === tab);
-    });
-
-    // Show the selected tab content
-    const selectedContent = document.getElementById(tab);
-    if (selectedContent) {
-      selectedContent.style.display = "block";
-      
-      // If it's a lazy-loaded tab, ensure the turbo frame is loaded
-      const turboFrame = selectedContent.querySelector("turbo-frame");
-      if (turboFrame && !turboFrame.src) {
-        turboFrame.src = turboFrame.dataset.src;
-      }
+    // Add active class to the tab link
+    const tabLink = document.querySelector(`[data-tab="${tabId}"]`);
+    if (tabLink) {
+      tabLink.classList.add("active");
     }
   }
 

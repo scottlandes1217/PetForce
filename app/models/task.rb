@@ -1,6 +1,4 @@
 class Task < ApplicationRecord
-    include Sidekiq::Worker
-    
     STATUSES = %w[Scheduled Pending On-Hold Overdue Completed].freeze
   
     belongs_to :pet

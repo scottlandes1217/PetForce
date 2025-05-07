@@ -1,0 +1,3 @@
+<%= turbo_frame_tag "task_status_#{task.id}" do %>
+  <span class="task-status-badge <%= task.status.downcase %>"><%= task.status %></span>
+<% end %> 

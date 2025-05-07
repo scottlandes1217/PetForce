@@ -1,6 +1,9 @@
 Rails.application.routes.draw do
   require 'sidekiq/web'
   
+  # Mount Action Cable
+  mount ActionCable.server => '/cable'
+  
   authenticate :user, lambda { |u| u.admin? } do
     mount Sidekiq::Web => '/sidekiq'
   end

@@ -255,7 +255,19 @@ edit(event) {
       }
     });
 
-    console.log("Sending data to server:", data);
+    // Ensure required fields are present
+    const requiredFields = {
+      name: data.name || this.currentValues.get('name'),
+      species_id: data.species_id || this.currentValues.get('species_id'),
+      breed: data.breed || this.currentValues.get('breed') || [],
+      description: data.description || this.currentValues.get('description'),
+      status: data.status || this.currentValues.get('status') || 'available'
+    };
+
+    // Merge required fields with any changed fields
+    const finalData = { ...requiredFields, ...data };
+
+    console.log("Sending data to server:", finalData);
 
     fetch(this.url, {
       method: "PATCH",
@@ -265,12 +277,14 @@ edit(event) {
         "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')
           .content,
       },
-      body: JSON.stringify({ pet: data }),
+      body: JSON.stringify({ pet: finalData }),
     })
       .then((response) => {
         console.log("Fetch response. Status:", response.status);
         if (!response.ok) {
-          throw new Error(`Response not ok. Status: ${response.status}`);
+          return response.json().then(err => {
+            throw new Error(`Response not ok. Status: ${response.status}. Errors: ${JSON.stringify(err)}`);
+          });
         }
         return response.json();
       })
@@ -300,7 +314,7 @@ edit(event) {
       })
       .catch((err) => {
         console.error("Error updating pet:", err);
-        this.showErrorMessage("Failed to update. Please try again.");
+        this.showErrorMessage(err.message || "Failed to update. Please try again.");
       })
       .finally(() => {
         this.isSaving = false;

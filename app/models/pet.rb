@@ -20,11 +20,11 @@ class Pet < ApplicationRecord
   # Validations
   validates :name, presence: true
   validates :weight_lbs, :weight_oz, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
-  validates :species, presence: true
-  validates :breed, presence: true
-  validates :age, presence: true, numericality: { greater_than_or_equal_to: 0 }
-  validates :description, presence: true
-  validates :status, presence: true
+  # validates :species, presence: true
+  # validates :breed, presence: true
+  # validates :age, presence: true, numericality: { greater_than_or_equal_to: 0 }
+  # validates :description, presence: true
+  # validates :status, presence: true
 
   # Ensure breed, color, and flags are always arrays
   def breed
