@@ -14,6 +14,11 @@ export default class extends Controller {
     this.noMorePosts = false; // Flag for no more posts
     this.noMorePostsElement = document.getElementById("no-more-posts"); // Cache the "No more posts" element
     window.addEventListener("scroll", this.onScroll.bind(this));
+
+    // --- Ad Impression Tracking ---
+    this.trackedAds = new Set();
+    this.observeAds();
+    this.observeAdClicks();
   }
 
   disconnect() {
@@ -54,6 +59,9 @@ export default class extends Controller {
 
       if (data.posts) {
         this.postsTarget.insertAdjacentHTML("beforeend", data.posts);
+        // Observe new ads after loading more posts
+        this.observeAds();
+        this.observeAdClicks();
       }
 
       if (data.next_page) {
@@ -86,5 +94,56 @@ export default class extends Controller {
     } else {
       console.warn("No more posts element not found. Cannot display 'No more posts' message.");
     }
+  }
+
+  observeAds() {
+    const adElements = document.querySelectorAll(".ad[data-ad-id]");
+    if (!('IntersectionObserver' in window)) return;
+    const observer = new IntersectionObserver((entries, obs) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const adId = entry.target.getAttribute('data-ad-id');
+          if (adId && !this.trackedAds.has(adId)) {
+            this.trackedAds.add(adId);
+            fetch('/ad_impressions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.getCSRFToken() },
+              body: JSON.stringify({ ad_id: adId })
+            });
+          }
+        }
+      });
+    }, { threshold: 0.5 });
+    adElements.forEach(el => observer.observe(el));
+  }
+
+  observeAdClicks() {
+    document.removeEventListener('click', this.handleAdClick, true);
+    this.handleAdClick = this.handleAdClick || (event => {
+      const btn = event.target.closest('.ad-click-btn');
+      if (btn) {
+        event.preventDefault();
+        const adId = btn.getAttribute('data-ad-id');
+        const adUrl = btn.getAttribute('data-ad-url') || '#';
+        if (!btn.dataset.clicked) {
+          btn.dataset.clicked = 'true';
+          fetch('/ad_impressions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.getCSRFToken() },
+            body: JSON.stringify({ ad_id: adId, impression_type: 'click' })
+          }).finally(() => {
+            window.location.href = adUrl;
+          });
+        } else {
+          window.location.href = adUrl;
+        }
+      }
+    });
+    document.addEventListener('click', this.handleAdClick, true);
+  }
+
+  getCSRFToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta && meta.getAttribute('content');
   }
 }

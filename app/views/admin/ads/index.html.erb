@@ -1,0 +1,29 @@
+<div class="container mt-4">
+  <h1>Ad Center</h1>
+  <div class="mb-3">
+    <%= link_to 'New Ad', new_admin_ad_path, class: 'btn btn-primary' %>
+  </div>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Created At</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @ads.each do |ad| %>
+        <tr>
+          <td><%= ad.title %></td>
+          <td><%= ad.status %></td>
+          <td><%= ad.created_at.strftime('%Y-%m-%d') %></td>
+          <td>
+            <%= link_to 'Edit', edit_admin_ad_path(ad), class: 'btn btn-sm btn-secondary' %>
+            <%= link_to 'Delete', admin_ad_path(ad), method: :delete, data: { confirm: 'Are you sure?' }, class: 'btn btn-sm btn-danger' %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div> 

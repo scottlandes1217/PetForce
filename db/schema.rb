@@ -10,9 +10,19 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_05_06_065631) do
+ActiveRecord::Schema[7.1].define(version: 2025_05_15_074132) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "action_text_rich_texts", force: :cascade do |t|
+    t.string "name", null: false
+    t.text "body"
+    t.string "record_type", null: false
+    t.bigint "record_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["record_type", "record_id", "name"], name: "index_action_text_rich_texts_uniqueness", unique: true
+  end
 
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
@@ -40,6 +50,54 @@ ActiveRecord::Schema[7.1].define(version: 2025_05_06_065631) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "ad_impressions", force: :cascade do |t|
+    t.bigint "ad_id", null: false
+    t.bigint "user_id"
+    t.string "impression_type"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["ad_id"], name: "index_ad_impressions_on_ad_id"
+    t.index ["user_id"], name: "index_ad_impressions_on_user_id"
+  end
+
+  create_table "ads", force: :cascade do |t|
+    t.string "title"
+    t.text "body"
+    t.integer "global_frequency"
+    t.integer "max_impressions_per_user"
+    t.integer "user_cooldown_seconds"
+    t.text "include_locations"
+    t.text "exclude_locations"
+    t.decimal "revenue_generated", default: "0.0"
+    t.decimal "revenue_share_percentage", default: "0.0"
+    t.integer "impressions_count", default: 0
+    t.integer "clicks_count", default: 0
+    t.text "pet_types"
+    t.string "status"
+    t.datetime "start_at"
+    t.datetime "end_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "url"
+    t.text "target_states"
+    t.text "target_counties"
+    t.text "target_cities"
+    t.text "target_zip_codes"
+    t.float "target_latitude"
+    t.float "target_longitude"
+    t.float "target_radius_miles"
+    t.integer "min_age"
+    t.integer "max_age"
+    t.text "target_genders"
+    t.text "target_pet_breeds"
+    t.integer "min_pet_age"
+    t.integer "max_pet_age"
+    t.integer "impression_cap"
+    t.integer "click_cap"
+    t.integer "budget_cents"
+    t.integer "parent_ad_id"
   end
 
   create_table "organization_fields", force: :cascade do |t|
@@ -158,6 +216,18 @@ ActiveRecord::Schema[7.1].define(version: 2025_05_06_065631) do
     t.index ["pet_id"], name: "index_tasks_on_pet_id"
   end
 
+  create_table "user_ad_rewards", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "ad_id", null: false
+    t.decimal "amount", default: "0.0"
+    t.boolean "donated", default: false
+    t.string "donated_to"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["ad_id"], name: "index_user_ad_rewards_on_ad_id"
+    t.index ["user_id"], name: "index_user_ad_rewards_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
@@ -166,7 +236,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_05_06_065631) do
     t.datetime "remember_created_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.integer "role", default: 0, null: false
+    t.integer "role", default: 0
     t.bigint "organization_id"
     t.string "first_name"
     t.string "last_name"
@@ -176,6 +246,14 @@ ActiveRecord::Schema[7.1].define(version: 2025_05_06_065631) do
     t.datetime "last_sign_in_at"
     t.string "current_sign_in_ip"
     t.string "last_sign_in_ip"
+    t.string "state"
+    t.string "county"
+    t.string "city"
+    t.string "zip_code"
+    t.float "latitude"
+    t.float "longitude"
+    t.date "birthdate"
+    t.integer "gender"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["organization_id"], name: "index_users_on_organization_id"
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
@@ -183,6 +261,8 @@ ActiveRecord::Schema[7.1].define(version: 2025_05_06_065631) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "ad_impressions", "ads"
+  add_foreign_key "ad_impressions", "users"
   add_foreign_key "organization_fields", "organizations"
   add_foreign_key "organization_users", "organizations"
   add_foreign_key "organization_users", "users"
@@ -195,5 +275,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_05_06_065631) do
   add_foreign_key "reactions", "posts"
   add_foreign_key "reactions", "users"
   add_foreign_key "tasks", "pets"
+  add_foreign_key "user_ad_rewards", "ads"
+  add_foreign_key "user_ad_rewards", "users"
   add_foreign_key "users", "organizations"
 end

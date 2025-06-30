@@ -31,19 +31,25 @@ RUN apt-get update -qq && \
 COPY Gemfile Gemfile.lock ./
 RUN bundle install
 
-# Add a script to be executed every time the container starts
-COPY bin/docker-entrypoint /usr/bin/
-RUN chmod +x /usr/bin/docker-entrypoint
-
 # Configure non-root user and set up tmp directory
 RUN useradd rails --create-home --shell /bin/bash && \
     mkdir -p /rails/tmp/cache && \
     chown -R rails:rails /rails && \
     chmod -R 755 /rails/tmp
 
+# Fix permissions for bundle path
+RUN chown -R rails:rails /usr/local/bundle
+
+# Add a script to be executed every time the container starts
+COPY bin/docker-entrypoint /usr/bin/
+RUN chmod +x /usr/bin/docker-entrypoint
+
+COPY bin/fix-bundle-permissions.sh /usr/bin/
+RUN chmod +x /usr/bin/fix-bundle-permissions.sh
+
 USER rails:rails
 
-ENTRYPOINT ["docker-entrypoint"]
+ENTRYPOINT ["/usr/bin/fix-bundle-permissions.sh", "docker-entrypoint"]
 
 # Start the server by default, this can be overwritten at runtime
 EXPOSE 3000

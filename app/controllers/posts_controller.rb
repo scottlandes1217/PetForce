@@ -102,6 +102,7 @@ end
 
   def set_pet
     @pet = Pet.find(params[:pet_id])
+    @organization = @pet.organization
   end
 
   def set_post

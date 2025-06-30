@@ -38,3 +38,6 @@ import "controllers";
 
 // Import channels
 import "./channels"
+
+import "trix"
+import "@rails/actiontext"

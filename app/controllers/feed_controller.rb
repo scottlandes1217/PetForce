@@ -7,6 +7,8 @@ class FeedController < ApplicationController
                  .page(params[:page])
                  .per(10)
 
+    @feed_items = helpers.interleave_ads_with_posts(@posts, current_user)
+
     respond_to do |format|
       format.html # Render the initial HTML view
       format.json do

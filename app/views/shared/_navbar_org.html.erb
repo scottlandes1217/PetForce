@@ -50,11 +50,11 @@
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
               <% if current_user.admin? %>
-                <li><%= link_to "Edit Profile", edit_user_path(current_user), class: "dropdown-item" %></li>
+                <li><%= link_to "Edit Profile", edit_user_registration_path, class: "dropdown-item" %></li>
               <% elsif current_user.shelter_staff? %>
-                <li><%= link_to "Edit Profile", edit_user_path(current_user), class: "dropdown-item" %></li>
+                <li><%= link_to "Edit Profile", edit_user_registration_path, class: "dropdown-item" %></li>
               <% else %>
-                <li><%= link_to "Edit Profile", edit_user_path(current_user), class: "dropdown-item" %></li>
+                <li><%= link_to "Edit Profile", edit_user_registration_path, class: "dropdown-item" %></li>
               <% end %>
               <% if current_user.shelter_staff? || current_user.admin? %>
                 <% if @organization.present? %>

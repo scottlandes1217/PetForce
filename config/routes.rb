@@ -1,4 +1,18 @@
 Rails.application.routes.draw do
+  get 'ad_impressions/create'
+  namespace :admin do
+    get 'ads/index'
+    get 'ads/new'
+    get 'ads/create'
+    get 'ads/edit'
+    get 'ads/update'
+    get 'ads/destroy'
+    resources :ads do
+      member do
+        post :create_variant
+      end
+    end
+  end
   require 'sidekiq/web'
   
   # Mount Action Cable
@@ -15,11 +29,10 @@ Rails.application.routes.draw do
   get 'feed/index'
   
   # Devise routes for user authentication
-  devise_for :users, controllers: { sessions: 'users/sessions' }, skip: [:registrations]
-  devise_scope :user do
-    get 'users/sign_up', to: 'devise/registrations#new', as: :new_user_registration
-    post 'users', to: 'devise/registrations#create', as: :user_registration
-  end
+  devise_for :users, controllers: { 
+    sessions: 'users/sessions',
+    registrations: 'users/registrations'
+  }
 
   # Root route for public landing page
   root 'home#index' # Public landing page for unauthenticated users
@@ -46,16 +59,15 @@ end
   # Admin namespace for admin-specific home page and potential future admin features
   namespace :admin do
     get 'home', to: 'home#index' # Admin home page
-  end
-
-  # Users resource for admin management
-  resources :users, only: [:index, :new, :create, :edit, :update], path: 'admin/users' do
-    collection do
-      get :search
-    end
-    member do
-      post :impersonate
-      delete :stop_impersonating
+    resources :ads
+    resources :users, only: [:index, :new, :create, :edit, :update] do
+      collection do
+        get :search
+      end
+      member do
+        post :impersonate
+        delete :stop_impersonating
+      end
     end
   end
 
@@ -77,4 +89,6 @@ end
     # Add this line for the custom "react" action on a specific post
     post :react, on: :member
   end
+
+  resources :ad_impressions, only: [:create]
 end

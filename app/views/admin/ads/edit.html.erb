@@ -1,0 +1,18 @@
+<h2>Edit Ad</h2>
+<% if @parent_ad %>
+  <div class="alert alert-info">This is a variant of <%= link_to @parent_ad.title, edit_admin_ad_path(@parent_ad) %>.</div>
+<% end %>
+<% if @variants.present? %>
+  <div class="mb-3">
+    <strong>Variants:</strong>
+    <ul>
+      <% @variants.each do |variant| %>
+        <li><%= link_to variant.title, edit_admin_ad_path(variant) %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+<% if @ad.parent_ad_id.nil? %>
+  <%= button_to 'Create Variant', create_variant_admin_ad_path(@ad), method: :post, class: 'btn btn-secondary mb-3' %>
+<% end %>
+<%= render 'form', ad: @ad %> 

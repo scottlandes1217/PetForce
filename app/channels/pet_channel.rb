@@ -1,6 +1,6 @@
 class PetChannel < ApplicationCable::Channel
   def subscribed
-    # stream_from "some_channel"
+    stream_from "pet_#{params[:pet_id]}"
   end
 
   def unsubscribed

@@ -2,6 +2,7 @@ class User < ApplicationRecord
   # Include default devise modules. Others available are:
   # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
   devise :database_authenticatable,
+         :registerable,
          :recoverable, :rememberable, :validatable,
          :trackable, :timeoutable
 
@@ -16,6 +17,8 @@ class User < ApplicationRecord
     admin: 2
   }
 
+  enum gender: { male: 0, female: 1, non_binary: 2, prefer_not_to_say: 3 }
+
   # Validations
   validates :email, presence: true, uniqueness: true
   validates :first_name, presence: true
@@ -25,6 +28,8 @@ class User < ApplicationRecord
 
   # Callbacks
   before_validation :set_default_role, on: :create
+  geocoded_by :full_address
+  after_validation :geocode, if: :should_geocode?
 
   # Scopes
   scope :search_by_name, ->(query) {
@@ -100,6 +105,22 @@ class User < ApplicationRecord
     Rails.logger.debug "Password validation result: #{result}"
     Rails.logger.debug "Password validation errors: #{errors.full_messages.join(', ')}" if errors.any?
     result
+  end
+
+  def full_address
+    [city, state, zip_code].compact.join(', ')
+  end
+
+  def should_geocode?
+    city_changed? || state_changed? || zip_code_changed?
+  end
+
+  def age
+    return unless birthdate
+    today = Date.today
+    years = today.year - birthdate.year
+    years -= 1 if today < birthdate + years.years
+    years
   end
 
   private

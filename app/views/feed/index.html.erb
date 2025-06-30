@@ -4,7 +4,13 @@
 
 <div id="feed-container" data-controller="feed">
   <div data-feed-target="posts">
-    <%= render @posts, partial: "posts/post", as: :post %>
+    <% @feed_items.each do |item| %>
+      <% if item.is_a?(Post) %>
+        <%= render partial: 'posts/post', locals: { post: item } %>
+      <% elsif item.is_a?(Ad) %>
+        <%= render partial: 'ads/ad', locals: { ad: item } %>
+      <% end %>
+    <% end %>
   </div>
   <div id="loading-indicator" data-feed-target="loadingIndicator" style="display: none; text-align: center; font-weight: bold;">
     Loading...

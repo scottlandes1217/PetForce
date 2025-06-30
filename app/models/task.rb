@@ -54,6 +54,9 @@ class Task < ApplicationRecord
         # Update the status directly in the database to avoid callbacks
         update_column(:status, new_status)
         
+        # Reload the task to get the new status
+        reload
+        
         # Manually trigger the sync_flags_with_pet method
         sync_flags_with_pet
         
@@ -114,8 +117,8 @@ class Task < ApplicationRecord
         Rails.logger.info "Task #{id}: New flags to add: #{current_flags.inspect}"
         Rails.logger.info "Task #{id}: Final flags will be: #{new_flags.inspect}"
         
-        # Update the pet's flags directly in the database
-        pet.update_column(:flags, new_flags)
+        # Update the pet's flags
+        pet.update(flags: new_flags)
         Rails.logger.info "Task #{id}: Updated pet flags in database: #{pet.reload.flags.inspect}"
       elsif %w[Completed On-Hold Scheduled].include?(status)
         # Remove flags from pet if no other active tasks need them
@@ -127,7 +130,7 @@ class Task < ApplicationRecord
                           .exists?
             Rails.logger.info "Task #{id}: Removing flag #{flag} from pet #{pet.id}"
             new_flags = Array(pet.flags) - [flag]
-            pet.update_column(:flags, new_flags)
+            pet.update(flags: new_flags)
             Rails.logger.info "Task #{id}: Updated pet flags in database: #{pet.reload.flags.inspect}"
           end
         end

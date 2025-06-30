@@ -12,7 +12,7 @@
      data-pet-posts-url-value="<%= organization_pet_posts_path(@organization, @pet) %>"
      data-pet-gallery-url-value="<%= gallery_organization_pet_path(@organization, @pet) %>">
 
-  <%= turbo_frame_tag "pet_header" do %>
+  <%= turbo_frame_tag "pet_header_#{@pet.id}" do %>
     <%= render "pets/pet_header", pet: @pet %>
   <% end %>
 

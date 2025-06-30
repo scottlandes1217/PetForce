@@ -38,6 +38,13 @@ class TasksController < ApplicationController
   
     def destroy
       @task.destroy
+      # Broadcast the pet header update after task deletion
+      Turbo::StreamsChannel.broadcast_replace_to(
+        "pet_#{@pet.id}",
+        target: "pet_header_#{@pet.id}",
+        partial: "pets/pet_header",
+        locals: { pet: @pet }
+      )
       redirect_to organization_pet_path(@organization, @pet, tab: "tasks"), notice: "Task deleted successfully."
     end
   
