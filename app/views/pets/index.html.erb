@@ -43,7 +43,7 @@
             <td>
               <%= link_to pet.name, organization_pet_path(@organization, pet) %>
             </td>
-            <td><%= pet.breed %></td>
+            <td><%= pet.breed_names.join(", ") %></td>
             <td><%= pet.age %></td>
             <td><%= pet.description %></td>
             <td>

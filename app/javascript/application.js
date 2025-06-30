@@ -34,7 +34,6 @@ application.register("turbo-stream", TurboStreamController);
 // Other imports
 import "bootstrap";
 import "@popperjs/core";
-import "controllers";
 
 // Import channels
 import "./channels"

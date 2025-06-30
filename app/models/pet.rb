@@ -39,6 +39,23 @@ class Pet < ApplicationRecord
     super || []
   end
 
+  # Get breed names from breed IDs
+  def breed_names
+    return [] if breed.blank?
+    
+    organization.organization_fields
+                .where(field_type: :breed, id: breed)
+                .pluck(:value)
+  end
+
+  # Get color names from color IDs
+  def color_names
+    return [] if color.blank?
+    
+    # Color stores string values directly, not IDs
+    color.map(&:titleize)
+  end
+
   # Enums
   enum sex: { male: 0, female: 1, unknown: 2 }
   enum coat_type: { rough: 0, short: 1, long: 2, hairless: 3, corded: 4, curly: 5 }

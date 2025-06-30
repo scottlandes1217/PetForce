@@ -132,9 +132,10 @@
     <div class="field-container">
       <strong>Breed:</strong>
       <span class="value" data-field="breed" data-edit-field-target="value">
-        <% if @pet.breed.present? && @pet.breed.any? %>
-          <%= @pet.breed.map { |b| OrganizationField.find_by(id: b)&.value&.titleize }
-                            .compact.join(", ") %>
+        <!-- DEBUG: <%= @pet.breed_names.inspect %> -->
+        <!-- DEBUG: <%= @pet.breed_names.any?.inspect %> -->
+        <% if @pet.breed_names.any? %>
+          <%= @pet.breed_names.join(", ") %>
         <% else %>
           Not Set
         <% end %>
@@ -151,8 +152,8 @@
               data-edit-field-target="input" 
               style="display: none;">
         <% @organization.organization_fields.breed.each do |breed_option| %>
-          <option value="<%= breed_option.id %>" 
-                  <%= "selected" if @pet.breed.include?(breed_option.id) %>>
+          <option value="<%= breed_option.id.to_s %>" 
+                  <%= "selected" if @pet.breed.map(&:to_s).include?(breed_option.id.to_s) %>>
             <%= breed_option.value.titleize %>
           </option>
         <% end %>
@@ -163,8 +164,8 @@
     <div class="field-container">
       <strong>Color:</strong>
       <span class="value" data-field="color" data-edit-field-target="value">
-        <% if @pet.color.present? && @pet.color.any? %>
-          <%= @pet.color.map(&:titleize).join(", ") %>
+        <% if @pet.color_names.any? %>
+          <%= @pet.color_names.join(", ") %>
         <% else %>
           Not Set
         <% end %>
