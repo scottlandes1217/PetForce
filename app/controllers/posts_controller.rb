@@ -110,6 +110,6 @@ end
   end
 
   def post_params
-    params.require(:post).permit(:body, images: [])
+    params.require(:post).permit(:body, :organization_id, images: [])
   end
 end

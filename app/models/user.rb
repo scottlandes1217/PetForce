@@ -9,6 +9,8 @@ class User < ApplicationRecord
   # Associations
   has_many :owned_pets, class_name: 'Pet', foreign_key: 'owner_id'
   has_and_belongs_to_many :organizations
+  has_many :comments, dependent: :destroy
+  has_many :comment_reactions, dependent: :destroy
 
   # Enums
   enum role: {
@@ -122,6 +124,8 @@ class User < ApplicationRecord
     years -= 1 if today < birthdate + years.years
     years
   end
+
+  # can_post_as_organization: boolean
 
   private
 

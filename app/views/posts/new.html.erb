@@ -36,6 +36,13 @@
       <%# Dynamically added via JavaScript when new images are uploaded %>
     </div>
 
+    <% if current_user.can_post_as_organization? && current_user.organizations.any? %>
+      <div class="form-group">
+        <%= f.label :organization_id, "Post as" %>
+        <%= f.select :organization_id, options_for_select([["Myself", ""]] + current_user.organizations.map { |org| [org.name, org.id] }), {}, class: "form-control" %>
+      </div>
+    <% end %>
+
     <%= f.submit "Create Post", class: "btn btn-success" %>
   <% end %>
 

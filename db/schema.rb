@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_05_15_074132) do
+ActiveRecord::Schema[7.1].define(version: 2025_06_30_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -98,6 +98,27 @@ ActiveRecord::Schema[7.1].define(version: 2025_05_15_074132) do
     t.integer "click_cap"
     t.integer "budget_cents"
     t.integer "parent_ad_id"
+  end
+
+  create_table "comment_reactions", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "comment_id", null: false
+    t.string "reaction_type", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["comment_id"], name: "index_comment_reactions_on_comment_id"
+    t.index ["user_id", "comment_id"], name: "index_comment_reactions_on_user_id_and_comment_id", unique: true
+    t.index ["user_id"], name: "index_comment_reactions_on_user_id"
+  end
+
+  create_table "comments", force: :cascade do |t|
+    t.text "body", null: false
+    t.bigint "user_id", null: false
+    t.bigint "post_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["post_id"], name: "index_comments_on_post_id"
+    t.index ["user_id"], name: "index_comments_on_user_id"
   end
 
   create_table "organization_fields", force: :cascade do |t|
@@ -254,6 +275,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_05_15_074132) do
     t.float "longitude"
     t.date "birthdate"
     t.integer "gender"
+    t.boolean "can_post_as_organization", default: false, null: false
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["organization_id"], name: "index_users_on_organization_id"
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
@@ -263,6 +285,10 @@ ActiveRecord::Schema[7.1].define(version: 2025_05_15_074132) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "ad_impressions", "ads"
   add_foreign_key "ad_impressions", "users"
+  add_foreign_key "comment_reactions", "comments"
+  add_foreign_key "comment_reactions", "users"
+  add_foreign_key "comments", "posts"
+  add_foreign_key "comments", "users"
   add_foreign_key "organization_fields", "organizations"
   add_foreign_key "organization_users", "organizations"
   add_foreign_key "organization_users", "users"

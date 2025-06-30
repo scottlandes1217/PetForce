@@ -58,29 +58,56 @@
   <!-- REACTIONS SECTION -->
 <div class="post-reactions">
   <% reaction_types = {
-    "Love"            => "fa-heart",
-    "Laugh"           => "fa-laugh-squint",
-    "Like"            => "fa-thumbs-up",
-    "Congratulations" => "fa-trophy",
-    "Dislike"         => "fa-thumbs-down",
-    "Angry"           => "fa-angry"
+    "Love"            => ["fa-heart",   "#e0245e"],
+    "Laugh"           => ["custom-laugh", "#f7b924"],
+    "Like"            => ["fa-thumbs-up", "#1877f2"],
+    "Congratulations" => ["fa-trophy",  "#ff9800"],
+    "Dislike"         => ["fa-thumbs-down", "#555"],
+    "Angry"           => ["custom-angry",   "#f02849"]
   } %>
-
+  <% always_solid = ["Congratulations", "Laugh", "Angry"] %>
   <% user_reaction = post.reactions.find_by(user_id: current_user.id) %>
-
-  <% reaction_types.each do |rtype, icon_class| %>
+  <% reaction_types.each do |rtype, (icon_class, color)| %>
     <% count_for_this_type = post.reactions.where(reaction_type: rtype).count %>
     <% is_selected = (user_reaction&.reaction_type == rtype) %>
-
     <button type="button"
-            class="reaction-button <%= 'selected' if is_selected %>"
+            class="reaction-icon-btn <%= 'selected' if is_selected %>"
             data-action="click->reaction#sendReaction"
             data-reaction-type="<%= rtype %>"
             data-post-id="<%= post.id %>">
-      <!-- Insert the Font Awesome icon here -->
-      <i class="fas <%= icon_class %>"></i>
-      <span><%= rtype %> (<%= count_for_this_type %>)</span>
+      <% if rtype == "Laugh" %>
+        <% icon_style = "fas" %>
+        <% icon_class = "fa-laugh-squint" %>
+        <% icon_color = is_selected ? "color: #f7b924;" : "color: #bbb;" %>
+        <i class="<%= icon_style %> <%= icon_class %>" style="<%= icon_color %>"></i>
+      <% elsif rtype == "Angry" %>
+        <% icon_style = "fas" %>
+        <% icon_class = "fa-angry" %>
+        <% icon_color = is_selected ? "color: #f02849;" : "color: #bbb;" %>
+        <i class="<%= icon_style %> <%= icon_class %>" style="<%= icon_color %>"></i>
+      <% elsif rtype == "Congratulations" %>
+        <% icon_style = "fas" %>
+        <% icon_color = is_selected ? "color: #ff9800;" : "color: #bbb;" %>
+        <i class="<%= icon_style %> <%= icon_class %>" style="<%= icon_color %>"></i>
+      <% else %>
+        <% icon_style = is_selected ? "fas" : "far" %>
+        <% icon_color = is_selected ? "color: #{color};" : "color: #bbb;" %>
+        <i class="<%= icon_style %> <%= icon_class %>" style="<%= icon_color %>"></i>
+      <% end %>
+      <span class="reaction-count"><%= count_for_this_type %></span>
     </button>
   <% end %>
+</div>
+
+<div class="comments-section">
+  <h5>Comments</h5>
+  <turbo-frame id="comments_for_post_<%= post.id %>">
+    <div id="new_comment_form_for_post_<%= post.id %>">
+      <%= render 'comments/form', post: post %>
+    </div>
+    <div class="comments-list">
+      <%= render post.comments %>
+    </div>
+  </turbo-frame>
 </div>
 </div>

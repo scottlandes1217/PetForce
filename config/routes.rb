@@ -50,6 +50,9 @@ resources :organizations do
     resources :tasks, only: [:index, :new, :create, :edit, :update, :destroy, :show]
   end
   resources :organization_fields, only: [:index, :create, :update, :destroy]
+  resources :posts do
+    resources :comments, only: [:create, :destroy]
+  end
 end
 
 
@@ -83,12 +86,14 @@ end
 
   # Posts namespace for feed and reactions
   resources :posts do
-    # Existing nested routes for reactions, etc.
     resources :reactions, only: [:create, :destroy]
-  
-    # Add this line for the custom "react" action on a specific post
+    resources :comments, only: [:create, :destroy]
     post :react, on: :member
   end
 
   resources :ad_impressions, only: [:create]
+
+  resources :comments do
+    resources :comment_reactions, only: [:create, :destroy]
+  end
 end
