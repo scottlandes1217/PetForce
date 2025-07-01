@@ -1,0 +1,18 @@
+<% if flash[:alert] || (defined?(resource) && resource&.errors&.any?) %>
+  <div class="global-top-alert alert alert-danger d-flex align-items-center justify-content-center position-fixed top-0 start-50 translate-middle-x" role="alert" style="z-index: 2000;">
+    <div>
+      <h6 class="mb-2">Please fix the following errors:</h6>
+      <ul class="mb-0">
+        <% if flash[:alert] %>
+          <li><strong><%= flash[:alert] %></strong></li>
+        <% end %>
+        <% if defined?(resource) && resource&.errors&.any? %>
+          <% resource.errors.full_messages.each do |message| %>
+            <li><strong><%= message %></strong></li>
+          <% end %>
+        <% end %>
+      </ul>
+    </div>
+    <button type="button" class="btn-close ms-3" data-action="click->global-alert#close" aria-label="Close"></button>
+  </div>
+<% end %> 

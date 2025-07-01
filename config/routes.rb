@@ -1,4 +1,20 @@
 Rails.application.routes.draw do
+  get 'calendar_shares/create'
+  get 'calendar_shares/destroy'
+  get 'events/index'
+  get 'events/show'
+  get 'events/new'
+  get 'events/create'
+  get 'events/edit'
+  get 'events/update'
+  get 'events/destroy'
+  get 'calendars/index'
+  get 'calendars/show'
+  get 'calendars/new'
+  get 'calendars/create'
+  get 'calendars/edit'
+  get 'calendars/update'
+  get 'calendars/destroy'
   get 'ad_impressions/create'
   namespace :admin do
     get 'ads/index'
@@ -53,6 +69,11 @@ resources :organizations do
   resources :posts do
     resources :comments, only: [:create, :destroy]
   end
+  resources :calendars, only: [:index, :show, :new, :create, :edit, :update, :destroy] do
+    resources :events, only: [:new, :create]
+    resources :calendar_shares, only: [:create, :destroy]
+  end
+  resources :events, only: [:index, :show, :edit, :update, :destroy]
 end
 
 

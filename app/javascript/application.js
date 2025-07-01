@@ -28,6 +28,18 @@ application.register("organization-fields", OrganizationFieldsController);
 import TaskUpdatesController from "./controllers/task_updates_controller";
 application.register("task-updates", TaskUpdatesController);
 
+import CalendarController from "./controllers/calendar_controller";
+application.register("calendar", CalendarController);
+
+import SidebarController from "./controllers/sidebar_controller";
+application.register("sidebar", SidebarController);
+
+import EventFormController from "./controllers/event_form_controller";
+application.register("event-form", EventFormController);
+
+import CalendarSharingController from "./controllers/calendar_sharing_controller";
+application.register("calendar-sharing", CalendarSharingController);
+
 import TurboStreamController from "./controllers/turbo_stream_controller";
 application.register("turbo-stream", TurboStreamController);
 
@@ -43,3 +55,29 @@ import "@rails/actiontext"
 
 import Rails from "@rails/ujs";
 Rails.start();
+
+console.log("moveGlobalAlertToBody loaded");
+
+document.addEventListener("turbo:load", () => {
+  console.log("turbo:load event fired");
+  moveGlobalAlertToBody();
+});
+document.addEventListener("turbo:frame-load", () => {
+  console.log("turbo:frame-load event fired");
+  moveGlobalAlertToBody();
+});
+
+function moveGlobalAlertToBody() {
+  console.log("moveGlobalAlertToBody called");
+  document.querySelectorAll('.global-top-alert').forEach(alert => {
+    if (alert.parentNode !== document.body) {
+      document.body.appendChild(alert);
+    }
+  });
+}
+
+// MutationObserver to move global-top-alerts whenever they appear
+const observer = new MutationObserver(() => {
+  moveGlobalAlertToBody();
+});
+observer.observe(document.body, { childList: true, subtree: true });

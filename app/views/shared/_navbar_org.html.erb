@@ -27,9 +27,12 @@
           <li class="nav-item">
             <%= link_to "Pets", organization_pets_path(@organization), class: "nav-link #{current_page?(organization_pets_path(@organization)) ? 'active' : ''}" %>
           </li>
+          <li class="nav-item">
+            <%= link_to "Calendar", organization_events_path(@organization), class: "nav-link #{current_page?(organization_events_path(@organization)) ? 'active' : ''}" %>
+          </li>
         <% end %>
         <li class="nav-item">
-          <%= link_to "Feed", feed_index_path, class: "nav-link" %>
+          <%= link_to "Social", feed_index_path, class: "nav-link" %>
         </li>
       </ul>
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_06_30_090000) do
+ActiveRecord::Schema[7.1].define(version: 2025_07_01_000605) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -100,6 +100,38 @@ ActiveRecord::Schema[7.1].define(version: 2025_06_30_090000) do
     t.integer "parent_ad_id"
   end
 
+  create_table "calendar_shares", force: :cascade do |t|
+    t.bigint "calendar_id", null: false
+    t.bigint "user_id"
+    t.string "permission", default: "view"
+    t.string "email"
+    t.string "status", default: "pending"
+    t.string "invitation_token"
+    t.datetime "accepted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["calendar_id", "email"], name: "index_calendar_shares_on_calendar_id_and_email", unique: true, where: "(email IS NOT NULL)"
+    t.index ["calendar_id", "user_id"], name: "index_calendar_shares_on_calendar_id_and_user_id", unique: true, where: "(user_id IS NOT NULL)"
+    t.index ["calendar_id"], name: "index_calendar_shares_on_calendar_id"
+    t.index ["invitation_token"], name: "index_calendar_shares_on_invitation_token", unique: true
+    t.index ["status"], name: "index_calendar_shares_on_status"
+    t.index ["user_id"], name: "index_calendar_shares_on_user_id"
+  end
+
+  create_table "calendars", force: :cascade do |t|
+    t.string "name", null: false
+    t.text "description"
+    t.string "color", default: "#3788d8"
+    t.boolean "is_public", default: false
+    t.bigint "organization_id", null: false
+    t.bigint "created_by_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_by_id"], name: "index_calendars_on_created_by_id"
+    t.index ["organization_id", "name"], name: "index_calendars_on_organization_id_and_name", unique: true
+    t.index ["organization_id"], name: "index_calendars_on_organization_id"
+  end
+
   create_table "comment_reactions", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.bigint "comment_id", null: false
@@ -119,6 +151,54 @@ ActiveRecord::Schema[7.1].define(version: 2025_06_30_090000) do
     t.datetime "updated_at", null: false
     t.index ["post_id"], name: "index_comments_on_post_id"
     t.index ["user_id"], name: "index_comments_on_user_id"
+  end
+
+  create_table "event_participants", force: :cascade do |t|
+    t.bigint "event_id", null: false
+    t.bigint "user_id", null: false
+    t.string "role", default: "attendee"
+    t.string "status", default: "pending"
+    t.string "response", default: "no_response"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_id", "user_id"], name: "index_event_participants_on_event_id_and_user_id", unique: true
+    t.index ["event_id"], name: "index_event_participants_on_event_id"
+    t.index ["user_id", "status"], name: "index_event_participants_on_user_id_and_status"
+    t.index ["user_id"], name: "index_event_participants_on_user_id"
+  end
+
+  create_table "event_tasks", force: :cascade do |t|
+    t.bigint "event_id", null: false
+    t.bigint "task_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_id", "task_id"], name: "index_event_tasks_on_event_id_and_task_id", unique: true
+    t.index ["event_id"], name: "index_event_tasks_on_event_id"
+    t.index ["task_id"], name: "index_event_tasks_on_task_id"
+  end
+
+  create_table "events", force: :cascade do |t|
+    t.string "title", null: false
+    t.text "description"
+    t.datetime "start_time", null: false
+    t.datetime "end_time", null: false
+    t.string "location"
+    t.bigint "organizer_id", null: false
+    t.bigint "calendar_id", null: false
+    t.bigint "organization_id", null: false
+    t.boolean "all_day", default: false
+    t.string "recurrence_rule"
+    t.string "status", default: "scheduled"
+    t.string "priority", default: "medium"
+    t.string "event_type", default: "general"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["calendar_id", "start_time"], name: "index_events_on_calendar_id_and_start_time"
+    t.index ["calendar_id"], name: "index_events_on_calendar_id"
+    t.index ["organization_id", "start_time"], name: "index_events_on_organization_id_and_start_time"
+    t.index ["organization_id"], name: "index_events_on_organization_id"
+    t.index ["organizer_id", "start_time"], name: "index_events_on_organizer_id_and_start_time"
+    t.index ["organizer_id"], name: "index_events_on_organizer_id"
   end
 
   create_table "organization_fields", force: :cascade do |t|
@@ -285,10 +365,21 @@ ActiveRecord::Schema[7.1].define(version: 2025_06_30_090000) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "ad_impressions", "ads"
   add_foreign_key "ad_impressions", "users"
+  add_foreign_key "calendar_shares", "calendars"
+  add_foreign_key "calendar_shares", "users"
+  add_foreign_key "calendars", "organizations"
+  add_foreign_key "calendars", "users", column: "created_by_id"
   add_foreign_key "comment_reactions", "comments"
   add_foreign_key "comment_reactions", "users"
   add_foreign_key "comments", "posts"
   add_foreign_key "comments", "users"
+  add_foreign_key "event_participants", "events"
+  add_foreign_key "event_participants", "users"
+  add_foreign_key "event_tasks", "events"
+  add_foreign_key "event_tasks", "tasks"
+  add_foreign_key "events", "calendars"
+  add_foreign_key "events", "organizations"
+  add_foreign_key "events", "users", column: "organizer_id"
   add_foreign_key "organization_fields", "organizations"
   add_foreign_key "organization_users", "organizations"
   add_foreign_key "organization_users", "users"

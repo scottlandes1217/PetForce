@@ -11,6 +11,10 @@ class User < ApplicationRecord
   has_and_belongs_to_many :organizations
   has_many :comments, dependent: :destroy
   has_many :comment_reactions, dependent: :destroy
+  has_many :organized_events, class_name: 'Event', foreign_key: 'organizer_id', dependent: :destroy
+  has_many :event_participants, dependent: :destroy
+  has_many :participating_events, through: :event_participants, source: :event
+  has_many :created_calendars, class_name: 'Calendar', foreign_key: 'created_by_id', dependent: :destroy
 
   # Enums
   enum role: {

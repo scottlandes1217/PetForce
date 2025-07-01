@@ -2,6 +2,8 @@ class Task < ApplicationRecord
     STATUSES = %w[Scheduled Pending On-Hold Overdue Completed].freeze
   
     belongs_to :pet
+    has_many :event_tasks, dependent: :destroy
+    has_many :events, through: :event_tasks
   
     validates :status, inclusion: { in: STATUSES }
     validates :subject, presence: true
