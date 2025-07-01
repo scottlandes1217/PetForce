@@ -73,6 +73,14 @@ function moveGlobalAlertToBody() {
     if (alert.parentNode !== document.body) {
       document.body.appendChild(alert);
     }
+    // Add close handler to the alert's close button
+    const closeBtn = alert.querySelector('.btn-close');
+    if (closeBtn && !closeBtn.dataset.closeHandlerAdded) {
+      closeBtn.addEventListener('click', function() {
+        alert.remove();
+      });
+      closeBtn.dataset.closeHandlerAdded = 'true';
+    }
   });
 }
 
