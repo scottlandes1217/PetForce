@@ -1,54 +1,82 @@
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm fixed-top">
   <div class="container-fluid">
     <!-- Brand -->
-    <%= link_to admin_home_path, class: "navbar-brand" do %>
-      PetForce Admin
+    <%= link_to admin_home_path, class: "navbar-brand fw-bold" do %>
+      <i class="fas fa-shield-alt me-2"></i>PetForce Admin
     <% end %>
 
-    <!-- Toggler for mobile view -->
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-
-    <!-- Navbar content -->
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <!-- Left-aligned links -->
-      <ul class="navbar-nav me-auto">
-        <li class="nav-item">
-          <%= link_to "Dashboard", admin_home_path, class: "nav-link #{current_page?(admin_home_path) ? 'active' : ''}" %>
-        </li>
-        <li class="nav-item">
-          <%= link_to "Organizations", organizations_path, class: "nav-link #{current_page?(organizations_path) ? 'active' : ''}" %>
-        </li>
-        <li class="nav-item">
-          <%= link_to "Users", admin_users_path, class: "nav-link #{current_page?(admin_users_path) ? 'active' : ''}" %>
-        </li>
-        <li class="nav-item">
-          <%= link_to "Ad Center", admin_ads_path, class: "nav-link #{current_page?(admin_ads_path) ? 'active' : ''}" %>
-        </li>
-      </ul>
-
-      <!-- Right-aligned user dropdown -->
-      <ul class="navbar-nav">
-        <% if user_signed_in? %>
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-              <%= current_user.email %>
-            </a>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-              <li><%= link_to "Edit Profile", edit_user_registration_path, class: "dropdown-item" %></li>
-              <li><hr class="dropdown-divider"></li>
-              <li>
-                <%= button_to "Sign Out", destroy_user_session_path, method: :delete, class: "dropdown-item", form: { data: { turbo: false } } %>
-              </li>
-            </ul>
+    <!-- Left Navigation Dropdown -->
+    <div class="navbar-nav me-auto">
+      <div class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="mainNavDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="fas fa-bars me-2"></i>
+          <% if current_page?(admin_home_path) %>
+            Dashboard
+          <% elsif current_page?(organizations_path) %>
+            Organizations
+          <% elsif current_page?(admin_users_path) %>
+            User Management
+          <% elsif current_page?(admin_ads_path) %>
+            Ad Center
+          <% else %>
+            Navigation
+          <% end %>
+        </a>
+        <ul class="dropdown-menu shadow-lg border-0" aria-labelledby="mainNavDropdown" style="min-width: 220px;">
+          <li>
+            <%= link_to admin_home_path, class: "dropdown-item d-flex align-items-center py-2 #{current_page?(admin_home_path) ? 'active' : ''}" do %>
+              <i class="fas fa-tachometer-alt me-3 text-muted"></i>
+              <span>Dashboard</span>
+            <% end %>
           </li>
-        <% else %>
-          <li class="nav-item">
-            <%= link_to "Log In", new_user_session_path, class: "nav-link" %>
+          <li>
+            <%= link_to organizations_path, class: "dropdown-item d-flex align-items-center py-2 #{current_page?(organizations_path) ? 'active' : ''}" do %>
+              <i class="fas fa-building me-3 text-muted"></i>
+              <span>Organizations</span>
+            <% end %>
           </li>
-        <% end %>
-      </ul>
+          <li>
+            <%= link_to admin_users_path, class: "dropdown-item d-flex align-items-center py-2 #{current_page?(admin_users_path) ? 'active' : ''}" do %>
+              <i class="fas fa-users me-3 text-muted"></i>
+              <span>User Management</span>
+            <% end %>
+          </li>
+          <li>
+            <%= link_to admin_ads_path, class: "dropdown-item d-flex align-items-center py-2 #{current_page?(admin_ads_path) ? 'active' : ''}" do %>
+              <i class="fas fa-bullhorn me-3 text-muted"></i>
+              <span>Ad Center</span>
+            <% end %>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Right User Dropdown -->
+    <div class="navbar-nav ms-auto">
+      <div class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="fas fa-user-circle me-2"></i>
+          <span class="d-none d-sm-inline"><%= current_user.email %></span>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0" aria-labelledby="userDropdown" style="min-width: 220px;">
+          <li class="dropdown-header text-muted small px-3 py-2">
+            <i class="fas fa-user me-2"></i>Account
+          </li>
+          <li>
+            <%= link_to edit_user_registration_path, class: "dropdown-item d-flex align-items-center py-2" do %>
+              <i class="fas fa-user-cog me-3 text-muted"></i>
+              <span>Profile Settings</span>
+            <% end %>
+          </li>
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <%= button_to destroy_user_session_path, method: :delete, class: "dropdown-item d-flex align-items-center py-2 text-danger", form: { data: { turbo: false } } do %>
+              <i class="fas fa-sign-out-alt me-3"></i>
+              <span>Sign Out</span>
+            <% end %>
+          </li>
+        </ul>
+      </div>
     </div>
   </div>
 </nav>

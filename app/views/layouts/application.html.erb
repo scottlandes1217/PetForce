@@ -24,7 +24,8 @@
 
   <body>
     <%= render 'shared/global_alert' %>
-    <div class="container mt-4">
+    <%= yield :navbar %>
+    <div class="container mt-5 pt-4">
       <%= yield %> <!-- Main content goes here -->
     </div>
   </body>
