@@ -18,7 +18,7 @@ class Users::RegistrationsController < Devise::RegistrationsController
     elsif resource.shelter_staff?
       organizations_path
     else
-      user_home_home_path
+      root_path
     end
   end
 

@@ -12,6 +12,17 @@ export default class extends Controller {
       console.log("Action:", event.action)
       console.log("Template:", event.template)
       console.log("Event detail:", event.detail)
+      // Redirect logic for calendar updates
+      const fragment = event.detail.newStreamElement;
+      if (fragment) {
+        const redirectTrigger = fragment.querySelector('#calendar-redirect-trigger');
+        if (redirectTrigger) {
+          const url = redirectTrigger.dataset.redirectUrl;
+          if (url) {
+            window.location.href = url;
+          }
+        }
+      }
     })
 
     document.addEventListener("turbo:before-cache", (event) => {

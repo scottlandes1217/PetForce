@@ -81,3 +81,16 @@ const observer = new MutationObserver(() => {
   moveGlobalAlertToBody();
 });
 observer.observe(document.body, { childList: true, subtree: true });
+
+document.addEventListener("turbo:before-stream-render", function(event) {
+  const fragment = event.detail.newStreamElement;
+  if (fragment) {
+    const redirectTrigger = fragment.querySelector('#calendar-redirect-trigger');
+    if (redirectTrigger) {
+      const url = redirectTrigger.dataset.redirectUrl;
+      if (url) {
+        window.location.href = url;
+      }
+    }
+  }
+});

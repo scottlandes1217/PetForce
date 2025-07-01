@@ -49,7 +49,7 @@ class CalendarsController < ApplicationController
     @calendar.created_by = current_user
 
     if @calendar.save
-      redirect_to organization_calendar_path(@organization, @calendar), notice: 'Calendar was successfully created.'
+      redirect_to organization_events_path(@organization), notice: 'Calendar was successfully created.'
     else
       render :new, status: :unprocessable_entity
     end
@@ -60,15 +60,59 @@ class CalendarsController < ApplicationController
 
   def update
     if @calendar.update(calendar_params)
-      redirect_to organization_calendar_path(@organization, @calendar), notice: 'Calendar was successfully updated.'
+      # Set up variables for main calendar grid refresh
+      @view = params[:view].presence || 'month'
+      @start_date = params[:start_date].presence&.to_date || Date.current
+      case @view
+      when 'day'
+        @end_date = @start_date
+        @events = @organization.events.includes(:organizer, :participants, :calendar)
+                               .where(start_time: @start_date.beginning_of_day..@start_date.end_of_day)
+                               .order(:start_time)
+      when 'week'
+        @end_date = @start_date.end_of_week
+        @events = @organization.events.includes(:organizer, :participants, :calendar)
+                               .where(start_time: @start_date.beginning_of_week..@start_date.end_of_week)
+                               .order(:start_time)
+      else # month
+        month_start = @start_date.beginning_of_month
+        month_end = @start_date.end_of_month
+        grid_start = month_start.beginning_of_week(:sunday)
+        grid_end = month_end.end_of_week(:saturday)
+        @end_date = grid_end
+        @events = @organization.events.includes(:organizer, :participants, :calendar)
+                               .where(start_time: grid_start.beginning_of_day..grid_end.end_of_day)
+                               .order(:start_time)
+      end
+      @calendars = @organization.calendars.includes(:events)
+      @selected_calendar_ids = params[:calendar_ids]&.map(&:to_i) || @calendars.pluck(:id)
+      if @selected_calendar_ids.any?
+        @events = @events.where(calendar_id: @selected_calendar_ids)
+      end
+      respond_to do |format|
+        format.html { redirect_to organization_events_path(@organization), notice: 'Calendar was successfully updated.' }
+        format.turbo_stream
+      end
     else
-      render :edit, status: :unprocessable_entity
+      respond_to do |format|
+        format.html { render :edit, status: :unprocessable_entity }
+        format.turbo_stream {
+          render turbo_stream: turbo_stream.replace(
+            "sidebar_content",
+            partial: "form",
+            locals: { calendar: @calendar }
+          )
+        }
+      end
     end
   end
 
   def destroy
     @calendar.destroy
-    redirect_to organization_calendars_path(@organization), notice: 'Calendar was successfully deleted.'
+    respond_to do |format|
+      format.html { redirect_to organization_events_path(@organization), notice: 'Calendar was successfully deleted.' }
+      format.json { head :no_content }
+    end
   end
 
   private

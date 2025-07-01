@@ -9,6 +9,17 @@
 @import "feed";
 @import "calendar";
 
+/* General App Styling */
+
+.mt-4 {
+  margin-top: 0px !important;
+}
+
+.container, .container-lg, .container-md, .container-sm, .container-xl, .container-xxl {
+  max-width: 100% !important;
+  margin: 0px !important;
+}
+
 /* General Alert Banner Styling */
 .alert {
   position: absolute !important;
@@ -246,4 +257,23 @@ input[type="file"]::file-selector-button + * {
 
 .table .status .task-status-badge.cancelled {
   background-color: #6c757d;
+}
+
+.global-top-alert {
+  min-width: 350px;
+  max-width: 90vw;
+  width: 600px;
+  padding: 1rem 2rem !important;
+  font-size: 1.1rem;
+  box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+  .global-top-alert {
+    width: 95vw;
+    min-width: 0;
+    max-width: 98vw;
+    padding: 1rem 0.5rem !important;
+    font-size: 1rem;
+  }
 }

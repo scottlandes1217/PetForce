@@ -63,4 +63,12 @@ class Calendar < ApplicationRecord
       calendar_shares.find_by(email: user_or_email)&.destroy
     end
   end
+
+  def system_calendar?
+    name == organization.name || (name == 'Personal' && created_by.present?)
+  end
+
+  def custom_calendar?
+    !system_calendar?
+  end
 end 
