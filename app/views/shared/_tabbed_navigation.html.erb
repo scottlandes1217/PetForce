@@ -1,0 +1,29 @@
+<div class="tabbed-navigation" data-controller="tabbed-navigation">
+  <div class="nav-tabs-container">
+    <div class="nav-tabs-scroll">
+      <div class="nav-tabs" data-tabbed-navigation-target="tabsContainer">
+        <% if user_signed_in? %>
+          <% pinned_tabs = PinnedTab.for_user(current_user).ordered %>
+          <% pinned_tabs.each do |tab| %>
+            <% is_active = current_page?(tab.url) %>
+            <div class="nav-tab" 
+                 data-tab-id="<%= tab.id %>" 
+                 data-tab-type="<%= tab.tab_type %>" 
+                 data-tab-url="<%= tab.url %>" 
+                 data-pet-id="<%= tab.tabable_id if tab.tab_type == 'pet' %>">
+              <div class="nav-tab-content <%= 'active' if is_active %>" data-action="click->tabbed-navigation#switchToTab">
+                <span class="nav-tab-title"><%= tab.title %></span>
+                <div class="nav-tab-actions">
+                  <button class="nav-tab-close" data-action="click->tabbed-navigation#unpinAndClose" title="Unpin and close tab">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+        <!-- Unpinned tabs will be dynamically added here by JavaScript -->
+      </div>
+    </div>
+  </div>
+</div> 

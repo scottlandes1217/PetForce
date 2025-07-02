@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_07_01_075051) do
+ActiveRecord::Schema[7.1].define(version: 2025_07_01_224202) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -272,6 +272,19 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_01_075051) do
     t.index ["owner_id"], name: "index_pets_on_owner_id"
   end
 
+  create_table "pinned_tabs", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "tabable_type", null: false
+    t.bigint "tabable_id", null: false
+    t.string "title"
+    t.string "url"
+    t.string "tab_type"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tabable_type", "tabable_id"], name: "index_pinned_tabs_on_tabable"
+    t.index ["user_id"], name: "index_pinned_tabs_on_user_id"
+  end
+
   create_table "post_attachments", force: :cascade do |t|
     t.bigint "post_id", null: false
     t.datetime "created_at", null: false
@@ -385,6 +398,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_01_075051) do
   add_foreign_key "organization_users", "users"
   add_foreign_key "pets", "organizations"
   add_foreign_key "pets", "users", column: "owner_id"
+  add_foreign_key "pinned_tabs", "users"
   add_foreign_key "post_attachments", "posts"
   add_foreign_key "posts", "organizations"
   add_foreign_key "posts", "pets"

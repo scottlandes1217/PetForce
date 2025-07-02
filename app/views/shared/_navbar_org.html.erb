@@ -11,8 +11,8 @@
       <% end %>
     <% end %>
 
-    <!-- Left Navigation Dropdown -->
-    <div class="navbar-nav me-auto">
+    <!-- Navigation Dropdown -->
+    <div class="navbar-nav align-bottom">
       <div class="nav-item dropdown">
         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="mainNavDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
           <i class="fas fa-bars me-2"></i>
@@ -63,8 +63,22 @@
       </div>
     </div>
 
-    <!-- Right User Dropdown -->
-    <div class="navbar-nav ms-auto">
+    <!-- Tabbed Navigation -->
+    <%= render 'shared/tabbed_navigation' %>
+
+    <!-- Tab Actions Dropdown (3-dot menu) -->
+    <div class="nav-tabs-actions dropdown align-bottom ms-3">
+      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="tabMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Tab actions">
+        <i class="fas fa-ellipsis-h"></i>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="tabMenuDropdown">
+        <li><a class="dropdown-item" href="#" data-action="tabbed-navigation#unpinAllTabs">Unpin all tabs</a></li>
+        <li><a class="dropdown-item" href="#" data-action="tabbed-navigation#pinAllTabs">Pin all tabs</a></li>
+      </ul>
+    </div>
+
+    <!-- User Dropdown -->
+    <div class="navbar-nav ms-3">
       <% if user_signed_in? && current_user.impersonated? %>
         <div class="nav-item me-3">
           <div class="alert alert-warning mb-0 py-1 px-2 small">
@@ -74,7 +88,6 @@
           </div>
         </div>
       <% end %>
-      
       <div class="nav-item dropdown">
         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
           <i class="fas fa-user-circle me-2"></i>
@@ -90,7 +103,6 @@
               <span>Profile Settings</span>
             <% end %>
           </li>
-          
           <% if current_user.shelter_staff? || current_user.admin? %>
             <% if @organization.present? %>
               <li><hr class="dropdown-divider"></li>
@@ -111,7 +123,6 @@
               </li>
             <% end %>
           <% end %>
-          
           <% if current_user.admin? || (current_user.shelter_staff? && current_user.organizations.size > 1) %>
             <li>
               <%= link_to organizations_path, class: "dropdown-item d-flex align-items-center py-2" do %>
@@ -120,7 +131,6 @@
               <% end %>
             </li>
           <% end %>
-          
           <li><hr class="dropdown-divider"></li>
           <li>
             <%= button_to destroy_user_session_path, method: :delete, class: "dropdown-item d-flex align-items-center py-2 text-danger", form: { data: { turbo: false } } do %>

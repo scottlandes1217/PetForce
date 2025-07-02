@@ -81,6 +81,26 @@
     display: flex;
     align-items: center;
     margin-bottom: 1em;
+    
+    .pin-button-container {
+      .pin-pet-btn {
+        transition: all 0.2s ease;
+        
+        &.pinned {
+          background-color: #ffc107;
+          border-color: #ffc107;
+          color: #212529;
+          
+          i {
+            color: #856404;
+          }
+        }
+        
+        &:hover {
+          transform: scale(1.05);
+        }
+      }
+    }
   }
   
   .header-image-container {
@@ -104,4 +124,23 @@
   
   .name-field-header .edit-input {
     font-size: 24px;
+  }
+  
+  // Pin button styles for pets index
+  .pin-pet-btn {
+    transition: all 0.2s ease;
+    
+    &.pinned {
+      background-color: #ffc107;
+      border-color: #ffc107;
+      color: #212529;
+      
+      i {
+        color: #856404;
+      }
+    }
+    
+    &:hover {
+      transform: scale(1.05);
+    }
   }

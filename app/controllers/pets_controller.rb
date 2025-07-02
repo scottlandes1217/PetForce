@@ -12,10 +12,14 @@ class PetsController < ApplicationController
               @organization.pets
             end
     @pets = @pets.order(:name).page(params[:page]).per(10)
+    
+    # Get pinned status for all pets
+    @pinned_pet_ids = current_user.pinned_tabs.where(tabable_type: 'Pet', tab_type: 'pet').pluck(:tabable_id)
   end
 
   def show
     @posts = @pet.posts.includes(images_attachments: :blob)
+    @is_pinned = current_user.pinned_tabs.exists?(tabable: @pet, tab_type: 'pet')
   end
 
   def new

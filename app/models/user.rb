@@ -15,6 +15,7 @@ class User < ApplicationRecord
   has_many :event_participants, dependent: :destroy
   has_many :participating_events, through: :event_participants, source: :event
   has_many :created_calendars, class_name: 'Calendar', foreign_key: 'created_by_id', dependent: :destroy
+  has_many :pinned_tabs, dependent: :destroy
 
   # Enums
   enum role: {

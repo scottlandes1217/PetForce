@@ -22,6 +22,9 @@ application.register("post", PostController);
 import PetController from "./controllers/pet_controller";
 application.register("pet", PetController);
 
+import TabbedNavigationController from "./controllers/tabbed_navigation_controller";
+application.register("tabbed-navigation", TabbedNavigationController);
+
 import OrganizationFieldsController from "./controllers/organization_fields_controller";
 application.register("organization-fields", OrganizationFieldsController);
 
@@ -61,11 +64,82 @@ console.log("moveGlobalAlertToBody loaded");
 document.addEventListener("turbo:load", () => {
   console.log("turbo:load event fired");
   moveGlobalAlertToBody();
+
+  // Dispatch pet:opened event if we're on a pet page
+  const petContainer = document.querySelector('[data-controller~="pet"]');
+  if (petContainer) {
+    const petId = petContainer.dataset.petId;
+    const petUrl = petContainer.dataset.petUrlValue;
+    
+    // Try multiple selectors to find the pet name
+    let petName = "Pet";
+    const petNameSelectors = [
+      'h1',
+      '.pet-name', 
+      '[data-pet-name]',
+      '[data-field="name"]',
+      '.name-field-header .value',
+      '.pet-header .value'
+    ];
+    
+    for (const selector of petNameSelectors) {
+      const petNameElement = document.querySelector(selector);
+      if (petNameElement && petNameElement.textContent.trim()) {
+        petName = petNameElement.textContent.trim();
+        console.log(`Found pet name "${petName}" using selector: ${selector}`);
+        break;
+      }
+    }
+    
+    // Check if we've already dispatched an event for this pet on this page load
+    const lastDispatchedPet = sessionStorage.getItem('lastDispatchedPet');
+    if (lastDispatchedPet === petId) {
+      console.log(`Already dispatched pet:opened event for pet ${petId} on this page load, skipping`);
+      return;
+    }
+    
+    console.log(`Dispatching pet:opened event for pet: ${petName} (ID: ${petId})`);
+    
+    // Add a small delay to ensure the tabbed navigation controller is connected
+    setTimeout(() => {
+      // Dispatch the pet:opened event
+      document.dispatchEvent(new CustomEvent('pet:opened', {
+        detail: { petId, petName, petUrl }
+      }));
+      
+      // Store in sessionStorage for unpinned tabs
+      sessionStorage.setItem('currentUnpinnedPetTab', JSON.stringify({ petId, petName, petUrl }));
+      sessionStorage.setItem('lastDispatchedPet', petId);
+      console.log(`Stored unpinned tab in sessionStorage: ${petName} (ID: ${petId})`);
+    }, 100); // 100ms delay
+  } else {
+    const existingTab = sessionStorage.getItem('currentUnpinnedPetTab');
+    if (existingTab) {
+      console.log('Not on a pet page, removing unpinned tab from sessionStorage');
+      sessionStorage.removeItem('currentUnpinnedPetTab');
+    }
+    // Clear the last dispatched pet when not on a pet page
+    sessionStorage.removeItem('lastDispatchedPet');
+  }
 });
-document.addEventListener("turbo:frame-load", () => {
-  console.log("turbo:frame-load event fired");
-  moveGlobalAlertToBody();
-});
+
+// Monitor sessionStorage changes for debugging
+const originalSetItem = sessionStorage.setItem;
+const originalRemoveItem = sessionStorage.removeItem;
+
+sessionStorage.setItem = function(key, value) {
+  if (key === 'currentUnpinnedPetTab') {
+    console.log(`sessionStorage.setItem called for ${key}:`, value);
+  }
+  return originalSetItem.apply(this, arguments);
+};
+
+sessionStorage.removeItem = function(key) {
+  if (key === 'currentUnpinnedPetTab') {
+    console.log(`sessionStorage.removeItem called for ${key}`);
+  }
+  return originalRemoveItem.apply(this, arguments);
+};
 
 function moveGlobalAlertToBody() {
   console.log("moveGlobalAlertToBody called");
@@ -83,12 +157,6 @@ function moveGlobalAlertToBody() {
     }
   });
 }
-
-// MutationObserver to move global-top-alerts whenever they appear
-const observer = new MutationObserver(() => {
-  moveGlobalAlertToBody();
-});
-observer.observe(document.body, { childList: true, subtree: true });
 
 document.addEventListener("turbo:before-stream-render", function(event) {
   const fragment = event.detail.newStreamElement;

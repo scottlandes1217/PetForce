@@ -3,6 +3,7 @@
 @import "base/variables";
 @import "components/navbar";
 @import "components/buttons";
+@import "components/tabbed_navigation";
 @import "views/pets";
 @import "views/posts";
 @import "views/organization_fields";
@@ -13,6 +14,15 @@
 
 .mt-4 {
   margin-top: 0px !important;
+}
+
+.navbar {
+  padding-bottom: 0px !important;
+}
+
+.nav-tab-content {
+  height: 40px !important;
+  border-radius: 5px 5px 0px 0px !important;
 }
 
 .container, .container-lg, .container-md, .container-sm, .container-xl, .container-xxl {

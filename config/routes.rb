@@ -79,6 +79,13 @@ end
 
   # Feed page
   resources :feed, only: [:index]
+  
+  # Pinned tabs
+  resources :pinned_tabs, only: [:index, :create, :destroy] do
+    collection do
+      delete :unpin_pet
+    end
+  end
 
   # Admin namespace for admin-specific home page and potential future admin features
   namespace :admin do
