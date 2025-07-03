@@ -34,7 +34,7 @@
             Navigation
           <% end %>
         </a>
-        <ul class="dropdown-menu shadow-lg border-0" aria-labelledby="mainNavDropdown" style="min-width: 220px;">
+        <ul class="dropdown-menu shadow-lg border-0" aria-labelledby="mainNavDropdown" style="min-width: 220px; left: 25px !important; top: 62px !important;">
           <li>
             <%= link_to (@organization.present? ? organization_path(@organization) : root_path), class: "dropdown-item d-flex align-items-center py-2 #{current_page?(@organization.present? ? organization_path(@organization) : root_path) ? 'active' : ''}" do %>
               <i class="fas fa-home me-3 text-muted"></i>
@@ -71,21 +71,8 @@
       </div>
     </div>
 
-    <!-- Tabbed Navigation -->
+    <!-- Tabbed Navigation with Actions -->
     <%= render 'shared/tabbed_navigation' %>
-
-    <!-- Tab Actions Dropdown (3-dot menu) -->
-    <div class="nav-tabs-actions dropdown align-bottom ms-3">
-      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="tabMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Tab actions">
-        <i class="fas fa-ellipsis-h"></i>
-      </button>
-      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="tabMenuDropdown">
-        <!-- Overflowed tabs will be dynamically inserted here by JS -->
-        <div id="overflowed-tabs-list" class="overflowed-tabs-list"></div>
-        <li><hr class="tab-menu-divider"></li>
-        <li><a class="dropdown-item" href="#" data-action="tabbed-navigation#unpinAllTabs">Unpin all tabs</a></li>
-      </ul>
-    </div>
 
     <!-- User Dropdown -->
     <div class="navbar-nav ms-3">
