@@ -9,6 +9,8 @@ class Task < ApplicationRecord
     validates :subject, presence: true
     validates :duration_minutes, numericality: { only_integer: true, greater_than_or_equal_to: 0 }, allow_nil: true
 
+
+
     before_save :clean_flag_list
     after_save :schedule_status_update, if: :should_schedule_update?
     after_destroy :cancel_scheduled_job

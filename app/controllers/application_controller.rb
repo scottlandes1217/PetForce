@@ -1,6 +1,7 @@
 class ApplicationController < ActionController::Base
   before_action :authenticate_user!, unless: :devise_controller?
   before_action :set_organization
+  before_action :setup_navbar_data
   before_action :configure_permitted_parameters, if: :devise_controller?
 
   protected
@@ -40,5 +41,11 @@ class ApplicationController < ActionController::Base
   def set_organization
     return unless current_user&.shelter_staff?
     @organization = current_user.organizations.first
+  end
+
+  def setup_navbar_data
+    return unless current_user
+    @pinned_tabs = current_user.pinned_tabs.ordered
+    Rails.logger.info "Setting up navbar data - Pinned tabs: #{@pinned_tabs.map { |t| { id: t.id, title: t.title, position: t.position, tab_type: t.tab_type } }}"
   end
 end

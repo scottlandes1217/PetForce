@@ -20,7 +20,7 @@ export default class extends Controller {
       }
     });
 
-    // Dispatch pet:opened event to create unpinned tab
+    // Always dispatch pet:opened event - let the tabbed navigation controller handle the logic
     const petId = this.element.dataset.petId;
     const petName = this.element.dataset.petName;
     const petUrl = window.location.href;

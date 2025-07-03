@@ -16,15 +16,6 @@
   margin-top: 0px !important;
 }
 
-.navbar {
-  padding-bottom: 0px !important;
-}
-
-.nav-tab-content {
-  height: 40px !important;
-  border-radius: 5px 5px 0px 0px !important;
-}
-
 .container, .container-lg, .container-md, .container-sm, .container-xl, .container-xxl {
   max-width: 100% !important;
   margin: 0px !important;
@@ -267,6 +258,73 @@ input[type="file"]::file-selector-button + * {
 
 .table .status .task-status-badge.cancelled {
   background-color: #6c757d;
+}
+
+/* Organization Tasks Page Styles */
+.badge.scheduled {
+  background-color: #17a2b8;
+}
+
+.badge.pending {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.badge.overdue {
+  background-color: #dc3545;
+}
+
+.badge.completed {
+  background-color: #28a745;
+}
+
+.badge.on-hold {
+  background-color: #6c757d;
+}
+
+/* Flag icon styles */
+.flag-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-right: 4px;
+}
+
+/* Task action buttons */
+.btn-group .btn {
+  margin-right: 2px;
+}
+
+.btn-group .btn:last-child {
+  margin-right: 0;
+}
+
+/* Task header styles */
+.task-header {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border: 1px solid #dee2e6;
+}
+
+.task-title {
+  margin-bottom: 0.5rem;
+  color: #495057;
+}
+
+.task-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.task-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
 }
 
 .global-top-alert {

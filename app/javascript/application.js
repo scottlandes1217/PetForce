@@ -31,6 +31,9 @@ application.register("organization-fields", OrganizationFieldsController);
 import TaskUpdatesController from "./controllers/task_updates_controller";
 application.register("task-updates", TaskUpdatesController);
 
+import TaskController from "./controllers/task_controller";
+application.register("task", TaskController);
+
 import CalendarController from "./controllers/calendar_controller";
 application.register("calendar", CalendarController);
 
@@ -48,6 +51,9 @@ application.register("turbo-stream", TurboStreamController);
 
 import PetsIndexController from "./controllers/pets_index_controller";
 application.register("pets-index", PetsIndexController);
+
+import OrganizationTasksIndexController from "./controllers/organization_tasks_index_controller";
+application.register("organization-tasks-index", OrganizationTasksIndexController);
 
 // Other imports
 import "bootstrap";
@@ -70,6 +76,11 @@ document.addEventListener("turbo:load", () => {
 
   // Dispatch pet:opened event if we're on a pet page
   const petContainer = document.querySelector('[data-controller~="pet"]');
+  const taskContainer = document.querySelector('[data-controller~="task"]');
+  
+  console.log("turbo:load - petContainer:", petContainer);
+  console.log("turbo:load - taskContainer:", taskContainer);
+  
   if (petContainer) {
     const petId = petContainer.dataset.petId;
     const petUrl = petContainer.dataset.petUrlValue;

@@ -8,7 +8,7 @@
     <!-- Left Navigation Dropdown -->
     <div class="navbar-nav me-auto">
       <div class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="mainNavDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <a class="main-nav-link dropdown-toggle d-flex align-items-center" href="#" id="mainNavDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
           <i class="fas fa-bars me-2"></i>
           <% if current_page?(admin_home_path) %>
             Dashboard
@@ -54,7 +54,7 @@
     <!-- Right User Dropdown -->
     <div class="navbar-nav ms-auto">
       <div class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <a class="user-nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
           <i class="fas fa-user-circle me-2"></i>
           <span class="d-none d-sm-inline"><%= current_user.email %></span>
         </a>

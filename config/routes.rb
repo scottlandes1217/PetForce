@@ -74,6 +74,7 @@ resources :organizations do
     resources :calendar_shares, only: [:create, :destroy]
   end
   resources :events, only: [:index, :show, :edit, :update, :destroy]
+  resources :tasks, only: [:index, :new, :create, :edit, :update, :destroy, :show], controller: 'organization_tasks'
 end
 
 
@@ -84,6 +85,7 @@ end
   resources :pinned_tabs, only: [:index, :create, :destroy] do
     collection do
       delete :unpin_pet
+      delete :unpin_task
       post :update_order
     end
   end

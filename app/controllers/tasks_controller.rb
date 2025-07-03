@@ -70,7 +70,7 @@ class TasksController < ApplicationController
         :start_time,
         :completed_at,
         :duration_minutes,
-        :task_type_id,
+        :task_type,
         flag_list: []
       )
     end
