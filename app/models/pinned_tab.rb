@@ -7,7 +7,7 @@ class PinnedTab < ApplicationRecord
   validates :tab_type, presence: true
   
   scope :for_user, ->(user) { where(user: user) }
-  scope :ordered, -> { order(created_at: :asc) }
+  scope :ordered, -> { order(Arel.sql('COALESCE(position, 999999), created_at ASC')) }
   
   def self.pin_pet(user, pet)
     find_or_create_by(

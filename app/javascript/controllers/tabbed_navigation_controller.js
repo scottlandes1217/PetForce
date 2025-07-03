@@ -7,17 +7,17 @@ export default class extends Controller {
     console.log("TabbedNavigationController connected");
     this.tabs = [];
     this.pinnedPetIds = new Set();
-    this.setupEventListeners();
     
-    // Initialize with server-rendered pinned tabs
     this.initializeFromServerRenderedTabs();
-    
-    // Restore unpinned tab if needed
     this.restoreUnpinnedTab();
+    this.setupEventListeners();
+    this.setupDragAndDrop();
   }
   
   disconnect() {
+    console.log("TabbedNavigationController disconnected");
     this.removeEventListeners();
+    this.removeDragAndDrop();
   }
   
   setupEventListeners() {
@@ -35,7 +35,7 @@ export default class extends Controller {
   initializeFromServerRenderedTabs() {
     // Get all existing tabs from the DOM (server-rendered pinned tabs)
     const existingTabs = this.tabsContainerTarget.querySelectorAll('.nav-tab');
-    
+    this.tabs = [];
     existingTabs.forEach(tabElement => {
       const tabData = {
         id: tabElement.dataset.tabId || null,
@@ -44,15 +44,33 @@ export default class extends Controller {
         url: tabElement.dataset.tabUrl,
         tab_type: tabElement.dataset.tabType
       };
-      
       this.tabs.push(tabData);
-      
-      // Add to pinnedPetIds if it's a pet tab
       if (tabData.tab_type === 'pet' && tabData.tabable_id) {
         this.pinnedPetIds.add(String(tabData.tabable_id));
       }
     });
-    
+    // Sort tabs by saved order before rendering
+    const savedOrder = this.loadTabOrder();
+    if (savedOrder) {
+      const orderMap = new Map();
+      savedOrder.forEach((item, index) => {
+        const key = item.id || item.tabable_id;
+        orderMap.set(String(key), index);
+      });
+      this.tabs.sort((a, b) => {
+        const aKey = String(a.id || a.tabable_id);
+        const bKey = String(b.id || b.tabable_id);
+        const aOrder = orderMap.get(aKey) ?? 999;
+        const bOrder = orderMap.get(bKey) ?? 999;
+        return aOrder - bOrder;
+      });
+    }
+    // Render tabs in the correct order
+    this.tabsContainerTarget.innerHTML = '';
+    this.tabs.forEach(tab => {
+      const tabElement = this.createTabElement(tab);
+      this.tabsContainerTarget.appendChild(tabElement);
+    });
     console.log(`Initialized with ${this.tabs.length} server-rendered pinned tabs`);
   }
   
@@ -118,6 +136,7 @@ export default class extends Controller {
   createTabElement(tab) {
     const tabDiv = document.createElement('div');
     tabDiv.className = 'nav-tab';
+    tabDiv.draggable = true;
     tabDiv.dataset.tabId = tab.id || '';
     tabDiv.dataset.tabType = tab.tab_type;
     tabDiv.dataset.tabUrl = tab.url;
@@ -134,18 +153,33 @@ export default class extends Controller {
         <span class="nav-tab-title">${tab.title}</span>
         <div class="nav-tab-actions">
           ${isPinned
-            ? `<button class="nav-tab-close" data-action="click->tabbed-navigation#unpinAndClose" title="Unpin and close tab"><i class="fas fa-times"></i></button>`
-            : `<button class="nav-tab-pin" data-action="click->tabbed-navigation#pinTab" title="Pin tab"><i class="fas fa-thumbtack"></i></button>`
+            ? `<button class="nav-tab-close" data-action="click->tabbed-navigation#unpinAndClose" title="Unpin and close tab" onclick="event.stopPropagation()"><i class="fas fa-times"></i></button>`
+            : `<button class="nav-tab-pin" data-action="click->tabbed-navigation#pinTab" title="Pin tab" onclick="event.stopPropagation()"><i class="fas fa-thumbtack"></i></button>`
           }
         </div>
       </div>
     `;
+    // Attach drag event listeners only to tabDiv
+    tabDiv.addEventListener('dragstart', this.handleDragStart);
+    tabDiv.addEventListener('dragover', this.handleDragOver);
+    tabDiv.addEventListener('drop', this.handleDrop);
+    tabDiv.addEventListener('dragend', this.handleDragEnd);
     return tabDiv;
   }
   
   switchToTab(event) {
     const tabElement = event.currentTarget.closest('.nav-tab');
     const url = tabElement.dataset.tabUrl;
+    let isActive = false;
+    try {
+      isActive = window.location.pathname === new URL(url, window.location.origin).pathname;
+    } catch (e) {
+      isActive = window.location.pathname === url;
+    }
+    if (isActive) {
+      // Already on this page, do nothing
+      return;
+    }
     const petId = tabElement.dataset.petId;
     
     // Check if this is a pinned tab
@@ -229,6 +263,12 @@ export default class extends Controller {
     const currentPetId = petContainer ? petContainer.dataset.petId : null;
     const isOnCurrentPetPage = currentPetId && String(currentPetId) === String(petId);
     
+    // Find the next tab to switch to (tab to the right)
+    const allTabs = Array.from(this.tabsContainerTarget.querySelectorAll('.nav-tab'));
+    const currentTabIndex = allTabs.indexOf(tabElement);
+    const nextTab = allTabs[currentTabIndex + 1];
+    const previousTab = allTabs[currentTabIndex - 1];
+    
     if (petId) {
       await fetch(`/pinned_tabs/unpin_pet?pet_id=${petId}`, {
         method: 'DELETE',
@@ -251,24 +291,43 @@ export default class extends Controller {
     }
     
     if (isOnCurrentPetPage) {
-      // If we're on the current pet's page, just unpin it and keep the tab
-      console.log(`On current pet page, keeping tab for pet ${petId} but unpinning it`);
+      // If we're on the current pet's page, close the tab and navigate
+      console.log(`On current pet page, closing tab for pet ${petId}`);
       
-      // Update the tab to show as unpinned (with pin icon)
-      const tabData = this.tabs.find(t => String(t.tabable_id) === String(petId));
-      if (tabData) {
-        const newTab = this.createTabElement(tabData);
-        tabElement.replaceWith(newTab);
-        this.makeTabActive(newTab);
-        console.log(`Tab for pet ${petId} is now unpinned but still visible`);
+      // Remove the tab from DOM and tabs array
+      tabElement.remove();
+      this.tabs = this.tabs.filter(t => String(t.tabable_id) !== String(petId));
+      
+      // Save the new tab order
+      this.saveTabOrder();
+      
+      // Navigate to next tab or main navigation
+      if (nextTab) {
+        // Switch to the tab to the right
+        const nextUrl = nextTab.dataset.tabUrl;
+        console.log(`Switching to next tab: ${nextUrl}`);
+        window.location.href = nextUrl;
+      } else if (previousTab) {
+        // Switch to the tab to the left if no tab to the right
+        const prevUrl = previousTab.dataset.tabUrl;
+        console.log(`Switching to previous tab: ${prevUrl}`);
+        window.location.href = prevUrl;
+      } else {
+        // No more tabs, go to main navigation (pets index)
+        console.log('No more tabs, navigating to pets index');
+        const organizationId = window.location.pathname.split('/')[2]; // Extract org ID from URL
+        window.location.href = `/organizations/${organizationId}/pets`;
       }
     } else {
-      // If we're not on the pet's page, remove the tab completely
+      // If we're not on the pet's page, just remove the tab
       console.log(`Not on current pet page, removing tab for pet ${petId}`);
       tabElement.remove();
       // Remove from tabs array
       this.tabs = this.tabs.filter(t => String(t.tabable_id) !== String(petId));
       console.log(`Tab for pet ${petId} has been removed`);
+      
+      // Save the new tab order
+      this.saveTabOrder();
     }
     
     // Notify pets index to update pin button
@@ -351,6 +410,9 @@ export default class extends Controller {
         petUrl: petUrl
       }));
     }
+    
+    // Save tab order after creating new tab
+    this.saveTabOrder();
   }
 
   async savePinnedTabToDatabase(petId) {
@@ -384,7 +446,9 @@ export default class extends Controller {
     this.tabs = this.tabs.filter(t => String(t.tabable_id) !== String(petId));
     // Notify pets index to update pin button
     window.dispatchEvent(new CustomEvent('pet:unpinned_ui', { detail: { petId } }));
-    console.log('[DEBUG] pet:unpinned_ui event dispatched for petId', petId);
+    
+    // Save tab order after removing tab
+    this.saveTabOrder();
   }
 
   makeTabActive(tabElement) {
@@ -444,5 +508,113 @@ export default class extends Controller {
     }
     // Remove any unpinned tab from sessionStorage
     sessionStorage.removeItem('currentUnpinnedPetTab');
+  }
+
+  // --- DRAG AND DROP HANDLERS AS CLASS PROPERTIES ---
+  handleDragStart = (event) => {
+    const tabElement = event.target.closest('.nav-tab');
+    console.log('[DEBUG] handleDragStart fired', tabElement);
+    if (!tabElement) return;
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/html', tabElement.outerHTML);
+    tabElement.classList.add('dragging');
+    this.draggedTab = {
+      element: tabElement,
+      petId: tabElement.dataset.petId,
+      tabId: tabElement.dataset.tabId
+    };
+  }
+
+  handleDragOver = (event) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    const tabElement = event.target.closest('.nav-tab');
+    if (!tabElement || tabElement === this.draggedTab?.element) return;
+    const rect = tabElement.getBoundingClientRect();
+    const midX = rect.left + rect.width / 2;
+    if (event.clientX < midX) {
+      tabElement.classList.add('drag-before');
+      tabElement.classList.remove('drag-after');
+    } else {
+      tabElement.classList.add('drag-after');
+      tabElement.classList.remove('drag-before');
+    }
+  }
+
+  handleDrop = (event) => {
+    event.preventDefault();
+    const targetTab = event.target.closest('.nav-tab');
+    if (!targetTab || !this.draggedTab) return;
+    const isAfter = targetTab.classList.contains('drag-after');
+    const targetPetId = targetTab.dataset.petId;
+    const targetTabId = targetTab.dataset.tabId;
+    const draggedIndex = this.tabs.findIndex(t => 
+      String(t.tabable_id) === String(this.draggedTab.petId) || 
+      String(t.id) === String(this.draggedTab.tabId)
+    );
+    const targetIndex = this.tabs.findIndex(t => 
+      String(t.tabable_id) === String(targetPetId) || 
+      String(t.id) === String(targetTabId)
+    );
+    if (draggedIndex !== -1 && targetIndex !== -1) {
+      const [draggedTab] = this.tabs.splice(draggedIndex, 1);
+      const newIndex = isAfter ? targetIndex : targetIndex;
+      this.tabs.splice(newIndex, 0, draggedTab);
+      const draggedElement = this.draggedTab.element;
+      if (isAfter) {
+        targetTab.parentNode.insertBefore(draggedElement, targetTab.nextSibling);
+      } else {
+        targetTab.parentNode.insertBefore(draggedElement, targetTab);
+      }
+      this.saveTabOrder();
+    }
+  }
+
+  handleDragEnd = (event) => {
+    this.tabsContainerTarget.querySelectorAll('.nav-tab').forEach(tab => {
+      tab.classList.remove('dragging', 'drag-before', 'drag-after');
+    });
+    this.draggedTab = null;
+  }
+
+  setupDragAndDrop() {
+    this.tabsContainerTarget.addEventListener('dragstart', this.handleDragStart);
+    this.tabsContainerTarget.addEventListener('dragover', this.handleDragOver);
+    this.tabsContainerTarget.addEventListener('drop', this.handleDrop);
+    this.tabsContainerTarget.addEventListener('dragend', this.handleDragEnd);
+  }
+
+  removeDragAndDrop() {
+    this.tabsContainerTarget.removeEventListener('dragstart', this.handleDragStart);
+    this.tabsContainerTarget.removeEventListener('dragover', this.handleDragOver);
+    this.tabsContainerTarget.removeEventListener('drop', this.handleDrop);
+    this.tabsContainerTarget.removeEventListener('dragend', this.handleDragEnd);
+  }
+
+  saveTabOrder() {
+    const pinnedTabs = this.tabs.filter(tab => tab.id); // Only pinned tabs have DB IDs
+    const tabOrder = pinnedTabs.map(tab => tab.id);
+    // Save to server
+    fetch('/pinned_tabs/update_order', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({ tab_ids: tabOrder })
+    }).then(res => res.json()).then(data => {
+      if (!data.success) {
+        console.error('Failed to update tab order on server:', data.error);
+      }
+    });
+    // No longer save to localStorage
+    // localStorage.setItem('tabOrder', JSON.stringify(tabOrder));
+    console.log('Tab order saved to server:', tabOrder);
+  }
+
+  loadTabOrder() {
+    // No longer use localStorage; order comes from server
+    return null;
   }
 } 

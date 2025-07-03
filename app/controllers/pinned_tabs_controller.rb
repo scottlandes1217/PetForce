@@ -27,4 +27,14 @@ class PinnedTabsController < ApplicationController
     PinnedTab.unpin_pet(current_user, pet)
     render json: { success: true }
   end
+  
+  def update_order
+    tab_ids = params[:tab_ids]
+    return render json: { success: false, error: 'No tab_ids provided' }, status: :unprocessable_entity unless tab_ids.is_a?(Array)
+    tab_ids.each_with_index do |id, idx|
+      tab = current_user.pinned_tabs.find_by(id: id)
+      tab.update(position: idx) if tab
+    end
+    render json: { success: true }
+  end
 end 

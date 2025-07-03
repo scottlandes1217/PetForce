@@ -84,6 +84,7 @@ end
   resources :pinned_tabs, only: [:index, :create, :destroy] do
     collection do
       delete :unpin_pet
+      post :update_order
     end
   end
 

@@ -48,9 +48,6 @@
             <td><%= pet.age %></td>
             <td><%= pet.description %></td>
             <td>
-              <!-- View button -->
-              <%= link_to "View", organization_pet_path(@organization, pet), class: "btn btn-primary btn-sm" %>
-              
               <!-- Pin button -->
               <button class="btn btn-outline-secondary btn-sm pin-pet-btn <%= 'pinned' if @pinned_pet_ids.include?(pet.id) %>"
                       data-pet-id="<%= pet.id %>"
@@ -59,6 +56,9 @@
                       title="<%= @pinned_pet_ids.include?(pet.id) ? 'Unpin from navigation' : 'Pin to navigation' %>">
                 <i class="fas fa-thumbtack <%= 'text-warning' if @pinned_pet_ids.include?(pet.id) %>"></i>
               </button>
+              
+              <!-- View button -->
+              <%= link_to "View", organization_pet_path(@organization, pet), class: "btn btn-primary btn-sm" %>
               
               <!-- Delete button -->
               <%= link_to "Delete", organization_pet_path(@organization, pet), 
