@@ -331,6 +331,11 @@
   margin-left: 35px;
 }
 
+// Search bar positioning
+.search-nav-container {
+  margin-top: 15px;
+}
+
 .dropdown-menu {
   padding: 0px !important;
   top: 98% !important;
@@ -499,4 +504,30 @@
 
 .tab-menu-divider {
   margin: 0px 0px 2px 0px;
+}
+
+// Center the tabbed navigation
+.tabbed-navigation-center-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+// Center the search bar above tabs
+.search-nav-above-tabs {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin: 1.5rem 0 0.5rem 0;
+  z-index: 10;
+}
+
+.org-header-area {
+  width: 100%;
+  position: relative;
+  z-index: 20;
+  background: transparent;
 }

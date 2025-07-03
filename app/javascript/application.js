@@ -121,10 +121,9 @@ document.addEventListener("turbo:load", () => {
         detail: { petId, petName, petUrl }
       }));
       
-      // Store in sessionStorage for unpinned tabs
-      sessionStorage.setItem('currentUnpinnedPetTab', JSON.stringify({ petId, petName, petUrl }));
+      // Don't automatically store in sessionStorage - only store if explicitly unpinned
       sessionStorage.setItem('lastDispatchedPet', petId);
-      console.log(`Stored unpinned tab in sessionStorage: ${petName} (ID: ${petId})`);
+      console.log(`Dispatched pet:opened event for: ${petName} (ID: ${petId})`);
     }, 100); // 100ms delay
   } else {
     const existingTab = sessionStorage.getItem('currentUnpinnedPetTab');

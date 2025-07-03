@@ -75,6 +75,10 @@ resources :organizations do
   end
   resources :events, only: [:index, :show, :edit, :update, :destroy]
   resources :tasks, only: [:index, :new, :create, :edit, :update, :destroy, :show], controller: 'organization_tasks'
+  
+  # Search routes
+  get 'search', to: 'search#index'
+  get 'search/quick', to: 'search#quick_search'
 end
 
 
