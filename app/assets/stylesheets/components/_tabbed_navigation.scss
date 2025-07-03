@@ -372,6 +372,10 @@
   color: #fff !important;
 }
 
+.dropdown-item.active i, .dropdown-item:active i {
+  color: #fff !important;
+}
+
 .tabbed-navigation .nav-tab i {
   color: #fff !important;
   margin-left: 10px;

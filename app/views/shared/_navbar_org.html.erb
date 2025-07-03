@@ -23,28 +23,39 @@
     <div class="org-header-navrow d-flex align-items-center">
       <!-- Main nav dropdown -->
       <div class="navbar-nav align-items-center my-0 py-0">
-        <div class="nav-item dropdown">
-          <a class="main-nav-link dropdown-toggle d-flex align-items-center" href="#" id="mainNavDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="fas fa-bars me-2"></i>
-            <% if @organization.present? %>
-              <% if current_page?(organization_path(@organization)) %>
-                Home
-              <% elsif current_page?(organization_pets_path(@organization)) || (request.path.match?(/\/organizations\/\d+\/pets\/\d+/) && !request.path.match?(/\/pets\/\d+\/(edit|new)/)) %>
-                Pets
-              <% elsif current_page?(organization_events_path(@organization)) || request.path.match?(/\/organizations\/\d+\/events\/\d+/) %>
-                Calendar
-              <% elsif current_page?(organization_tasks_path(@organization)) || request.path.match?(/\/organizations\/\d+\/tasks\/\d+/) %>
-                Tasks
-              <% elsif current_page?(feed_index_path) %>
-                Social
-              <% else %>
-                Navigation
-              <% end %>
+        <div class="nav-item dropdown d-flex align-items-center" id="mainNavDropdownWrapper">
+          <%# Determine current section and icon %>
+          <% current_section = nil; current_icon = nil; current_path = nil %>
+          <% if @organization.present? %>
+            <% if current_page?(organization_path(@organization)) %>
+              <% current_section = 'Home'; current_icon = 'fas fa-home'; current_path = organization_path(@organization) %>
+            <% elsif current_page?(organization_pets_path(@organization)) || (request.path.match?(/\/organizations\/\d+\/pets\/\d+/) && !request.path.match?(/\/pets\/\d+\/(edit|new)/)) %>
+              <% current_section = 'Pets'; current_icon = 'fas fa-paw'; current_path = organization_pets_path(@organization) %>
+            <% elsif current_page?(organization_events_path(@organization)) || request.path.match?(/\/organizations\/\d+\/events\/\d+/) %>
+              <% current_section = 'Calendar'; current_icon = 'fas fa-calendar'; current_path = organization_events_path(@organization) %>
+            <% elsif current_page?(organization_tasks_path(@organization)) || request.path.match?(/\/organizations\/\d+\/tasks\/\d+/) %>
+              <% current_section = 'Tasks'; current_icon = 'fas fa-tasks'; current_path = organization_tasks_path(@organization) %>
+            <% elsif current_page?(feed_index_path) %>
+              <% current_section = 'Social'; current_icon = 'fas fa-users'; current_path = feed_index_path %>
             <% else %>
-              Navigation
+              <% current_section = 'Navigation'; current_icon = 'fas fa-bars'; current_path = '#' %>
             <% end %>
-          </a>
-          <ul class="dropdown-menu" style="z-index:20;">
+          <% else %>
+            <% current_section = 'Navigation'; current_icon = 'fas fa-bars'; current_path = '#' %>
+          <% end %>
+
+          <%# Icon+name link to section index %>
+          <%= link_to current_path, class: "main-nav-link d-flex align-items-center px-2 py-1", style: "text-decoration:none; color:#fff; font-size:1.15rem;" do %>
+            <i class="<%= current_icon %> me-2"></i>
+            <span><%= current_section %></span>
+          <% end %>
+
+          <%# Dropdown arrow button only opens menu %>
+          <button class="btn btn-link px-2 py-1 ms-1" type="button" id="mainNavDropdown" data-bs-toggle="dropdown" aria-expanded="false" tabindex="0" style="color:#fff; font-size:1.15rem;">
+            <i class="fas fa-caret-down"></i>
+          </button>
+
+          <ul class="dropdown-menu" aria-labelledby="mainNavDropdown" style="z-index:20;">
             <li>
               <%= link_to (@organization.present? ? organization_path(@organization) : root_path), class: "dropdown-item d-flex align-items-center py-2 #{current_page?(@organization.present? ? organization_path(@organization) : root_path) ? 'active' : ''}" do %>
                 <i class="fas fa-home me-3 text-muted"></i>
@@ -91,7 +102,7 @@
         </a>
         <ul class="dropdown-menu dropdown-menu-end mt-1" aria-labelledby="tabMenuDropdown" style="min-width: 180px;">
           <li><hr class="tab-menu-divider"></li>
-          <li><a class="dropdown-item" href="#" data-action="tabbed-navigation#unpinAllTabs">Unpin all tabs</a></li>
+          <li><a class="dropdown-item" href="#" onclick="document.dispatchEvent(new CustomEvent('unpinAllTabs')); return false;">Unpin all tabs</a></li>
         </ul>
       </div>
     </div>

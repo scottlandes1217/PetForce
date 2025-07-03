@@ -39,7 +39,6 @@ export default class extends Controller {
   }
 
   async togglePin(event) {
-    // Always get the button from the event target
     const button = event.currentTarget.closest('.pin-pet-btn');
     const petId = button.dataset.petId;
     const isPinned = button.classList.contains('pinned');
@@ -49,17 +48,43 @@ export default class extends Controller {
     console.log(`[DEBUG] togglePin: petId=${petId}, isPinned=${isPinned}, class=${button.className}`);
 
     if (isPinned) {
-      // Unpin: let tabbed navigation handle it
-      const event = new CustomEvent('pet:unpinned', {
-        detail: { petId: petId }
-      });
-      window.dispatchEvent(event);
+      // Unpin: persist to backend first
+      try {
+        await fetch(`/pinned_tabs/unpin_pet?pet_id=${petId}`, {
+          method: 'DELETE',
+          headers: {
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+        // Then update UI
+        const event = new CustomEvent('pet:unpinned', {
+          detail: { petId: petId }
+        });
+        window.dispatchEvent(event);
+      } catch (error) {
+        console.error('Failed to unpin pet:', error);
+      }
     } else {
-      // Pin: create pinned tab
-      const event = new CustomEvent('pet:opened', {
-        detail: { petId: petId, petName: petName, petUrl: petUrl, fromPinButton: true }
-      });
-      window.dispatchEvent(event);
+      // Pin: persist to backend first
+      try {
+        await fetch('/pinned_tabs', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify({ pet_id: petId })
+        });
+        // Then update UI
+        const event = new CustomEvent('pet:opened', {
+          detail: { petId: petId, petName: petName, petUrl: petUrl, fromPinButton: true }
+        });
+        window.dispatchEvent(event);
+      } catch (error) {
+        console.error('Failed to pin pet:', error);
+      }
     }
   }
 } 

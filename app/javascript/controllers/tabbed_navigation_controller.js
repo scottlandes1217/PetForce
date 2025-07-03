@@ -30,10 +30,13 @@ export default class extends Controller {
     this.handlePetUnpinned = this.handlePetUnpinned.bind(this);
     this.handleTaskOpened = this.handleTaskOpened.bind(this);
     this.handleTaskUnpinned = this.handleTaskUnpinned.bind(this);
+    this.handleUnpinAllTabs = this.unpinAllTabs.bind(this);
+    
     window.addEventListener('pet:opened', this.handlePetOpened);
     window.addEventListener('pet:unpinned', this.handlePetUnpinned);
     window.addEventListener('task:opened', this.handleTaskOpened);
     window.addEventListener('task:unpinned', this.handleTaskUnpinned);
+    document.addEventListener('unpinAllTabs', this.handleUnpinAllTabs);
   }
   
   removeEventListeners() {
@@ -41,6 +44,7 @@ export default class extends Controller {
     window.removeEventListener('pet:unpinned', this.handlePetUnpinned);
     window.removeEventListener('task:opened', this.handleTaskOpened);
     window.removeEventListener('task:unpinned', this.handleTaskUnpinned);
+    document.removeEventListener('unpinAllTabs', this.handleUnpinAllTabs);
   }
   
   initializeFromServerRenderedTabs() {
@@ -739,24 +743,88 @@ export default class extends Controller {
   }
   
   async unpinAllTabs(event) {
-    event.preventDefault();
-    // Find the active tab (by .active class or current URL)
+    // Handle both regular events and custom events
+    if (event && event.preventDefault) {
+      event.preventDefault();
+    }
+    console.log("Unpin all tabs clicked");
+    
+    // Find the active tab by checking current URL against tab URLs
     let activeTab = null;
+    const currentPath = window.location.pathname;
     const tabElements = Array.from(this.tabsContainerTarget.querySelectorAll('.nav-tab'));
+    
     tabElements.forEach(tab => {
-      if (tab.querySelector('.nav-tab-content.active')) {
-        activeTab = tab;
+      const tabUrl = tab.dataset.tabUrl;
+      if (tabUrl) {
+        let isActive = false;
+        try {
+          isActive = currentPath === new URL(tabUrl, window.location.origin).pathname;
+        } catch (e) {
+          isActive = currentPath === tabUrl;
+        }
+        
+        if (isActive) {
+          activeTab = tab;
+          console.log("Found active tab:", tab.dataset.recordId, tab.dataset.tabType, "URL:", tabUrl);
+        }
       }
     });
+    
     const activeTabId = activeTab ? activeTab.dataset.tabId : null;
     const activeTabType = activeTab ? activeTab.dataset.tabType : null;
     const activeTabRecordId = activeTab ? activeTab.dataset.recordId : null;
+    
+    console.log("Active tab info:", { activeTabId, activeTabType, activeTabRecordId });
 
-    // Unpin all pinned pet tabs except the active one
-    const petIds = Array.from(this.pinnedPetIds);
-    for (const petId of petIds) {
-      // If this is the active tab, just unpin (don't remove)
+    // Handle all pet tabs (both pinned and unpinned) except the active one
+    const allPetTabs = Array.from(this.tabsContainerTarget.querySelectorAll('.nav-tab[data-tab-type="pet"]'));
+    console.log("Processing all pet tabs:", allPetTabs.map(t => ({ id: t.dataset.recordId, isPinned: t.dataset.tabId, url: t.dataset.tabUrl })));
+    console.log("Current path:", currentPath);
+    console.log("Active tab info:", { activeTabId, activeTabType, activeTabRecordId });
+    
+    for (const tabElement of allPetTabs) {
+      const petId = tabElement.dataset.recordId;
+      const isPinned = tabElement.dataset.tabId; // If tabId exists, it's pinned
+      
+      console.log(`Processing pet tab ${petId}, isPinned: ${!!isPinned}, active tab is pet ${activeTabRecordId}`);
+      
+      // If this is the active tab, keep it open (unpin if it was pinned)
       if (activeTabType === 'pet' && String(activeTabRecordId) === String(petId)) {
+        console.log(`Keeping active pet tab ${petId} open`);
+        if (isPinned) {
+          console.log(`Unpinning active pet tab ${petId} (keeping it open)`);
+          await fetch(`/pinned_tabs/unpin_pet?pet_id=${petId}`, {
+            method: 'DELETE',
+            headers: {
+              'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          });
+          this.pinnedPetIds.delete(petId);
+          // Remove id from tab data so it's treated as unpinned
+          tabElement.dataset.tabId = '';
+          this.tabs = this.tabs.map(t => {
+            if (t.tab_type === 'pet' && String(t.tabable_id) === String(petId)) {
+              return { ...t, id: null };
+            }
+            return t;
+          });
+          // Update the DOM to show the pin icon instead of X
+          const tabData = this.tabs.find(t => t.tab_type === 'pet' && String(t.tabable_id) === String(petId));
+          if (tabData) {
+            // Update the URL to current URL to ensure active state is preserved
+            tabData.url = window.location.href;
+            const newTab = this.createTabElement(tabData);
+            tabElement.replaceWith(newTab);
+            this.makeTabActive(newTab);
+          }
+        }
+        continue;
+      }
+      // Remove all other pet tabs (both pinned and unpinned)
+      console.log(`Removing non-active pet tab ${petId}`);
+      if (isPinned) {
         await fetch(`/pinned_tabs/unpin_pet?pet_id=${petId}`, {
           method: 'DELETE',
           headers: {
@@ -765,44 +833,57 @@ export default class extends Controller {
           }
         });
         this.pinnedPetIds.delete(petId);
-        // Remove id from tab data so it's treated as unpinned
-        if (activeTab) {
-          activeTab.dataset.tabId = '';
-        }
-        this.tabs = this.tabs.map(t => {
-          if (t.tab_type === 'pet' && String(t.tabable_id) === String(petId)) {
-            return { ...t, id: null };
-          }
-          return t;
-        });
-        // --- Update the DOM to show the pin icon instead of X ---
-        if (activeTab) {
-          const tabData = this.tabs.find(t => t.tab_type === 'pet' && String(t.tabable_id) === String(petId));
+      }
+      tabElement.remove();
+      this.tabs = this.tabs.filter(t => String(t.tabable_id) !== String(petId) || t.tab_type !== 'pet');
+      console.log(`Removed pet tab ${petId} from DOM and tabs array`);
+    }
+    // Handle all task tabs (both pinned and unpinned) except the active one
+    const allTaskTabs = Array.from(this.tabsContainerTarget.querySelectorAll('.nav-tab[data-tab-type="task"]'));
+    console.log("Processing all task tabs:", allTaskTabs.map(t => ({ id: t.dataset.recordId, isPinned: t.dataset.tabId })));
+    
+    for (const tabElement of allTaskTabs) {
+      const taskId = tabElement.dataset.recordId;
+      const isPinned = tabElement.dataset.tabId; // If tabId exists, it's pinned
+      
+      console.log(`Processing task tab ${taskId}, isPinned: ${!!isPinned}, active tab is task ${activeTabRecordId}`);
+      
+      // If this is the active tab, keep it open (unpin if it was pinned)
+      if (activeTabType === 'task' && String(activeTabRecordId) === String(taskId)) {
+        console.log(`Keeping active task tab ${taskId} open`);
+        if (isPinned) {
+          console.log(`Unpinning active task tab ${taskId} (keeping it open)`);
+          await fetch(`/pinned_tabs/unpin_task?task_id=${taskId}`, {
+            method: 'DELETE',
+            headers: {
+              'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          });
+          this.pinnedTaskIds.delete(taskId);
+          // Remove id from tab data so it's treated as unpinned
+          tabElement.dataset.tabId = '';
+          this.tabs = this.tabs.map(t => {
+            if (t.tab_type === 'task' && String(t.tabable_id) === String(taskId)) {
+              return { ...t, id: null };
+            }
+            return t;
+          });
+          // Update the DOM to show the pin icon instead of X
+          const tabData = this.tabs.find(t => t.tab_type === 'task' && String(t.tabable_id) === String(taskId));
           if (tabData) {
+            // Update the URL to current URL to ensure active state is preserved
+            tabData.url = window.location.href;
             const newTab = this.createTabElement(tabData);
-            activeTab.replaceWith(newTab);
+            tabElement.replaceWith(newTab);
             this.makeTabActive(newTab);
           }
         }
         continue;
       }
-      // Remove all other pinned pet tabs
-      await fetch(`/pinned_tabs/unpin_pet?pet_id=${petId}`, {
-        method: 'DELETE',
-        headers: {
-          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
-          'X-Requested-With': 'XMLHttpRequest'
-        }
-      });
-      this.pinnedPetIds.delete(petId);
-      const tabElement = this.tabsContainerTarget.querySelector(`[data-record-id="${petId}"][data-tab-type="pet"]`);
-      if (tabElement) tabElement.remove();
-      this.tabs = this.tabs.filter(t => String(t.tabable_id) !== String(petId) || t.tab_type !== 'pet');
-    }
-    // Unpin all pinned task tabs except the active one
-    const taskIds = Array.from(this.pinnedTaskIds);
-    for (const taskId of taskIds) {
-      if (activeTabType === 'task' && String(activeTabRecordId) === String(taskId)) {
+      // Remove all other task tabs (both pinned and unpinned)
+      console.log(`Removing non-active task tab ${taskId}`);
+      if (isPinned) {
         await fetch(`/pinned_tabs/unpin_task?task_id=${taskId}`, {
           method: 'DELETE',
           headers: {
@@ -811,37 +892,10 @@ export default class extends Controller {
           }
         });
         this.pinnedTaskIds.delete(taskId);
-        if (activeTab) {
-          activeTab.dataset.tabId = '';
-        }
-        this.tabs = this.tabs.map(t => {
-          if (t.tab_type === 'task' && String(t.tabable_id) === String(taskId)) {
-            return { ...t, id: null };
-          }
-          return t;
-        });
-        // --- Update the DOM to show the pin icon instead of X ---
-        if (activeTab) {
-          const tabData = this.tabs.find(t => t.tab_type === 'task' && String(t.tabable_id) === String(taskId));
-          if (tabData) {
-            const newTab = this.createTabElement(tabData);
-            activeTab.replaceWith(newTab);
-            this.makeTabActive(newTab);
-          }
-        }
-        continue;
       }
-      await fetch(`/pinned_tabs/unpin_task?task_id=${taskId}`, {
-        method: 'DELETE',
-        headers: {
-          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
-          'X-Requested-With': 'XMLHttpRequest'
-        }
-      });
-      this.pinnedTaskIds.delete(taskId);
-      const tabElement = this.tabsContainerTarget.querySelector(`[data-record-id="${taskId}"][data-tab-type="task"]`);
-      if (tabElement) tabElement.remove();
+      tabElement.remove();
       this.tabs = this.tabs.filter(t => String(t.tabable_id) !== String(taskId) || t.tab_type !== 'task');
+      console.log(`Removed task tab ${taskId} from DOM and tabs array`);
     }
     sessionStorage.removeItem('currentUnpinnedPetTab');
     sessionStorage.removeItem('currentUnpinnedTaskTab');
@@ -1010,16 +1064,7 @@ export default class extends Controller {
       divider.appendChild(hr);
       dropdownMenu.appendChild(divider);
     }
-    if (!unpinLi) {
-      unpinLi = document.createElement('li');
-      const a = document.createElement('a');
-      a.className = 'dropdown-item';
-      a.href = '#';
-      a.dataset.action = 'tabbed-navigation#unpinAllTabs';
-      a.textContent = 'Unpin all tabs';
-      unpinLi.appendChild(a);
-      dropdownMenu.appendChild(unpinLi);
-    }
+    // Don't create the unpin button here since it's already in the HTML template
 
     // Remove only dynamically inserted overflowed tab <li>s
     dropdownMenu.querySelectorAll('li.overflowed-tab-li').forEach(li => li.remove());
