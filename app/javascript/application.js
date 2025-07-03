@@ -139,6 +139,8 @@ document.addEventListener("turbo:load", () => {
   }
 });
 
+
+
 // Monitor sessionStorage changes for debugging
 const originalSetItem = sessionStorage.setItem;
 const originalRemoveItem = sessionStorage.removeItem;

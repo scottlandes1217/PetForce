@@ -5,8 +5,11 @@ export default class extends Controller {
 
   connect() {
     console.log("Pet controller connected");
-    // Initialize the active tab from localStorage or default to 'details'
-    const activeTab = localStorage.getItem('petActiveTab') || 'details';
+    // Get pet ID for storing tab state per pet
+    const currentPetId = this.element.dataset.petId;
+    
+    // Initialize the active tab from localStorage using pet-specific key, or default to 'details'
+    const activeTab = localStorage.getItem(`pet_${currentPetId}_activeTab`) || 'details';
     this.showTab(activeTab);
 
     this.selectedGalleryImage = null;
@@ -48,8 +51,11 @@ export default class extends Controller {
   }
 
   showTab(tabId) {
-    // Store the active tab in localStorage
-    localStorage.setItem('petActiveTab', tabId);
+    // Get pet ID for storing tab state per pet
+    const currentPetId = this.element.dataset.petId;
+    
+    // Store the active tab in localStorage using pet-specific key
+    localStorage.setItem(`pet_${currentPetId}_activeTab`, tabId);
 
     // Hide all tab contents
     document.querySelectorAll(".tab-content").forEach((content) => {

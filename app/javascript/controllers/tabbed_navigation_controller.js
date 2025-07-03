@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { Turbo } from "@hotwired/turbo-rails"
 
 export default class extends Controller {
   static targets = ["tabsContainer"]
@@ -250,77 +251,13 @@ export default class extends Controller {
   }
   
   switchToTab(event) {
-    const tabElement = event.currentTarget.closest('.nav-tab');
-    const url = tabElement.dataset.tabUrl;
-    const tabType = tabElement.dataset.tabType;
-    
-    let isActive = false;
-    try {
-      isActive = window.location.pathname === new URL(url, window.location.origin).pathname;
-    } catch (e) {
-      isActive = window.location.pathname === url;
-    }
-    if (isActive) {
-      // Already on this page, do nothing
-      return;
-    }
-    
-    if (tabType === 'pet') {
-      const petId = tabElement.dataset.recordId;
-      
-      // Check if this is a pinned tab
-      const isPinned = this.pinnedPetIds.has(String(petId));
-      
-      if (isPinned) {
-        console.log(`Switching to pinned tab for pet: ${petId}, removing unpinned tabs`);
-        
-        // Remove all unpinned tabs from the DOM and tabs array
-        const unpinnedTabs = this.tabsContainerTarget.querySelectorAll('.nav-tab');
-        unpinnedTabs.forEach(tab => {
-          const tabPetId = tab.dataset.recordId;
-          const tabType = tab.dataset.tabType;
-          if (tabPetId && tabType === 'pet' && !this.pinnedPetIds.has(String(tabPetId))) {
-            console.log(`Removing unpinned tab for pet: ${tabPetId}`);
-            tab.remove();
-            // Remove from tabs array
-            this.tabs = this.tabs.filter(t => String(t.tabable_id) !== String(tabPetId));
-          }
-        });
-        
-        // Clear sessionStorage for unpinned tabs
-        sessionStorage.removeItem('currentUnpinnedPetTab');
-        console.log('Cleared sessionStorage for unpinned tabs');
-      }
-    } else if (tabType === 'task') {
-      const taskId = tabElement.dataset.recordId;
-      
-      // Check if this is a pinned tab
-      const isPinned = this.pinnedTaskIds.has(String(taskId));
-      
-      if (isPinned) {
-        console.log(`Switching to pinned tab for task: ${taskId}, removing unpinned tabs`);
-        
-        // Remove all unpinned tabs from the DOM and tabs array
-        const unpinnedTabs = this.tabsContainerTarget.querySelectorAll('.nav-tab');
-        unpinnedTabs.forEach(tab => {
-          const tabTaskId = tab.dataset.recordId;
-          const tabType = tab.dataset.tabType;
-          if (tabTaskId && tabType === 'task' && !this.pinnedTaskIds.has(String(tabTaskId))) {
-            console.log(`Removing unpinned tab for task: ${tabTaskId}`);
-            tab.remove();
-            // Remove from tabs array
-            this.tabs = this.tabs.filter(t => String(t.tabable_id) !== String(tabTaskId));
-          }
-        });
-        
-        // Clear sessionStorage for unpinned tabs
-        sessionStorage.removeItem('currentUnpinnedTaskTab');
-        console.log('Cleared sessionStorage for unpinned tabs');
-      }
-    }
-    
+    event.preventDefault();
+    const tab = event.currentTarget.closest('.nav-tab');
+    if (!tab) return;
+    const url = tab.dataset.tabUrl;
     if (url) {
-      window.location.href = url;
+      // Use Turbo navigation for fast tab switching
+      Turbo.visit(url);
     }
   }
   
@@ -454,17 +391,17 @@ export default class extends Controller {
           // Switch to the tab to the right
           const nextUrl = nextTab.dataset.tabUrl;
           console.log(`Switching to next tab: ${nextUrl}`);
-          window.location.href = nextUrl;
+          Turbo.visit(nextUrl);
         } else if (previousTab) {
           // Switch to the tab to the left if no tab to the right
           const prevUrl = previousTab.dataset.tabUrl;
           console.log(`Switching to previous tab: ${prevUrl}`);
-          window.location.href = prevUrl;
+          Turbo.visit(prevUrl);
         } else {
           // No more tabs, go to main navigation (pets index)
           console.log('No more tabs, navigating to pets index');
           const organizationId = window.location.pathname.split('/')[2]; // Extract org ID from URL
-          window.location.href = `/organizations/${organizationId}/pets`;
+          Turbo.visit(`/organizations/${organizationId}/pets`);
         }
       } else {
         // If we're not on the pet's page, just remove the tab
@@ -533,17 +470,17 @@ export default class extends Controller {
           // Switch to the tab to the right
           const nextUrl = nextTab.dataset.tabUrl;
           console.log(`Switching to next tab: ${nextUrl}`);
-          window.location.href = nextUrl;
+          Turbo.visit(nextUrl);
         } else if (previousTab) {
           // Switch to the tab to the left if no tab to the right
           const prevUrl = previousTab.dataset.tabUrl;
           console.log(`Switching to previous tab: ${prevUrl}`);
-          window.location.href = prevUrl;
+          Turbo.visit(prevUrl);
         } else {
           // No more tabs, go to main navigation (tasks index)
           console.log('No more tabs, navigating to tasks index');
           const organizationId = window.location.pathname.split('/')[2]; // Extract org ID from URL
-          window.location.href = `/organizations/${organizationId}/tasks`;
+          Turbo.visit(`/organizations/${organizationId}/tasks`);
         }
       } else {
         // If we're not on the task's page, just remove the tab
@@ -1156,7 +1093,7 @@ export default class extends Controller {
       a.appendChild(document.createTextNode(title));
       a.onclick = (e) => {
         e.preventDefault();
-        window.location.href = tab.dataset.tabUrl;
+        Turbo.visit(tab.dataset.tabUrl);
       };
       li.appendChild(a);
       dropdownMenu.insertBefore(li, divider);
