@@ -21,11 +21,15 @@ export default class extends Controller {
   }
   
   setupEventListeners() {
-    document.addEventListener('pet:opened', this.handlePetOpened.bind(this));
+    this.handlePetOpened = this.handlePetOpened.bind(this);
+    this.handlePetUnpinned = this.handlePetUnpinned.bind(this);
+    window.addEventListener('pet:opened', this.handlePetOpened);
+    window.addEventListener('pet:unpinned', this.handlePetUnpinned);
   }
   
   removeEventListeners() {
-    document.removeEventListener('pet:opened', this.handlePetOpened.bind(this));
+    window.removeEventListener('pet:opened', this.handlePetOpened);
+    window.removeEventListener('pet:unpinned', this.handlePetUnpinned);
   }
   
   initializeFromServerRenderedTabs() {
@@ -266,6 +270,10 @@ export default class extends Controller {
       this.tabs = this.tabs.filter(t => String(t.tabable_id) !== String(petId));
       console.log(`Tab for pet ${petId} has been removed`);
     }
+    
+    // Notify pets index to update pin button
+    window.dispatchEvent(new CustomEvent('pet:unpinned_ui', { detail: { petId } }));
+    console.log('[DEBUG] pet:unpinned_ui event dispatched for petId', petId);
   }
   
   closeAllTabs() {
@@ -278,38 +286,107 @@ export default class extends Controller {
   }
   
   handlePetOpened(event) {
-    const { petId, petName, petUrl } = event.detail;
-    console.log(`Pet opened event received: ${petName} (ID: ${petId})`);
-    
-    // Check if tab already exists
+    const { petId, petName, petUrl, fromPinButton } = event.detail;
+    // Guard: Only create a new tab if one does not already exist
     let existingTab = this.tabsContainerTarget.querySelector(`[data-pet-id="${petId}"]`);
     if (existingTab) {
       console.log(`Tab for pet ${petId} already exists, making it active`);
       this.makeTabActive(existingTab);
       return;
     }
-    
+
     // Check if this pet is already pinned
     if (this.pinnedPetIds.has(String(petId))) {
       console.log(`Pet ${petId} is already pinned, not creating duplicate tab`);
       return;
     }
-    
-    // Add new tab (unpinned by default)
-    const tabData = {
-      id: null,
-      tabable_id: petId,
-      title: petName,
-      url: petUrl,
-      tab_type: 'pet'
-    };
-    this.tabs.push(tabData);
-    const tabElement = this.createTabElement(tabData);
-    this.tabsContainerTarget.appendChild(tabElement);
-    this.makeTabActive(tabElement);
-    console.log(`Created new tab for pet: ${petName} (ID: ${petId})`);
+
+    if (fromPinButton) {
+      // Create pinned tab
+      console.log(`Creating pinned tab for pet: ${petName} (ID: ${petId})`);
+
+      // Add new tab as pinned
+      const tabData = {
+        id: null,
+        tabable_id: petId,
+        title: petName,
+        url: petUrl,
+        tab_type: 'pet'
+      };
+      this.tabs.push(tabData);
+      
+      // Add to pinnedPetIds immediately
+      this.pinnedPetIds.add(String(petId));
+      
+      const tabElement = this.createTabElement(tabData);
+      this.tabsContainerTarget.appendChild(tabElement);
+      this.makeTabActive(tabElement);
+      console.log(`Created pinned tab for pet: ${petName} (ID: ${petId})`);
+
+      // Save to database
+      this.savePinnedTabToDatabase(petId);
+    } else {
+      // Create unpinned tab
+      console.log(`Creating unpinned tab for pet: ${petName} (ID: ${petId})`);
+
+      // Add new tab as unpinned
+      const tabData = {
+        id: null,
+        tabable_id: petId,
+        title: petName,
+        url: petUrl,
+        tab_type: 'pet'
+      };
+      this.tabs.push(tabData);
+      
+      const tabElement = this.createTabElement(tabData);
+      this.tabsContainerTarget.appendChild(tabElement);
+      this.makeTabActive(tabElement);
+      console.log(`Created unpinned tab for pet: ${petName} (ID: ${petId})`);
+
+      // Store in sessionStorage for unpinned tabs
+      sessionStorage.setItem('currentUnpinnedPetTab', JSON.stringify({
+        petId: petId,
+        petName: petName,
+        petUrl: petUrl
+      }));
+    }
   }
-  
+
+  async savePinnedTabToDatabase(petId) {
+    try {
+      await fetch('/pinned_tabs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ pet_id: petId })
+      });
+      console.log(`Saved pinned tab for pet ${petId} to database`);
+      
+      // Notify pets index to update pin button
+      window.dispatchEvent(new CustomEvent('pet:pinned', { detail: { petId } }));
+    } catch (error) {
+      console.error(`Failed to save pinned tab for pet ${petId}:`, error);
+      // Remove from pinnedPetIds if save failed
+      this.pinnedPetIds.delete(String(petId));
+    }
+  }
+
+  handlePetUnpinned(event) {
+    const { petId } = event.detail;
+    this.pinnedPetIds.delete(String(petId));
+    // Remove the tab if present
+    let tab = this.tabsContainerTarget.querySelector(`[data-pet-id="${petId}"]`);
+    if (tab) tab.remove();
+    this.tabs = this.tabs.filter(t => String(t.tabable_id) !== String(petId));
+    // Notify pets index to update pin button
+    window.dispatchEvent(new CustomEvent('pet:unpinned_ui', { detail: { petId } }));
+    console.log('[DEBUG] pet:unpinned_ui event dispatched for petId', petId);
+  }
+
   makeTabActive(tabElement) {
     this.tabsContainerTarget.querySelectorAll('.nav-tab-content').forEach(tab => {
       tab.classList.remove('active');

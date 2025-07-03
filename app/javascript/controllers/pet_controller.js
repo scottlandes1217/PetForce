@@ -19,6 +19,19 @@ export default class extends Controller {
         this.showTab(newTab);
       }
     });
+
+    // Dispatch pet:opened event to create unpinned tab
+    const petId = this.element.dataset.petId;
+    const petName = this.element.dataset.petName;
+    const petUrl = window.location.href;
+    
+    if (petId && petName) {
+      console.log(`Pet page loaded, dispatching pet:opened for pet: ${petName} (ID: ${petId})`);
+      const event = new CustomEvent('pet:opened', {
+        detail: { petId: petId, petName: petName, petUrl: petUrl, fromPinButton: false }
+      });
+      window.dispatchEvent(event);
+    }
   }
 
   disconnect() {

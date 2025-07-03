@@ -52,8 +52,9 @@
               <%= link_to "View", organization_pet_path(@organization, pet), class: "btn btn-primary btn-sm" %>
               
               <!-- Pin button -->
-              <button class="btn btn-outline-secondary btn-sm pin-pet-btn <%= 'pinned' if @pinned_pet_ids.include?(pet.id) %>" 
+              <button class="btn btn-outline-secondary btn-sm pin-pet-btn <%= 'pinned' if @pinned_pet_ids.include?(pet.id) %>"
                       data-pet-id="<%= pet.id %>"
+                      data-initial-pinned="<%= @pinned_pet_ids.include?(pet.id) %>"
                       data-action="click->pets-index#togglePin"
                       title="<%= @pinned_pet_ids.include?(pet.id) ? 'Unpin from navigation' : 'Pin to navigation' %>">
                 <i class="fas fa-thumbtack <%= 'text-warning' if @pinned_pet_ids.include?(pet.id) %>"></i>

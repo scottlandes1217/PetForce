@@ -296,9 +296,16 @@
   align-items: center;
 }
 
+// Move navbar links next to tabs //
 .navbar-expand-lg .navbar-nav .nav-link {
   margin-top: 25px;
   margin-left: 35px;
+}
+
+.dropdown-menu {
+  padding: 0px !important;
+  top: 98% !important;
+  left: 38px !important;
 }
 
 // Remove any extra margin/padding
@@ -344,4 +351,27 @@
 
 #mainNavDropdown {
   font-size: 20px;
+}
+
+// Ensure admin user actions are always on a single line
+.admin-users-actions.btn-group {
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
+  gap: 0.5rem;
+}
+
+// Pin button/icon contrast and spacing
+.pin-pet-btn {
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+}
+.pin-pet-btn.pinned {
+  background-color: #ffc107 !important;
+  border-color: #ffc107 !important;
+}
+.pin-pet-btn.pinned i {
+  color: #343a40 !important;
+}
+.pin-pet-btn:not(.pinned) i {
+  color: #ffc107 !important;
 }

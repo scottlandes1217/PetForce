@@ -46,6 +46,9 @@ application.register("calendar-sharing", CalendarSharingController);
 import TurboStreamController from "./controllers/turbo_stream_controller";
 application.register("turbo-stream", TurboStreamController);
 
+import PetsIndexController from "./controllers/pets_index_controller";
+application.register("pets-index", PetsIndexController);
+
 // Other imports
 import "bootstrap";
 import "@popperjs/core";

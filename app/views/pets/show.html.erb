@@ -5,6 +5,7 @@
 <div class="container mt-4" 
      data-controller="pet edit-field turbo-stream"
      data-pet-id="<%= @pet.id %>"
+     data-pet-name="<%= @pet.name %>"
      data-url="<%= organization_pet_path(@organization, @pet) %>"
      data-pet-url-value="<%= organization_pet_path(@organization, @pet) %>"
      data-pet-edit-url-value="<%= edit_organization_pet_path(@organization, @pet) %>"
