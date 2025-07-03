@@ -1,4 +1,4 @@
-<div class="search-container" 
+<div class="search-container mx-auto" 
      data-controller="search"
      data-search-organization-id-value="<%= organization.id %>"
      data-search-search-url-value="<%= organization_search_quick_path(organization) %>">
@@ -12,6 +12,7 @@
         data-search-target="input"
         data-action="input->search#performSearch keydown->search#handleKeydown"
         autocomplete="off"
+        style="width:100%;"
       >
       <div class="search-loading" data-search-target="loading" style="display: none;">
         <i class="fas fa-spinner fa-spin"></i>

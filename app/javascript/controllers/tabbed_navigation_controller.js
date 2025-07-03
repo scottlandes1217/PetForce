@@ -1053,91 +1053,113 @@ export default class extends Controller {
 
   // Call this after any tab change
   updateOverflowedTabsList() {
-    const tabsContainer = this.tabsContainerTarget;
-    const overflowedTabsList = document.getElementById('overflowed-tabs-list');
-    if (!overflowedTabsList) return;
-    // Clear previous
-    overflowedTabsList.innerHTML = '';
-    // 1. Set all tabs to visible and reset styles for measurement
-    const tabElements = Array.from(tabsContainer.querySelectorAll('.nav-tab'));
+    // Select the 3-dots dropdown menu globally
+    const dropdownMenu = document.querySelector('#tabMenuDropdown + .dropdown-menu');
+    if (!dropdownMenu) return;
+
+    // Always ensure divider and 'Unpin all tabs' are present and in the correct order
+    let divider = Array.from(dropdownMenu.children).find(
+      li => li.querySelector && li.querySelector('.tab-menu-divider')
+    );
+    let unpinLi = Array.from(dropdownMenu.querySelectorAll('li')).find(li => {
+      const a = li.querySelector('a.dropdown-item');
+      return a && a.dataset.action && a.dataset.action.includes('unpinAllTabs');
+    });
+
+    if (!divider) {
+      divider = document.createElement('li');
+      const hr = document.createElement('hr');
+      hr.className = 'tab-menu-divider';
+      divider.appendChild(hr);
+      dropdownMenu.appendChild(divider);
+    }
+    if (!unpinLi) {
+      unpinLi = document.createElement('li');
+      const a = document.createElement('a');
+      a.className = 'dropdown-item';
+      a.href = '#';
+      a.dataset.action = 'tabbed-navigation#unpinAllTabs';
+      a.textContent = 'Unpin all tabs';
+      unpinLi.appendChild(a);
+      dropdownMenu.appendChild(unpinLi);
+    }
+
+    // Remove only dynamically inserted overflowed tab <li>s
+    dropdownMenu.querySelectorAll('li.overflowed-tab-li').forEach(li => li.remove());
+
+    // 1. Set all tabs to visible (no animation)
+    const tabElements = Array.from(this.tabsContainerTarget.querySelectorAll('.nav-tab'));
     tabElements.forEach(tab => {
       tab.classList.remove('tab-overflowed');
-      tab.style.width = '';
-      tab.style.minWidth = '';
-      tab.style.margin = '';
-      tab.style.padding = '';
-      tab.style.border = '';
-      tab.style.transform = 'translateX(0)';
+      tab.style.removeProperty('width');
+      tab.style.removeProperty('minWidth');
+      tab.style.removeProperty('margin');
+      tab.style.removeProperty('padding');
+      tab.style.removeProperty('border');
+      tab.style.removeProperty('transform');
     });
-    // 2. Measure all tabs and determine which should overflow
-    const containerRect = tabsContainer.getBoundingClientRect();
+
+    // 2. Calculate available width for tabs
+    const tabsRow = document.querySelector('.org-header-navrow');
+    const tabMenuDropdown = document.getElementById('tabMenuDropdown');
+    const userNav = document.querySelector('.org-header-right .navbar-nav');
+    const tabsRowRect = tabsRow.getBoundingClientRect();
+    const dropdownRect = tabMenuDropdown ? tabMenuDropdown.getBoundingClientRect() : { width: 0 };
+    const userNavRect = userNav ? userNav.getBoundingClientRect() : { width: 0 };
+    const buffer = 80; // Buffer so tabs disappear before the X is cut off
+    const availableWidth = tabsRowRect.width - dropdownRect.width - userNavRect.width - 32 - buffer;
+
+    // 3. Show as many tabs as fit from left to right, hide the rest
+    // First, show all tabs so we can measure their widths
+    tabElements.forEach(tab => {
+      tab.classList.remove('tab-overflowed');
+      tab.style.display = '';
+    });
+    // Now, measure and hide from right to left
+    let usedWidth = 0;
     let overflowed = [];
-    tabElements.forEach(tab => {
-      const rect = tab.getBoundingClientRect();
-      if (rect.left < containerRect.left || rect.right > containerRect.right) {
-        overflowed.push(tab);
-      }
-    });
-    // 3. Apply overflow logic and animate
-    tabElements.forEach(tab => {
-      if (overflowed.includes(tab)) {
-        if (!tab.classList.contains('tab-overflowed')) {
-          // Animate width to 0 and slide left
-          const tabWidth = tab.getBoundingClientRect().width;
-          tab.style.width = tabWidth + 'px';
-          tab.style.transform = 'translateX(0)';
-          void tab.offsetWidth;
-          tab.classList.add('tab-overflowed');
-          tab.style.width = '0px';
-          tab.style.transform = 'translateX(-40px)';
-        }
+    for (let i = 0; i < tabElements.length; i++) {
+      const tab = tabElements[i];
+      const tabWidth = tab.getBoundingClientRect().width;
+      if (usedWidth + tabWidth > availableWidth) {
+        overflowed = tabElements.slice(i);
+        break;
       } else {
-        if (tab.classList.contains('tab-overflowed')) {
-          // Animate in from right
-          tab.style.width = '0px';
-          tab.style.transform = 'translateX(40px)';
-          void tab.offsetWidth;
-          tab.classList.remove('tab-overflowed');
-          const normalWidth = tab.scrollWidth;
-          tab.style.width = normalWidth + 'px';
-          tab.style.transform = 'translateX(0)';
-          setTimeout(() => {
-            tab.style.width = '';
-            tab.style.transform = '';
-          }, 180);
-        } else {
-          tab.style.width = '';
-          tab.style.transform = '';
-        }
+        usedWidth += tabWidth;
       }
+    }
+    // Hide overflowed tabs
+    overflowed.forEach(tab => {
+      tab.classList.add('tab-overflowed');
+      tab.style.display = 'none';
     });
+
+    // 5. Render overflowed tabs as clickable items with icons, before the divider
     if (overflowed.length === 0) {
-      overflowedTabsList.style.display = 'none';
       return;
     }
-    overflowedTabsList.style.display = 'block';
-    // Render overflowed tabs as clickable items with icons
     overflowed.forEach(tab => {
+      // Only render if tab is actually hidden (has .tab-overflowed)
+      if (!tab.classList.contains('tab-overflowed')) return;
       const title = tab.querySelector('.nav-tab-title').textContent;
       const tabId = tab.dataset.tabId;
       const tabType = tab.dataset.tabType;
       const recordId = tab.dataset.recordId;
       const li = document.createElement('li');
+      li.className = 'overflowed-tab-li';
       const a = document.createElement('a');
       a.className = 'dropdown-item d-flex align-items-center' + (tab.querySelector('.nav-tab-content.active') ? ' active' : '');
       a.href = '#';
-      // Add icon
       const icon = document.createElement('i');
       icon.className = (tabType === 'pet' ? 'fas fa-paw me-2' : 'fas fa-tasks me-2') + (tab.querySelector('.nav-tab-content.active') ? ' active-icon' : '');
       a.appendChild(icon);
       a.appendChild(document.createTextNode(title));
       a.onclick = (e) => {
         e.preventDefault();
-        // Navigate to the tab's URL
         window.location.href = tab.dataset.tabUrl;
       };
       li.appendChild(a);
-      overflowedTabsList.appendChild(li);
+      dropdownMenu.insertBefore(li, divider);
     });
   }
 
