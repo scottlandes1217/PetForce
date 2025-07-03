@@ -36,7 +36,7 @@
               Navigation
             <% end %>
           </a>
-          <ul class="dropdown-menu shadow-lg border-0" aria-labelledby="mainNavDropdown" style="min-width: 220px; left: 25px !important; top: 62px !important;">
+          <ul class="dropdown-menu shadow-lg border-0" aria-labelledby="mainNavDropdown" style="min-width: 220px; left: 30px !important; top: 86px !important;">
             <li>
               <%= link_to (@organization.present? ? organization_path(@organization) : root_path), class: "dropdown-item d-flex align-items-center py-2 #{current_page?(@organization.present? ? organization_path(@organization) : root_path) ? 'active' : ''}" do %>
                 <i class="fas fa-home me-3 text-muted"></i>
@@ -72,17 +72,18 @@
           </ul>
         </div>
       </div>
-      
-      <!-- Search Bar -->
-      <% if @organization.present? %>
-        <div class="search-nav-container">
-          <%= render 'shared/search_bar', organization: @organization %>
+
+      <div class="d-flex flex-column align-items-center w-100">
+        <% if @organization.present? %>
+          <div class="search-nav-container mb-2">
+            <%= render 'shared/search_bar', organization: @organization %>
+          </div>
+        <% end %>
+        <div class="w-100">
+          <%= render 'shared/tabbed_navigation' %>
         </div>
-      <% end %>
-
-      <!-- Tabbed Navigation with Actions -->
-      <%= render 'shared/tabbed_navigation' %>
-
+      </div>
+      
       <!-- User Dropdown -->
       <div class="navbar-nav ms-3">
         <% if user_signed_in? && current_user.impersonated? %>
@@ -148,5 +149,6 @@
         </div>
       </div>
     </div>
+    
   </nav>
 </div>

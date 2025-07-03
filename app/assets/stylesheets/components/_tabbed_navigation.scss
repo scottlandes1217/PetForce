@@ -302,8 +302,7 @@
 
 // Set navbar height and center content
 .navbar {
-  height: 72px;
-  min-height: 72px;
+  height: 91px;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
   display: flex;
@@ -334,6 +333,13 @@
 // Search bar positioning
 .search-nav-container {
   margin-top: 15px;
+  width: 100%;
+  max-width: 800px;
+  margin-bottom: 0px;
+}
+
+.search-container {
+  margin-top: 10px;
 }
 
 .dropdown-menu {
@@ -449,8 +455,13 @@
 
 // Keep your margin rules
 .navbar-expand-lg .navbar-nav .user-nav-link, .navbar-expand-lg .navbar-nav .main-nav-link {
-  margin-top: 25px;
+  margin-top: 45px;
   margin-left: 35px;
+}
+
+.search-input {
+    font-size: 13px !important;
+    line-height: 0.5 !important;
 }
 
 .navbar-org .user-nav-link, .navbar-org .main-nav-link {

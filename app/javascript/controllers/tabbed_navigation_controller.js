@@ -147,19 +147,22 @@ export default class extends Controller {
     if (taskContainer && unpinnedTaskTab) {
       try {
         const { taskId, taskSubject, taskUrl } = JSON.parse(unpinnedTaskTab);
-        console.log(`Restoring unpinned tab for task: ${taskSubject} (ID: ${taskId})`);
-        
-        // Check if this task is already pinned
-        if (this.pinnedTaskIds.has(String(taskId))) {
-          console.log(`Task ${taskId} is already pinned, not restoring as unpinned tab`);
+        // Only restore if the current page is for this task
+        if (String(taskContainer.dataset.taskId) !== String(taskId)) {
+          // If not the same task, clear sessionStorage and do not restore
+          sessionStorage.removeItem('currentUnpinnedTaskTab');
           return;
         }
+        console.log(`Restoring unpinned tab for task: ${taskSubject} (ID: ${taskId})`);
         
-        // Check if tab already exists
-        let existingTab = this.tabsContainerTarget.querySelector(`[data-record-id="${taskId}"][data-tab-type="task"]`);
-        if (existingTab) {
-          console.log(`Tab for task ${taskId} already exists, making it active`);
-          this.makeTabActive(existingTab);
+        // Check if this task is already pinned or a pinned tab exists in DOM
+        const isPinned = this.pinnedTaskIds.has(String(taskId));
+        const existingPinnedTab = this.tabsContainerTarget.querySelector(`[data-record-id="${taskId}"][data-tab-type="task"][data-tab-id]`);
+        if (isPinned || existingPinnedTab) {
+          console.log(`Task ${taskId} is already pinned, not restoring as unpinned tab`);
+          if (existingPinnedTab) {
+            this.makeTabActive(existingPinnedTab);
+          }
           return;
         }
         
@@ -699,25 +702,18 @@ export default class extends Controller {
   }
 
   handleTaskOpened(event) {
-    console.log("=== handleTaskOpened called ===");
-    console.log("Event:", event);
-    console.log("Event detail:", event.detail);
+    // Always clear any unpinned task tab from sessionStorage when a new task is opened
+    sessionStorage.removeItem('currentUnpinnedTaskTab');
     const { taskId, taskSubject, taskUrl, fromPinButton } = event.detail;
     console.log(`Task opened: ${taskSubject} (ID: ${taskId})`);
     console.log("Current tabs:", this.tabs);
     console.log("Pinned task IDs:", this.pinnedTaskIds);
     console.log("All pinned tab IDs from DOM:", Array.from(this.tabsContainerTarget.querySelectorAll('.nav-tab[data-tab-id]')).map(t => ({ id: t.dataset.tabId, recordId: t.dataset.recordId, type: t.dataset.tabType })));
     
-    // Check if this task is already pinned
+    // Check if this task is already pinned or a pinned tab exists in DOM
     const isPinned = this.pinnedTaskIds.has(String(taskId));
-    console.log(`Is task ${taskId} pinned according to pinnedTaskIds? ${isPinned}`);
-    
-    // Also check if there's a pinned tab in the DOM for this task
     const existingPinnedTab = this.tabsContainerTarget.querySelector(`[data-record-id="${taskId}"][data-tab-type="task"][data-tab-id]`);
-    const hasPinnedTabInDOM = existingPinnedTab && existingPinnedTab.dataset.tabId;
-    console.log(`Is there a pinned tab in DOM for task ${taskId}? ${hasPinnedTabInDOM}`);
-    
-    if (isPinned || hasPinnedTabInDOM) {
+    if (isPinned || existingPinnedTab) {
       console.log(`Task ${taskId} is already pinned, making it active`);
       const existingTab = this.tabsContainerTarget.querySelector(`[data-record-id="${taskId}"][data-tab-type="task"]`);
       if (existingTab) {
