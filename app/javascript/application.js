@@ -55,6 +55,9 @@ application.register("pets-index", PetsIndexController);
 import OrganizationTasksIndexController from "./controllers/organization_tasks_index_controller";
 application.register("organization-tasks-index", OrganizationTasksIndexController);
 
+import SearchController from "./controllers/search_controller";
+application.register("search", SearchController);
+
 // Other imports
 import "bootstrap";
 import "@popperjs/core";

@@ -12,6 +12,7 @@ export default class extends Controller {
     this.selectedIndex = -1
     this.results = []
     this.isSearching = false
+    this.keyboardSelected = false
     
     // Close dropdown when clicking outside
     document.addEventListener('click', this.handleClickOutside.bind(this))
@@ -110,6 +111,7 @@ export default class extends Controller {
   hoverResult(event) {
     const index = parseInt(event.currentTarget.dataset.searchIndex)
     this.selectedIndex = index
+    this.keyboardSelected = false
     this.updateSelectedResult()
   }
 
@@ -125,18 +127,20 @@ export default class extends Controller {
       case 'ArrowDown':
         event.preventDefault()
         this.selectedIndex = Math.min(this.selectedIndex + 1, this.results.length - 1)
+        this.keyboardSelected = true
         this.updateSelectedResult()
         break
       
       case 'ArrowUp':
         event.preventDefault()
         this.selectedIndex = Math.max(this.selectedIndex - 1, -1)
+        this.keyboardSelected = true
         this.updateSelectedResult()
         break
       
       case 'Enter':
         event.preventDefault()
-        if (this.selectedIndex >= 0 && this.results[this.selectedIndex]) {
+        if (this.keyboardSelected && this.selectedIndex > -1 && this.results[this.selectedIndex]) {
           const result = this.results[this.selectedIndex]
           if (result.url) {
             window.location.href = result.url

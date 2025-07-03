@@ -29,7 +29,9 @@ class SearchController < ApplicationController
   private
 
   def set_organization
-    @organization = current_user.organizations.find(params[:organization_id]) if params[:organization_id]
+    @organization = Organization.find_by(id: params[:organization_id])
+    head :not_found unless @organization
+    # Optionally, add authorization here if needed
   end
 
   def organization_context?
