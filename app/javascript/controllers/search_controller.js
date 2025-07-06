@@ -160,7 +160,12 @@ export default class extends Controller {
   showFullSearch() {
     const query = this.inputTarget.value.trim()
     if (query) {
-      const searchUrl = `/organizations/${this.organizationIdValue}/search?q=${encodeURIComponent(query)}`
+      let searchUrl
+      if (this.hasOrganizationIdValue && this.organizationIdValue) {
+        searchUrl = `/organizations/${this.organizationIdValue}/search?q=${encodeURIComponent(query)}`
+      } else {
+        searchUrl = `/admin/search?q=${encodeURIComponent(query)}`
+      }
       window.location.href = searchUrl
     }
   }

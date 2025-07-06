@@ -16,6 +16,8 @@ Rails.application.routes.draw do
   get 'calendars/update'
   get 'calendars/destroy'
   get 'ad_impressions/create'
+
+  # SINGLE admin namespace block for all admin routes
   namespace :admin do
     get 'ads/index'
     get 'ads/new'
@@ -28,7 +30,20 @@ Rails.application.routes.draw do
         post :create_variant
       end
     end
+    get 'search', to: 'search#index', as: :search
+    get 'search/quick', to: 'search#quick_search', as: :quick_search
+    get 'home', to: 'home#index' # Admin home page
+    resources :users, only: [:index, :new, :create, :edit, :update] do
+      collection do
+        get :search
+      end
+      member do
+        post :impersonate
+        delete :stop_impersonating
+      end
+    end
   end
+
   require 'sidekiq/web'
   
   # Mount Action Cable
@@ -91,21 +106,6 @@ end
       delete :unpin_pet
       delete :unpin_task
       post :update_order
-    end
-  end
-
-  # Admin namespace for admin-specific home page and potential future admin features
-  namespace :admin do
-    get 'home', to: 'home#index' # Admin home page
-    resources :ads
-    resources :users, only: [:index, :new, :create, :edit, :update] do
-      collection do
-        get :search
-      end
-      member do
-        post :impersonate
-        delete :stop_impersonating
-      end
     end
   end
 
