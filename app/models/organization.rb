@@ -3,6 +3,7 @@ class Organization < ApplicationRecord
     has_many :users, through: :organization_users
     has_many :pets, dependent: :destroy
     has_many :organization_fields, dependent: :destroy
+    has_many :forms, dependent: :destroy
     has_many :posts
     has_many :calendars, dependent: :destroy
     has_many :events, dependent: :destroy

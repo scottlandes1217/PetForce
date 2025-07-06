@@ -20,6 +20,7 @@
     <!-- Trix CSS -->
     <link rel="stylesheet" type="text/css" href="https://unpkg.com/trix@2.0.0/dist/trix.css">
 
+    <%= yield :head if content_for?(:head) %>
   </head>
 
   <body>
@@ -28,5 +29,7 @@
     <div class="main-content">
       <%= yield %> <!-- Main content goes here -->
     </div>
+    
+    <%= yield :javascript if content_for?(:javascript) %>
   </body>
 </html>

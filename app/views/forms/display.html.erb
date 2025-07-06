@@ -1,0 +1,78 @@
+<%= render 'shared/navbar_org' %>
+
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><%= @form.name %></h1>
+        <% if @form.description.present? %>
+          <p class="text-muted"><%= @form.description %></p>
+        <% end %>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <div id="form-display">
+            <%= @form.form_html.html_safe if @form.form_html.present? %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% if @form.form_css.present? %>
+  <style>
+    <%= @form.form_css.html_safe %>
+  </style>
+<% end %>
+
+<% if @form.form_js.present? %>
+  <script>
+    <%= @form.form_js.html_safe %>
+  </script>
+<% end %>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Handle form submission
+    const form = document.querySelector('#form-display form');
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Collect form data
+        const formData = new FormData(form);
+        const data = {};
+        
+        for (let [key, value] of formData.entries()) {
+          data[key] = value;
+        }
+        
+        // Submit to server
+        fetch('<%= submit_organization_form_path(@organization, @form) %>', {
+          method: 'POST',
+          headers: {
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            form_data: data
+          })
+        })
+        .then(response => {
+          if (response.ok) {
+            alert('Form submitted successfully!');
+            form.reset();
+          } else {
+            alert('Error submitting form.');
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('Error submitting form.');
+        });
+      });
+    }
+  });
+</script> 

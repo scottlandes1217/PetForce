@@ -81,6 +81,13 @@ resources :organizations do
     resources :tasks, only: [:index, :new, :create, :edit, :update, :destroy, :show]
   end
   resources :organization_fields, only: [:index, :create, :update, :destroy]
+  resources :forms do
+    member do
+      get :builder
+      get :display
+      post :submit
+    end
+  end
   resources :posts do
     resources :comments, only: [:create, :destroy]
   end

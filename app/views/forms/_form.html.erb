@@ -1,0 +1,56 @@
+<%= form_with(model: [@organization, form], local: true) do |f| %>
+  <% if form.errors.any? %>
+    <div class="alert alert-danger">
+      <h4><%= pluralize(form.errors.count, "error") %> prohibited this form from being saved:</h4>
+      <ul>
+        <% form.errors.each do |error| %>
+          <li><%= error.full_message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-body">
+          <div class="mb-3">
+            <%= f.label :name, class: "form-label" %>
+            <%= f.text_field :name, class: "form-control", placeholder: "Enter form name" %>
+          </div>
+
+          <div class="mb-3">
+            <%= f.label :description, class: "form-label" %>
+            <%= f.text_area :description, class: "form-control", rows: 3, placeholder: "Enter form description" %>
+          </div>
+
+          <div class="mb-3">
+            <div class="form-check">
+              <%= f.check_box :is_active, class: "form-check-input" %>
+              <%= f.label :is_active, "Active", class: "form-check-label" %>
+            </div>
+            <small class="form-text text-muted">Inactive forms won't be available for use</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Actions</h5>
+        </div>
+        <div class="card-body">
+          <div class="d-grid gap-2">
+            <%= f.submit class: "btn btn-primary" %>
+            <%= link_to "Cancel", organization_forms_path(@organization), class: "btn btn-secondary" %>
+            
+            <% if form.persisted? %>
+              <%= link_to "Form Builder", builder_organization_form_path(@organization, form), class: "btn btn-info" %>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %> 

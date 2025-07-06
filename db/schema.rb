@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_07_03_021558) do
+ActiveRecord::Schema[7.1].define(version: 2025_07_06_200835) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -199,6 +199,26 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_03_021558) do
     t.index ["organization_id"], name: "index_events_on_organization_id"
     t.index ["organizer_id", "start_time"], name: "index_events_on_organizer_id_and_start_time"
     t.index ["organizer_id"], name: "index_events_on_organizer_id"
+  end
+
+  create_table "form_submissions", force: :cascade do |t|
+    t.bigint "form_id", null: false
+    t.jsonb "data"
+    t.datetime "submitted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["form_id"], name: "index_form_submissions_on_form_id"
+  end
+
+  create_table "forms", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.string "name"
+    t.text "description"
+    t.jsonb "form_data"
+    t.boolean "is_active"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["organization_id"], name: "index_forms_on_organization_id"
   end
 
   create_table "organization_fields", force: :cascade do |t|
@@ -394,6 +414,8 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_03_021558) do
   add_foreign_key "events", "calendars"
   add_foreign_key "events", "organizations"
   add_foreign_key "events", "users", column: "organizer_id"
+  add_foreign_key "form_submissions", "forms"
+  add_foreign_key "forms", "organizations"
   add_foreign_key "organization_fields", "organizations"
   add_foreign_key "organization_users", "organizations"
   add_foreign_key "organization_users", "users"
