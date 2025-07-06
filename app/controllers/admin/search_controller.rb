@@ -1,4 +1,4 @@
-class Admin::SearchController < ApplicationController
+class Admin::SearchController < Admin::ApplicationController
   before_action :authenticate_user!
   layout 'admin' # Use admin layout if you have one
 
