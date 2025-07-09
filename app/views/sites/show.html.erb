@@ -4,16 +4,16 @@
   <div class="row">
     <div class="col-12">
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1><%= @form.name %></h1>
+        <h1><%= @site.name %></h1>
         <div class="btn-group" role="group">
-          <%= link_to edit_organization_form_path(@organization, @form), class: "btn btn-secondary" do %>
+          <%= link_to edit_organization_site_path(@organization, @site), class: "btn btn-secondary" do %>
             <i class="fas fa-edit me-2"></i>Edit
           <% end %>
-          <%= link_to builder_organization_form_path(@organization, @form), class: "btn btn-info", data: { turbo: false } do %>
+          <%= link_to builder_organization_site_path(@organization, @site), class: "btn btn-info", data: { turbo: false } do %>
             <i class="fas fa-paint-brush me-2"></i>Form Builder
           <% end %>
-          <%= link_to organization_forms_path(@organization), class: "btn btn-outline-secondary" do %>
-            <i class="fas fa-arrow-left me-2"></i>Back to Forms
+          <%= link_to organization_sites_path(@organization), class: "btn btn-outline-secondary" do %>
+            <i class="fas fa-arrow-left me-2"></i>Back to Sites
           <% end %>
         </div>
       </div>
@@ -22,14 +22,14 @@
         <div class="col-md-8">
           <div class="card">
             <div class="card-header">
-              <h5 class="mb-0">Form Details</h5>
+              <h5 class="mb-0">Site Details</h5>
             </div>
             <div class="card-body">
               <div class="row">
                 <div class="col-md-6">
-                  <p><strong>Name:</strong> <%= @form.name %></p>
+                  <p><strong>Name:</strong> <%= @site.name %></p>
                   <p><strong>Status:</strong> 
-                    <% if @form.is_active? %>
+                    <% if @site.is_active? %>
                       <span class="badge bg-success">Active</span>
                     <% else %>
                       <span class="badge bg-secondary">Inactive</span>
@@ -37,27 +37,27 @@
                   </p>
                 </div>
                 <div class="col-md-6">
-                  <p><strong>Created:</strong> <%= @form.created_at.strftime("%B %d, %Y at %I:%M %p") %></p>
-                  <p><strong>Updated:</strong> <%= @form.updated_at.strftime("%B %d, %Y at %I:%M %p") %></p>
+                  <p><strong>Created:</strong> <%= @site.created_at.strftime("%B %d, %Y at %I:%M %p") %></p>
+                  <p><strong>Updated:</strong> <%= @site.updated_at.strftime("%B %d, %Y at %I:%M %p") %></p>
                 </div>
               </div>
               
-              <% if @form.description.present? %>
+              <% if @site.description.present? %>
                 <hr>
                 <p><strong>Description:</strong></p>
-                <p><%= @form.description %></p>
+                <p><%= @site.description %></p>
               <% end %>
             </div>
           </div>
 
-          <% if @form.form_data.present? %>
+          <% if @site.site_data.present? %>
             <div class="card mt-4">
               <div class="card-header">
-                <h5 class="mb-0">Form Preview</h5>
+                <h5 class="mb-0">Site Preview</h5>
               </div>
               <div class="card-body">
-                <div id="form-preview">
-                  <%= @form.form_html.html_safe if @form.form_html.present? %>
+                <div id="site-preview">
+                  <%= @site.form_html.html_safe if @site.form_html.present? %>
                 </div>
               </div>
             </div>
@@ -65,9 +65,9 @@
             <div class="card mt-4">
               <div class="card-body text-center py-5">
                 <i class="fas fa-paint-brush fa-3x text-muted mb-3"></i>
-                <h4 class="text-muted">No form content yet</h4>
-                <p class="text-muted">Use the form builder to create your form.</p>
-                <%= link_to builder_organization_form_path(@organization, @form), class: "btn btn-primary", data: { turbo: false } do %>
+                <h4 class="text-muted">No site content yet</h4>
+                <p class="text-muted">Use the form builder to create your site.</p>
+                <%= link_to builder_organization_site_path(@organization, @site), class: "btn btn-primary", data: { turbo: false } do %>
                   <i class="fas fa-paint-brush me-2"></i>Open Form Builder
                 <% end %>
               </div>
@@ -82,20 +82,20 @@
             </div>
             <div class="card-body">
               <div class="d-grid gap-2">
-                <%= link_to builder_organization_form_path(@organization, @form), class: "btn btn-primary", data: { turbo: false } do %>
+                <%= link_to builder_organization_site_path(@organization, @site), class: "btn btn-primary", data: { turbo: false } do %>
                   <i class="fas fa-paint-brush me-2"></i>Form Builder
                 <% end %>
-                <%= link_to display_organization_form_path(@organization, @form), class: "btn btn-info", target: "_blank" do %>
-                  <i class="fas fa-eye me-2"></i>View Form
+                <%= link_to display_organization_site_path(@organization, @site), class: "btn btn-info", target: "_blank" do %>
+                  <i class="fas fa-eye me-2"></i>View Site
                 <% end %>
-                <%= link_to edit_organization_form_path(@organization, @form), class: "btn btn-secondary" do %>
-                  <i class="fas fa-edit me-2"></i>Edit Form
+                <%= link_to edit_organization_site_path(@organization, @site), class: "btn btn-secondary" do %>
+                  <i class="fas fa-edit me-2"></i>Edit Site
                 <% end %>
-                <%= link_to organization_form_path(@organization, @form), 
+                <%= link_to organization_site_path(@organization, @site), 
                     method: :delete, 
-                    data: { confirm: "Are you sure you want to delete this form?" }, 
+                    data: { confirm: "Are you sure you want to delete this site?" }, 
                     class: "btn btn-danger" do %>
-                  <i class="fas fa-trash me-2"></i>Delete Form
+                  <i class="fas fa-trash me-2"></i>Delete Site
                 <% end %>
               </div>
             </div>

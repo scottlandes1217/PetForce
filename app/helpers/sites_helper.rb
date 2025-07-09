@@ -1,5 +1,5 @@
-module FormsHelper
-  def form_builder_field_metadata_json
+module SitesHelper
+  def site_builder_field_metadata_json
     pet_fields = [
       { name: 'name', type: 'text', label: 'Pet Name' },
       { name: 'age', type: 'number', label: 'Age' },
@@ -17,4 +17,4 @@ module FormsHelper
       task_fields: task_fields
     }.to_json.html_safe
   end
-end
+end 

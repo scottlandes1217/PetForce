@@ -4,16 +4,16 @@
   <div class="row">
     <div class="col-12">
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1><%= @form.name %></h1>
-        <% if @form.description.present? %>
-          <p class="text-muted"><%= @form.description %></p>
+        <h1><%= @site.name %></h1>
+        <% if @site.description.present? %>
+          <p class="text-muted"><%= @site.description %></p>
         <% end %>
       </div>
 
       <div class="card">
         <div class="card-body">
           <div id="form-display">
-            <%= @form.form_html.html_safe if @form.form_html.present? %>
+            <%= @site.site_html.html_safe if @site.site_html.present? %>
           </div>
         </div>
       </div>
@@ -21,15 +21,15 @@
   </div>
 </div>
 
-<% if @form.form_css.present? %>
+<% if @site.site_css.present? %>
   <style>
-    <%= @form.form_css.html_safe %>
+    <%= @site.site_css.html_safe %>
   </style>
 <% end %>
 
-<% if @form.form_js.present? %>
+<% if @site.site_js.present? %>
   <script>
-    <%= @form.form_js.html_safe %>
+    <%= @site.site_js.html_safe %>
   </script>
 <% end %>
 
@@ -50,14 +50,14 @@
         }
         
         // Submit to server
-        fetch('<%= submit_organization_form_path(@organization, @form) %>', {
+        fetch('<%= submit_organization_site_path(@organization, @site) %>', {
           method: 'POST',
           headers: {
             'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            form_data: data
+            site_data: data
           })
         })
         .then(response => {

@@ -1,4 +1,4 @@
-/* Form Builder (GrapeJS) custom styles */
+/* Site Builder (GrapeJS) custom styles */
 .builder-body {
   margin-left: 180px;
   transition: margin-left 0.2s;
@@ -15,7 +15,7 @@
   height: 40px !important;
 }
 
-#form-pages-sidebar {
+#site-pages-sidebar {
   position: fixed;
   left: 0;
   top: 91px;
@@ -41,7 +41,7 @@
   background: #444444;
 }
 
-#gjs, #form-pages-sidebar {
+#gjs, #site-pages-sidebar {
   overscroll-behavior: contain;
 }
 
@@ -147,7 +147,7 @@ html, body {
   color: #fff !important;
 }
 
-body.sidebar-collapsed #form-pages-sidebar {
+body.sidebar-collapsed #site-pages-sidebar {
   left: -180px !important;
 }
 body.sidebar-collapsed .builder-body {

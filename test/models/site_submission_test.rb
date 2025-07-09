@@ -1,6 +1,6 @@
 require "test_helper"
 
-class FormTest < ActiveSupport::TestCase
+class SiteSubmissionTest < ActiveSupport::TestCase
   # test "the truth" do
   #   assert true
   # end

@@ -81,7 +81,7 @@ resources :organizations do
     resources :tasks, only: [:index, :new, :create, :edit, :update, :destroy, :show]
   end
   resources :organization_fields, only: [:index, :create, :update, :destroy]
-  resources :forms do
+  resources :sites do
     member do
       get :builder
       get :display

@@ -5,10 +5,10 @@
     <div class="col-12">
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Edit Form</h1>
-        <%= link_to "Back to Forms", organization_forms_path(@organization), class: "btn btn-secondary" %>
+        <%= link_to "Back to Forms", organization_sites_path(@organization), class: "btn btn-secondary" %>
       </div>
 
-      <%= render 'form', form: @form %>
+      <%= render 'form', site: @site %>
     </div>
   </div>
 </div>

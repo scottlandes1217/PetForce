@@ -1,15 +1,15 @@
 <%= render 'shared/navbar_org' %>
 <div class="builder-container">
   <div class="builder-body p-0">
-    <div id="form-pages-sidebar">
-      <button id="toggle-pages-sidebar" style="background: none; border: none; color: #fff; font-size: 1.2rem; padding: 8px 8px 0 8px; align-self: flex-end; cursor: pointer;">«</button>
-      <div style="font-weight:bold; font-size:1.1rem; padding:0 16px 12px 16px;">Form Pages</div>
-      <ul id="form-pages-list" style="list-style:none; padding:0 16px; margin:0;"></ul>
-      <button id="add-form-page" style="margin:16px 16px 0 16px; background:#007bff; color:#fff; border:none; border-radius:4px; padding:8px 0; font-size:1rem;">+ Add Page</button>
-    </div>
+          <div id="site-pages-sidebar">
+        <button id="toggle-pages-sidebar" style="background: none; border: none; color: #fff; font-size: 1.2rem; padding: 8px 8px 0 8px; align-self: flex-end; cursor: pointer;">«</button>
+        <div style="font-weight:bold; font-size:1.1rem; padding:0 16px 12px 16px;">Site Pages</div>
+        <ul id="site-pages-list" style="list-style:none; padding:0 16px; margin:0;"></ul>
+        <button id="add-site-page" style="margin:16px 16px 0 16px; background:#007bff; color:#fff; border:none; border-radius:4px; padding:8px 0; font-size:1rem;">+ Add Page</button>
+      </div>
     <div id="gjs">
       <div style="text-align: center; padding: 20px; color: #666;">
-        Loading form builder...
+        Loading site builder...
       </div>
     </div>
   </div>
@@ -31,7 +31,7 @@
 </script>
 
 <script type="application/json" id="org-fields-metadata">
-<%= form_builder_field_metadata_json %>
+<%= site_builder_field_metadata_json %>
 </script>
 
 <script>
@@ -141,7 +141,7 @@ function initGrapesJSBuilder() {
         });
       });
 
-      // --- Multi-Page Form Logic ---
+      // --- Multi-Page Site Logic ---
       let pages = [
         { id: 'page-1', name: 'Page 1' }
       ];
@@ -152,8 +152,8 @@ function initGrapesJSBuilder() {
       let isPageSwitching = false;
 
       // After pages and currentPageId are set, and after editor is initialized
-      <% if @form.form_data.present? && @form.form_data['pages_json'].present? %>
-        const loadedPages = <%= @form.form_data['pages_json'].to_json.html_safe %>;
+      <% if @site.site_data.present? && @site.site_data['pages_json'].present? %>
+        const loadedPages = <%= @site.site_data['pages_json'].to_json.html_safe %>;
         console.log('Loading saved pages data:', loadedPages);
         if (loadedPages && loadedPages.length > 0) {
           pages = loadedPages;
@@ -173,6 +173,7 @@ function initGrapesJSBuilder() {
           showPage(currentPageId);
         }
       <% else %>
+        console.log('No saved pages data found, starting with default page');
         pages = [{ id: 'page-1', name: 'Page 1' }];
         ensurePageWrapper(pages[0].id, pages[0].name, '');
         currentPageId = pages[0].id;
@@ -186,12 +187,15 @@ function initGrapesJSBuilder() {
         let wrapper = editor.DomComponents.getWrapper().find(`#${pageId}`)[0];
         if (!wrapper) {
           console.log('Creating new wrapper for page:', pageId);
+          const displayStyle = (pageId === currentPageId) ? 'block' : 'none';
           wrapper = editor.addComponents({
             tagName: 'div',
             attributes: { id: pageId, 'data-page': pageName },
             components: [],
-            style: { minHeight: '400px', display: 'none' }
+            style: { minHeight: '400px', display: displayStyle }
           })[0];
+          
+          console.log('Created wrapper with ID:', wrapper.getId(), 'and attributes:', wrapper.getAttributes());
           
           // If we have HTML content, parse it and add to the wrapper
           if (html && html.trim()) {
@@ -242,10 +246,10 @@ function initGrapesJSBuilder() {
             const wrapper = editor.DomComponents.getWrapper().find(`#${page.id}`)[0];
             if (wrapper) {
               if (page.id === pageId) {
-                wrapper.setStyle({ ...wrapper.getStyle(), display: '' });
+                wrapper.setStyle({ ...wrapper.getStyle(), display: 'block' });
                 // Make this wrapper the only valid drop target
                 wrapper.set('droppable', true);
-                console.log('Showing page:', page.id);
+                console.log('Showing page:', page.id, 'with display: block');
               } else {
                 wrapper.setStyle({ ...wrapper.getStyle(), display: 'none' });
                 // Disable drops on hidden wrappers
@@ -299,7 +303,7 @@ function initGrapesJSBuilder() {
       // Render sidebar pages list
       function renderPagesSidebar() {
         console.log('renderPagesSidebar called, currentPageId:', currentPageId);
-        const list = document.getElementById('form-pages-list');
+        const list = document.getElementById('site-pages-list');
         list.innerHTML = '';
         pages.forEach((page, idx) => {
           const li = document.createElement('li');
@@ -424,24 +428,10 @@ function initGrapesJSBuilder() {
       }
 
       // Add page button handler
-      document.getElementById('add-form-page').onclick = addPage;
-
-      // Ensure wrappers for all pages
-      // This block is now redundant as ensurePageWrapper is called after pages are set
-      // pages.forEach(page => ensurePageWrapper(page.id, page.name));
-      // showPage(currentPageId);
+      document.getElementById('add-site-page').onclick = addPage;
 
       // Track if a block is being dragged
       let isDraggingBlock = false;
-      
-      // Handle block drag start
-      editor.on('block:drag:start', (block) => {
-        console.log('block:drag:start triggered');
-        isDraggingBlock = true;
-      });
-      
-      // Track components before drop to identify new ones
-      let componentsBeforeDrop = [];
       
       // Handle block drag start
       editor.on('block:drag:start', (block) => {
@@ -497,8 +487,8 @@ function initGrapesJSBuilder() {
         }, 100);
       });
 
-      // --- Button Block Traits ---
-      editor.DomComponents.addType('form-button', {
+      // Block type for custom button
+      editor.DomComponents.addType('site-button', {
         model: {
           defaults: {
             tagName: 'button',
@@ -515,7 +505,7 @@ function initGrapesJSBuilder() {
                 label: 'Action',
                 name: 'button-action',
                 options: [
-                  { value: 'submit', name: 'Submit Form' },
+                  { value: 'submit', name: 'Submit Site' },
                   { value: 'navigate', name: 'Navigate to URL' }
                 ],
                 changeProp: 1
@@ -563,7 +553,7 @@ function initGrapesJSBuilder() {
               const url = model.get('button-url');
               if (url) window.location.href = url;
             } else if (action === 'submit') {
-              // Find the parent form and submit it
+              // Find the parent site and submit it
               let el = this.el;
               while (el && el.tagName !== 'FORM') el = el.parentElement;
               if (el) el.submit();
@@ -605,28 +595,33 @@ function initGrapesJSBuilder() {
 
       // Collapse all categories except 'Basic' on load (after all blocks are added)
       setTimeout(() => {
-        editor.BlockManager.getCategories().forEach(cat => {
-          if (cat.get('id') !== 'Basic') {
-            cat.set('open', false);
+        if (editor.BlockManager && typeof editor.BlockManager.getCategories === 'function') {
+          const cats = editor.BlockManager.getCategories();
+          if (cats && cats.forEach) {
+            cats.forEach(cat => {
+              if (cat.get('id') !== 'Basic') {
+                cat.set('open', false);
+              }
+            });
           }
-        });
+        }
       }, 0);
 
       // Add Save, Back, and Pages buttons to the options panel
       editor.Panels.addButton('options', [
         {
-          id: 'save-form',
+          id: 'save-site',
           className: 'fa fa-save gjs-custom-btn',
           label: '',
-          command: 'save-form',
-          attributes: { title: 'Save Form', style: 'font-weight: bold; padding: 0 8px;' }
+          command: 'save-site',
+          attributes: { title: 'Save Site', style: 'font-weight: bold; padding: 0 8px;' }
         },
         {
-          id: 'back-to-form',
+          id: 'back-to-site',
           className: 'fa fa-arrow-left gjs-custom-btn',
           label: '',
-          command: 'back-to-form',
-          attributes: { title: 'Back to Forms', style: 'font-weight: bold; padding: 0 8px;' }
+          command: 'back-to-site',
+          attributes: { title: 'Back to Sites', style: 'font-weight: bold; padding: 0 8px;' }
         },
         {
           id: 'toggle-pages-sidebar-btn',
@@ -711,14 +706,16 @@ function initGrapesJSBuilder() {
       }
 
       // --- Commands ---
-      editor.Commands.add('save-form', {
+      editor.Commands.add('save-site', {
         run(editor, sender) {
-          console.log('save-form command triggered');
-          sender && sender.set('active', 0);
+          console.log('save-site command triggered');
+          if (sender && typeof sender.set === 'function') {
+            sender.set('active', 0);
+          }
           const pagesData = getPagesData();
           const css = editor.getCss();
           const js = editor.getJs();
-          fetch('<%= organization_form_path(@organization, @form, format: :json) %>', {
+          fetch('<%= organization_site_path(@organization, @site, format: :json) %>', {
             method: 'PATCH',
             headers: {
               'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
@@ -726,8 +723,8 @@ function initGrapesJSBuilder() {
               'Accept': 'application/json',
             },
             body: JSON.stringify({
-              form: {
-                form_data: {
+              site: {
+                site_data: {
                   pages_json: pagesData,
                   css: css,
                   js: js
@@ -738,21 +735,21 @@ function initGrapesJSBuilder() {
           .then(response => response.json())
           .then(data => {
             if (data.success) {
-              showGlobalSuccess('Form saved successfully!');
+              showGlobalSuccess('Site saved successfully!');
             } else {
-              showGlobalError('Error saving form: ' + data.errors);
+              showGlobalError('Error saving site: ' + data.errors);
             }
           })
           .catch(error => {
             console.error('Error:', error);
-            showGlobalError('Error saving form');
+            showGlobalError('Error saving site');
           });
         }
       });
 
-      editor.Commands.add('back-to-form', {
+      editor.Commands.add('back-to-site', {
         run(editor, sender) {
-          window.location.href = '<%= organization_form_path(@organization, @form) %>';
+          window.location.href = '<%= organization_site_path(@organization, @site) %>';
         }
       });
 
@@ -770,18 +767,18 @@ function initGrapesJSBuilder() {
       console.log('Registering Save, Back, and Pages buttons');
       editor.Panels.addButton('options', [
         {
-          id: 'save-form',
+          id: 'save-site',
           className: 'fa fa-save gjs-custom-btn',
           label: '',
-          command: 'save-form',
-          attributes: { title: 'Save Form', style: 'font-weight: bold; padding: 0 8px;' }
+          command: 'save-site',
+          attributes: { title: 'Save Site', style: 'font-weight: bold; padding: 0 8px;' }
         },
         {
-          id: 'back-to-form',
+          id: 'back-to-site',
           className: 'fa fa-arrow-left gjs-custom-btn',
           label: '',
-          command: 'back-to-form',
-          attributes: { title: 'Back to Forms', style: 'font-weight: bold; padding: 0 8px;' }
+          command: 'back-to-site',
+          attributes: { title: 'Back to Sites', style: 'font-weight: bold; padding: 0 8px;' }
         },
         {
           id: 'toggle-pages-sidebar-btn',
@@ -794,7 +791,7 @@ function initGrapesJSBuilder() {
 
     } catch (error) {
       console.error('Error initializing GrapeJS:', error);
-      document.getElementById('gjs').innerHTML = '<div style="text-align: center; padding: 20px; color: red;">Error loading form builder: ' + error.message + '</div>';
+      document.getElementById('gjs').innerHTML = '<div style="text-align: center; padding: 20px; color: red;">Error loading site builder: ' + error.message + '</div>';
     }
   }
 }
@@ -823,7 +820,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style>
-  .sidebar-collapsed #form-pages-sidebar {
+  .sidebar-collapsed #site-pages-sidebar {
     left: -180px;
   }
   .sidebar-collapsed .builder-body {
@@ -834,7 +831,7 @@ document.addEventListener('DOMContentLoaded', function() {
     overflow: hidden;
     display: flex;
   }
-  #form-pages-sidebar {
+  #site-pages-sidebar {
     height: 100%;
     overflow-y: auto;
   }

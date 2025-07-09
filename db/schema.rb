@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_07_06_234032) do
+ActiveRecord::Schema[7.1].define(version: 2025_07_09_085301) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -201,26 +201,6 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_06_234032) do
     t.index ["organizer_id"], name: "index_events_on_organizer_id"
   end
 
-  create_table "form_submissions", force: :cascade do |t|
-    t.bigint "form_id", null: false
-    t.jsonb "data"
-    t.datetime "submitted_at"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["form_id"], name: "index_form_submissions_on_form_id"
-  end
-
-  create_table "forms", force: :cascade do |t|
-    t.bigint "organization_id", null: false
-    t.string "name"
-    t.text "description"
-    t.jsonb "form_data"
-    t.boolean "is_active"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["organization_id"], name: "index_forms_on_organization_id"
-  end
-
   create_table "organization_assets", force: :cascade do |t|
     t.bigint "organization_id", null: false
     t.datetime "created_at", null: false
@@ -343,6 +323,27 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_06_234032) do
     t.index ["user_id"], name: "index_reactions_on_user_id"
   end
 
+  create_table "site_submissions", force: :cascade do |t|
+    t.bigint "site_id", null: false
+    t.jsonb "data"
+    t.datetime "submitted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["site_id"], name: "index_site_submissions_on_site_id"
+  end
+
+  create_table "sites", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.string "name"
+    t.text "description"
+    t.jsonb "form_data"
+    t.boolean "is_active"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.jsonb "site_data"
+    t.index ["organization_id"], name: "index_sites_on_organization_id"
+  end
+
   create_table "tasks", force: :cascade do |t|
     t.string "status", default: "Scheduled", null: false
     t.string "subject", null: false
@@ -421,8 +422,6 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_06_234032) do
   add_foreign_key "events", "calendars"
   add_foreign_key "events", "organizations"
   add_foreign_key "events", "users", column: "organizer_id"
-  add_foreign_key "form_submissions", "forms"
-  add_foreign_key "forms", "organizations"
   add_foreign_key "organization_assets", "organizations"
   add_foreign_key "organization_fields", "organizations"
   add_foreign_key "organization_users", "organizations"
@@ -436,6 +435,8 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_06_234032) do
   add_foreign_key "posts", "users"
   add_foreign_key "reactions", "posts"
   add_foreign_key "reactions", "users"
+  add_foreign_key "site_submissions", "sites"
+  add_foreign_key "sites", "organizations"
   add_foreign_key "tasks", "pets"
   add_foreign_key "user_ad_rewards", "ads"
   add_foreign_key "user_ad_rewards", "users"

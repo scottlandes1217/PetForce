@@ -1,5 +1,5 @@
-class FormSubmission < ApplicationRecord
-  belongs_to :form
+class SiteSubmission < ApplicationRecord
+  belongs_to :site
   
   # Validations
   validates :data, presence: true
@@ -14,6 +14,6 @@ class FormSubmission < ApplicationRecord
   
   # Methods
   def to_s
-    "Submission for #{form.name} on #{submitted_at.strftime('%B %d, %Y at %I:%M %p')}"
+    "Submission for #{site.name} on #{submitted_at.strftime('%B %d, %Y at %I:%M %p')}"
   end
 end
