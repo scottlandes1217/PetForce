@@ -9,7 +9,7 @@
           <%= link_to edit_organization_form_path(@organization, @form), class: "btn btn-secondary" do %>
             <i class="fas fa-edit me-2"></i>Edit
           <% end %>
-          <%= link_to builder_organization_form_path(@organization, @form), class: "btn btn-info" do %>
+          <%= link_to builder_organization_form_path(@organization, @form), class: "btn btn-info", data: { turbo: false } do %>
             <i class="fas fa-paint-brush me-2"></i>Form Builder
           <% end %>
           <%= link_to organization_forms_path(@organization), class: "btn btn-outline-secondary" do %>
@@ -67,7 +67,7 @@
                 <i class="fas fa-paint-brush fa-3x text-muted mb-3"></i>
                 <h4 class="text-muted">No form content yet</h4>
                 <p class="text-muted">Use the form builder to create your form.</p>
-                <%= link_to builder_organization_form_path(@organization, @form), class: "btn btn-primary" do %>
+                <%= link_to builder_organization_form_path(@organization, @form), class: "btn btn-primary", data: { turbo: false } do %>
                   <i class="fas fa-paint-brush me-2"></i>Open Form Builder
                 <% end %>
               </div>
@@ -82,7 +82,7 @@
             </div>
             <div class="card-body">
               <div class="d-grid gap-2">
-                <%= link_to builder_organization_form_path(@organization, @form), class: "btn btn-primary" do %>
+                <%= link_to builder_organization_form_path(@organization, @form), class: "btn btn-primary", data: { turbo: false } do %>
                   <i class="fas fa-paint-brush me-2"></i>Form Builder
                 <% end %>
                 <%= link_to display_organization_form_path(@organization, @form), class: "btn btn-info", target: "_blank" do %>

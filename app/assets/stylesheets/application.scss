@@ -10,11 +10,16 @@
 @import "views/organization_fields";
 @import "feed";
 @import "calendar";
+@import "views/form_builder";
 
 /* General App Styling */
 
 .main-content {
-  margin: 92px 0px 0px 0px
+  margin: 91px 0px 0px 0px
+}
+
+.main-nav-dropdown {
+  inset: -1px auto auto -107px !important;
 }
 
 .container, .container-lg, .container-md, .container-sm, .container-xl, .container-xxl {

@@ -55,7 +55,7 @@
                           <%= link_to edit_organization_form_path(@organization, form), class: "btn btn-sm btn-outline-secondary" do %>
                             <i class="fas fa-edit"></i>
                           <% end %>
-                          <%= link_to builder_organization_form_path(@organization, form), class: "btn btn-sm btn-outline-info" do %>
+                          <%= link_to builder_organization_form_path(@organization, form), class: "btn btn-sm btn-outline-info", data: { turbo: false } do %>
                             <i class="fas fa-paint-brush"></i>
                           <% end %>
                           <%= link_to organization_form_path(@organization, form), 

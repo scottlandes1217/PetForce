@@ -1,7 +1,13 @@
 <%= render 'shared/navbar_org' %>
 <div class="builder-container">
   <div class="builder-body p-0">
-    <div id="gjs" style="height: 80vh; min-height: 600px; width: 100vw; max-width: 100vw; margin-left: calc(-50vw + 50%);">
+    <div id="form-pages-sidebar">
+      <button id="toggle-pages-sidebar" style="background: none; border: none; color: #fff; font-size: 1.2rem; padding: 8px 8px 0 8px; align-self: flex-end; cursor: pointer;">«</button>
+      <div style="font-weight:bold; font-size:1.1rem; padding:0 16px 12px 16px;">Form Pages</div>
+      <ul id="form-pages-list" style="list-style:none; padding:0 16px; margin:0;"></ul>
+      <button id="add-form-page" style="margin:16px 16px 0 16px; background:#007bff; color:#fff; border:none; border-radius:4px; padding:8px 0; font-size:1rem;">+ Add Page</button>
+    </div>
+    <div id="gjs">
       <div style="text-align: center; padding: 20px; color: #666;">
         Loading form builder...
       </div>
@@ -13,30 +19,20 @@
 <link rel="stylesheet" href="https://unpkg.com/grapesjs@0.21.7/dist/css/grapes.min.css">
 <link rel="stylesheet" href="https://unpkg.com/grapesjs-preset-webpage@1.0.3/dist/grapesjs-preset-webpage.min.css">
 
-<style>
-  /* Canvas fills viewport minus navbar */
-  #gjs {
-    height: calc(100vh - 92px) !important;
-    scroll-behavior: none;
-    min-height: 600px !important;
-    width: 100vw !important;
-    max-width: 100vw !important;
-    margin-left: calc(-50vw + 50%) !important;
-  }
-  #gjs .gjs-cv-canvas, #gjs .gjs-cv-canvas iframe, #gjs .gjs-cv-canvas iframe body {
-    min-height: 600px !important;
-  }
-  .gjs-custom-btn {
-    padding: 4px 0px !important;
-    max-width: 20px !important;
-  }
-  html, body {
-    overflow-x: hidden;
-  }
-</style>
-
 <script src="https://unpkg.com/grapesjs@0.21.7/dist/grapes.min.js"></script>
 <script src="https://unpkg.com/grapesjs-preset-webpage@1.0.3/dist/index.js"></script>
+
+<script type="application/json" id="org-tables-fields">
+<%= {
+  pets: Pet.attribute_names - ["id", "created_at", "updated_at", "organization_id"],
+  tasks: Task.attribute_names - ["id", "created_at", "updated_at", "pet_id"]
+  # Add more tables as needed
+}.to_json.html_safe %>
+</script>
+
+<script type="application/json" id="org-fields-metadata">
+<%= form_builder_field_metadata_json %>
+</script>
 
 <script>
   function initGrapesJSBuilder() {
@@ -62,6 +58,293 @@
         });
 
         editor.on('load', () => {
+          // Remove unwanted default blocks
+          editor.BlockManager.remove('link-block');
+          editor.BlockManager.remove('quote');
+
+          // Add a custom Photo block that uses the Asset Manager
+          editor.BlockManager.add('photo-upload', {
+            label: 'Photo',
+            category: 'Basic',
+            media: '<i class="fa fa-image"></i>',
+            content: { type: 'image' }
+          });
+
+          // Add a custom Button block
+          editor.BlockManager.add('form-button', {
+            label: 'Button',
+            category: 'Basic',
+            media: '<i class="fa fa-arrow-right"></i>',
+            content: '<button class="btn btn-primary" data-gjs-type="form-button">Submit</button>'
+          });
+
+          // Type-to-icon mapping
+          const typeIcons = {
+            text: '<i class="fa fa-font"></i>',
+            number: '<i class="fa fa-hashtag"></i>',
+            picklist: '<i class="fa fa-list"></i>',
+            multiselect: '<i class="fa fa-tasks"></i>',
+            date: '<i class="fa fa-calendar"></i>',
+            checkbox: '<i class="fa fa-check-square"></i>',
+            textarea: '<i class="fa fa-align-left"></i>'
+          };
+
+          // Use the new org-fields-metadata JSON for block generation
+          const fieldsMeta = JSON.parse(document.getElementById('org-fields-metadata').textContent);
+          Object.entries(fieldsMeta).forEach(([category, fields]) => {
+            const categoryLabel = category.replace('_fields', ' Fields').replace(/\b\w/g, l => l.toUpperCase());
+            fields.forEach(field => {
+              let content = '';
+              let icon = typeIcons[field.type] || '<i class="fa fa-question"></i>';
+              // Generate correct field HTML
+              switch (field.type) {
+                case 'text':
+                  content = `<label>${field.label}<input type="text" name="${category}[${field.name}]" class="form-control"/></label>`;
+                  break;
+                case 'number':
+                  content = `<label>${field.label}<input type="number" name="${category}[${field.name}]" class="form-control"/></label>`;
+                  break;
+                case 'picklist':
+                  content = `<label>${field.label}<select name="${category}[${field.name}]" class="form-control">${(field.options||[]).map(opt => `<option value='${opt}'>${opt}</option>`).join('')}</select></label>`;
+                  break;
+                case 'multiselect':
+                  content = `<label>${field.label}<select name="${category}[${field.name}][]" class="form-control" multiple>${(field.options||[]).map(opt => `<option value='${opt}'>${opt}</option>`).join('')}</select></label>`;
+                  break;
+                case 'date':
+                  content = `<label>${field.label}<input type="date" name="${category}[${field.name}]" class="form-control"/></label>`;
+                  break;
+                case 'checkbox':
+                  content = `<label><input type="checkbox" name="${category}[${field.name}]"/> ${field.label}</label>`;
+                  break;
+                case 'textarea':
+                  content = `<label>${field.label}<textarea name="${category}[${field.name}]" class="form-control"></textarea></label>`;
+                  break;
+                default:
+                  content = `<label>${field.label}<input type="text" name="${category}[${field.name}]" class="form-control"/></label>`;
+              }
+              editor.BlockManager.add(`${category}-${field.name}`, {
+                label: field.label,
+                category: categoryLabel,
+                media: icon,
+                content: content
+              });
+            });
+          });
+
+          // --- Multi-Page Form Logic ---
+          let pages = [
+            { id: 'page-1', name: 'Page 1' }
+          ];
+          let currentPageId = pages[0].id;
+
+          // Helper to create a wrapper for a page if not present
+          function ensurePageWrapper(pageId, pageName) {
+            let wrapper = editor.DomComponents.getWrapper().find(`#${pageId}`)[0];
+            if (!wrapper) {
+              wrapper = editor.addComponents({
+                tagName: 'div',
+                attributes: { id: pageId, 'data-page': pageName },
+                components: [],
+                style: { minHeight: '400px', display: 'none' }
+              })[0];
+            }
+            return wrapper;
+          }
+
+          // Show only the selected page
+          function showPage(pageId) {
+            currentPageId = pageId;
+            pages.forEach(page => {
+              const wrapper = editor.DomComponents.getWrapper().find(`#${page.id}`)[0];
+              if (wrapper) {
+                if (page.id === pageId) {
+                  wrapper.setStyle({ ...wrapper.getStyle(), display: '' });
+                  // If empty, show placeholder
+                  if (!wrapper.components().length) {
+                    if (!wrapper.find('.page-placeholder')[0]) {
+                      wrapper.append(`<div class="page-placeholder" style="color:#888; text-align:center; padding:40px 0;">This page is empty. Drag blocks here!</div>`);
+                    }
+                  } else {
+                    // Remove placeholder if content exists
+                    wrapper.find('.page-placeholder').forEach(ph => ph.remove());
+                  }
+                } else {
+                  wrapper.setStyle({ ...wrapper.getStyle(), display: 'none' });
+                }
+              }
+            });
+          }
+
+          // Render sidebar pages list
+          function renderPagesSidebar() {
+            const list = document.getElementById('form-pages-list');
+            list.innerHTML = '';
+            pages.forEach((page, idx) => {
+              const li = document.createElement('li');
+              li.textContent = page.name;
+              li.style.marginBottom = '8px';
+              li.style.cursor = 'pointer';
+              li.style.background = page.id === currentPageId ? '#007bff' : '#23272b';
+              li.style.color = page.id === currentPageId ? '#fff' : '#ccc';
+              li.style.padding = '8px 12px';
+              li.style.borderRadius = '4px';
+              li.onclick = () => {
+                showPage(page.id);
+                renderPagesSidebar();
+              };
+              // Remove button
+              if (pages.length > 1) {
+                const removeBtn = document.createElement('span');
+                removeBtn.textContent = ' ×';
+                removeBtn.style.color = '#dc3545';
+                removeBtn.style.marginLeft = '8px';
+                removeBtn.style.cursor = 'pointer';
+                removeBtn.onclick = (e) => {
+                  e.stopPropagation();
+                  removePage(page.id);
+                };
+                li.appendChild(removeBtn);
+              }
+              list.appendChild(li);
+            });
+          }
+
+          // Add page
+          function addPage() {
+            const newId = `page-${Date.now()}`;
+            const newName = `Page ${pages.length + 1}`;
+            pages.push({ id: newId, name: newName });
+            ensurePageWrapper(newId, newName);
+            showPage(newId);
+            renderPagesSidebar();
+          }
+
+          // Remove page
+          function removePage(pageId) {
+            if (pages.length === 1) return;
+            const idx = pages.findIndex(p => p.id === pageId);
+            if (idx !== -1) {
+              // Remove wrapper/component
+              const wrapper = editor.DomComponents.getWrapper().find(`#${pageId}`)[0];
+              if (wrapper) wrapper.remove();
+              pages.splice(idx, 1);
+              // Show previous or first page
+              const nextPage = pages[idx - 1] || pages[0];
+              showPage(nextPage.id);
+              renderPagesSidebar();
+            }
+          }
+
+          // Add page button handler
+          document.getElementById('add-form-page').onclick = addPage;
+
+          // Ensure wrappers for all pages
+          pages.forEach(page => ensurePageWrapper(page.id, page.name));
+          showPage(currentPageId);
+          renderPagesSidebar();
+
+          // When a block is dropped, add it to the current page wrapper
+          editor.on('component:add', (model) => {
+            if (model.parent() === editor.DomComponents.getWrapper()) {
+              // Move to current page wrapper
+              const wrapper = editor.DomComponents.getWrapper().find(`#${currentPageId}`)[0];
+              if (wrapper) wrapper.append(model);
+            }
+          });
+
+          // --- Button Block Traits ---
+          editor.DomComponents.addType('form-button', {
+            model: {
+              defaults: {
+                tagName: 'button',
+                attributes: { class: 'btn btn-primary', type: 'button' },
+                traits: [
+                  {
+                    type: 'text',
+                    label: 'Label',
+                    name: 'button-label',
+                    changeProp: 1
+                  },
+                  {
+                    type: 'select',
+                    label: 'Action',
+                    name: 'button-action',
+                    options: [
+                      { value: 'submit', name: 'Submit Form' },
+                      { value: 'navigate', name: 'Navigate to URL' }
+                    ],
+                    changeProp: 1
+                  },
+                  {
+                    type: 'text',
+                    label: 'URL',
+                    name: 'button-url',
+                    placeholder: 'https://...',
+                    changeProp: 1,
+                    condition: { 'button-action': 'navigate' }
+                  }
+                ],
+                'button-label': 'Submit',
+                'button-action': 'submit',
+                'button-url': ''
+              },
+              init() {
+                this.on('change:button-label', this.handleLabelChange);
+                this.on('change:button-action', this.handleActionChange);
+                this.on('change:button-url', this.handleUrlChange);
+              },
+              handleLabelChange() {
+                this.set('content', this.get('button-label'));
+              },
+              handleActionChange() {
+                if (this.get('button-action') === 'navigate') {
+                  this.addAttributes({ type: 'button' });
+                } else {
+                  this.addAttributes({ type: 'submit' });
+                }
+              },
+              handleUrlChange() {
+                // No-op for now, handled on click
+              }
+            },
+            view: {
+              events: {
+                click: 'handleClick'
+              },
+              handleClick(e) {
+                const model = this.model;
+                const action = model.get('button-action');
+                if (action === 'navigate') {
+                  const url = model.get('button-url');
+                  if (url) window.location.href = url;
+                } else if (action === 'submit') {
+                  // Find the parent form and submit it
+                  let el = this.el;
+                  while (el && el.tagName !== 'FORM') el = el.parentElement;
+                  if (el) el.submit();
+                }
+              }
+            }
+          });
+
+          // Configure Asset Manager for org-specific assets
+          const orgId = <%= @organization.id %>;
+          editor.AssetManager.setConfig({
+            upload: `/organizations/${orgId}/assets/upload`,
+            uploadName: 'file',
+            assets: [], // Will be loaded via fetch below
+            autoAdd: true,
+            multiUpload: false,
+            // ... other config as needed ...
+          });
+
+          // Fetch and load org assets
+          fetch(`/organizations/${orgId}/assets.json`)
+            .then(res => res.json())
+            .then(urls => {
+              urls.forEach(url => editor.AssetManager.add(url));
+            });
+
           // Set min-height on the canvas iframe and its body
           const setCanvasMinHeight = () => {
             const iframe = editor.Canvas.getFrameEl();
@@ -83,10 +366,26 @@
             observer.observe(iframe.contentDocument.body, { attributes: true, childList: true, subtree: true });
           }
           editor.Commands.run('open-blocks');
+
+          // Collapse all categories except 'Basic' on load (after all blocks are added)
+          setTimeout(() => {
+            editor.BlockManager.getCategories().forEach(cat => {
+              if (cat.get('id') !== 'Basic') {
+                cat.set('open', false);
+              }
+            });
+          }, 0);
         });
 
-        // Add Save and Back buttons to the GrapeJS header (options panel)
+        // Add Pages button to the GrapeJS header (options panel)
         editor.Panels.addButton('options', [
+          {
+            id: 'toggle-pages-sidebar-btn',
+            className: 'fa fa-list gjs-custom-btn',
+            label: '',
+            command: 'toggle-pages-sidebar',
+            attributes: { title: 'Toggle Pages Sidebar', style: 'font-weight: bold; padding: 0 8px;' }
+          },
           {
             id: 'save-form',
             className: 'fa fa-save gjs-custom-btn',
@@ -99,9 +398,21 @@
             className: 'fa fa-arrow-left gjs-custom-btn',
             label: '',
             command: 'back-to-form',
-            attributes: { title: 'Back to Form', style: 'font-weight: bold; padding: 0 8px;' }
+            attributes: { title: 'Back to Forms', style: 'font-weight: bold; padding: 0 8px;' }
           }
         ]);
+
+        // Toggle pages sidebar command
+        editor.Commands.add('toggle-pages-sidebar', {
+          run(editor, sender) {
+            sender && sender.set('active', 0);
+            document.body.classList.toggle('sidebar-collapsed');
+            const toggleBtn = document.getElementById('toggle-pages-sidebar');
+            if (toggleBtn) {
+              toggleBtn.textContent = document.body.classList.contains('sidebar-collapsed') ? '»' : '«';
+            }
+          }
+        });
 
         // Save command
         editor.Commands.add('save-form', {
@@ -194,4 +505,50 @@
   document.addEventListener('turbo:before-cache', function() {
     window.gjsEditorInitialized = false;
   });
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var toggleBtn = document.getElementById('toggle-pages-sidebar');
+    if (toggleBtn) {
+      toggleBtn.onclick = function() {
+        document.body.classList.toggle('sidebar-collapsed');
+        toggleBtn.textContent = document.body.classList.contains('sidebar-collapsed') ? '»' : '«';
+      };
+    }
+  });
 </script>
+
+<style>
+  .sidebar-collapsed #form-pages-sidebar {
+    left: -180px;
+  }
+  .sidebar-collapsed .builder-body {
+    margin-left: 0 !important;
+  }
+  .builder-body {
+    height: calc(100vh - 92px);
+    overflow: hidden;
+    display: flex;
+  }
+  #form-pages-sidebar {
+    height: 100%;
+    overflow-y: auto;
+  }
+  #gjs {
+    height: 100%;
+    min-height: 0;
+    flex: 1 1 0;
+    overflow: auto;
+  }
+  .gjs-custom-btn {
+    color: #fff !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 8px !important;
+    margin: 0 2px !important;
+    border-radius: 3px !important;
+    transition: background-color 0.2s !important;
+  }
+  .gjs-custom-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+  }
+</style>
