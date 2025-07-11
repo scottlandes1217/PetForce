@@ -61,7 +61,9 @@
         <button id="multi-select" class="canvas-zoom-btn"><i class="fas fa-object-group"></i></button>
       </div>
       <div id="canvas-wrapper">
-        <div id="orchestration-canvas"></div>
+        <div id="orchestration-canvas">
+          <div id="canvas-inner"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -84,266 +86,7 @@
   </div>
 </div>
 
-<!-- Modern Orchestration Builder Styles -->
-<style>
-/* --- Layout --- */
-.orchestration-builder-container {
-  height: calc(100vh - 60px);
-  display: flex;
-  flex-direction: column;
-}
-.builder-main {
-  flex: 1;
-  display: flex;
-  overflow: hidden;
-}
-.builder-sidebar {
-  width: 280px;
-  flex-shrink: 0;
-  overflow-y: auto;
-  background: #fff;
-  border-right: 1px solid #e0e0e0;
-  z-index: 20;
-}
-.builder-canvas {
-  flex: 1;
-  position: relative;
-  background: #f8f9fa;
-  overflow: hidden;
-  min-width: 0;
-}
-#canvas-controls {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 30;
-  display: flex;
-  gap: 5px;
-}
-.canvas-zoom-btn {
-  background: #fff;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 5px 8px;
-  cursor: pointer;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  transition: background 0.2s;
-}
-.canvas-zoom-btn:hover {
-  background: #f0f0f0;
-}
-.canvas-zoom-btn.active {
-  background: #007bff;
-  color: white;
-}
-#canvas-wrapper {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  overflow: visible;
-  background: #f8f9fa;
-}
-#orchestration-canvas {
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  top: 0;
-  left: 0;
-  min-height: 600px;
-  min-width: 1200px;
-  background: #f8f9fa;
-  outline: none;
-}
-
-/* --- Block Palette --- */
-.block-category {
-  border-bottom: 1px solid #e9ecef;
-}
-.category-header {
-  padding: 12px 16px;
-  background: #f8f9fa;
-  cursor: pointer;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.block-list {
-  padding: 8px 0;
-}
-.block-item {
-  padding: 8px 16px;
-  cursor: grab;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-radius: 6px;
-  margin-bottom: 2px;
-  transition: background 0.2s;
-}
-.block-item:hover {
-  background: #e3f2fd;
-}
-.block-item:active {
-  cursor: grabbing;
-}
-.block-item i {
-  width: 16px;
-  text-align: center;
-}
-
-/* --- Block Styles --- */
-.orchestration-block {
-  position: absolute;
-  width: 200px;
-  min-height: 80px;
-  background: #fff;
-  border: 2px solid #dee2e6;
-  border-radius: 8px;
-  padding: 16px;
-  cursor: move;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  transition: box-shadow 0.2s, border-color 0.2s;
-  z-index: 10;
-  user-select: none;
-}
-.orchestration-block.selected {
-  border-color: #007bff;
-  box-shadow: 0 0 0 3px rgba(0,123,255,0.18);
-}
-.orchestration-block.multiple {
-  border-color: #4caf50;
-  box-shadow: 0 0 0 3px rgba(76,175,80,0.18);
-}
-.block-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-.block-icon {
-  width: 40px;
-  height: 40px;
-  background: #f8f9fa;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.block-icon i {
-  font-size: 18px;
-  color: #6c757d;
-}
-.block-info {
-  flex: 1;
-  min-width: 0;
-}
-.block-title {
-  font-weight: 600;
-  font-size: 14px;
-  margin: 0 0 2px 0;
-  color: #222;
-  line-height: 1.2;
-}
-.block-type {
-  font-size: 11px;
-  color: #888;
-  text-transform: uppercase;
-  display: block;
-}
-.block-content {
-  font-size: 12px;
-  color: #6c757d;
-  line-height: 1.3;
-}
-/* Block type colors - Salesforce Flow style */
-.block-trigger .block-icon { background: #ff6b6b; }
-.block-trigger .block-icon i { color: #fff; }
-.block-screen .block-icon { background: #4ecdc4; }
-.block-screen .block-icon i { color: #fff; }
-.block-decision .block-icon { background: #45b7d1; }
-.block-decision .block-icon i { color: #fff; }
-.block-create_record .block-icon { background: #f39c12; }
-.block-create_record .block-icon i { color: #fff; }
-.block-update_record .block-icon { background: #9b59b6; }
-.block-update_record .block-icon i { color: #fff; }
-.block-delete_record .block-icon { background: #e74c3c; }
-.block-delete_record .block-icon i { color: #fff; }
-.block-assignment .block-icon { background: #3498db; }
-.block-assignment .block-icon i { color: #fff; }
-.block-loop .block-icon { background: #1abc9c; }
-.block-loop .block-icon i { color: #fff; }
-.block-email .block-icon { background: #34495e; }
-.block-email .block-icon i { color: #fff; }
-.block-notification .block-icon { background: #e67e22; }
-.block-notification .block-icon i { color: #fff; }
-.block-api_call .block-icon { background: #9b59b6; }
-.block-api_call .block-icon i { color: #fff; }
-.block-wait .block-icon { background: #95a5a6; }
-.block-wait .block-icon i { color: #fff; }
-
-/* --- Ports --- */
-.block-ports {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  background: #007bff;
-  border-radius: 50%;
-  border: 2px solid #fff;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.2s;
-  z-index: 20;
-}
-.block-ports:hover {
-  background: #0056b3;
-  transform: scale(1.2);
-}
-.port-output { bottom: -7px; left: 50%; transform: translateX(-50%); }
-
-/* --- SVG Connections --- */
-#connection-svg {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  pointer-events: none;
-  z-index: 5;
-}
-.connection-path {
-  stroke: #2196f3;
-  stroke-width: 2;
-  fill: none;
-}
-.connection-path.invalid {
-  stroke: #f44336;
-  stroke-dasharray: 5,5;
-}
-.connection-path.preview {
-  stroke: #2196f3;
-  stroke-width: 2;
-  stroke-dasharray: 5,5;
-  opacity: 0.7;
-}
-.connection-path.selected {
-  stroke: #ff6b6b;
-  stroke-width: 3;
-}
-
-/* --- Modal --- */
-#block-properties-modal .modal-content {
-  border-radius: 10px;
-}
-
-/* --- Multi-select box --- */
-#selection-box {
-  position: absolute;
-  border: 2px dashed #007bff;
-  background: rgba(0,123,255,0.08);
-  z-index: 100;
-  pointer-events: none;
-  display: none;
-}
-</style>
+<%= stylesheet_link_tag "orchestration_builder", media: "all" %>
 
 <script>
 // Modern Orchestration Builder Script
@@ -353,6 +96,7 @@ class OrchestrationBuilder {
   constructor(config) {
     this.config = config;
     this.canvas = document.getElementById(config.canvasId);
+    this.inner = document.getElementById('canvas-inner');
     this.palette = document.getElementById(config.paletteId);
     this.saveBtn = document.getElementById(config.saveBtnId);
     this.testBtn = document.getElementById(config.testBtnId);
@@ -380,28 +124,73 @@ class OrchestrationBuilder {
   }
 
   init() {
+    console.log('Initializing builder, canvas:', this.canvas);
     this.setupSVG();
     this.setupPalette();
     this.setupCanvasEvents();
     this.setupControls();
     this.setupModal();
+    this.updateTransform(); // Set transform before loading blocks/connections
     this.loadBlocks(this.config.orchestrationData || []);
     this.loadConnections(this.config.connectionData || []);
     this.setupKeyboardShortcuts();
+    // Ensure pointer-events: auto on #canvas-inner
+    this.inner.style.pointerEvents = 'auto';
   }
 
   setupSVG() {
     // SVG for connections
     this.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     this.svg.setAttribute('id', 'connection-svg');
+    this.inner.insertBefore(this.svg, this.inner.firstChild);
     this.svg.style.position = 'absolute';
     this.svg.style.top = '0';
     this.svg.style.left = '0';
     this.svg.style.width = '100%';
     this.svg.style.height = '100%';
-    this.svg.style.pointerEvents = 'auto'; // Changed from 'none' to 'auto'
     this.svg.style.zIndex = '5';
-    this.canvas.parentNode.insertBefore(this.svg, this.canvas);
+    this.svg.style.pointerEvents = 'none'; // SVG does not block panning
+    // Create separate markers for each color
+    let defs = this.svg.querySelector('defs');
+    if (!defs) {
+      defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+      this.svg.appendChild(defs);
+    }
+    
+    // Create black arrow marker
+    if (!this.svg.querySelector('#arrow-marker-black')) {
+      const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+      marker.setAttribute('id', 'arrow-marker-black');
+      marker.setAttribute('markerWidth', '15');
+      marker.setAttribute('markerHeight', '15');
+      marker.setAttribute('refX', '13');
+      marker.setAttribute('refY', '7.5');
+      marker.setAttribute('orient', 'auto');
+      marker.setAttribute('markerUnits', 'userSpaceOnUse');
+      const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+      arrow.setAttribute('points', '0,0 0,15 13,7.5');
+      arrow.setAttribute('fill', '#000');
+      arrow.setAttribute('stroke', 'none');
+      marker.appendChild(arrow);
+      defs.appendChild(marker);
+    }
+    // Create blue arrow marker (selected)
+    if (!this.svg.querySelector('#arrow-marker-blue')) {
+      const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+      marker.setAttribute('id', 'arrow-marker-blue');
+      marker.setAttribute('markerWidth', '15');
+      marker.setAttribute('markerHeight', '15');
+      marker.setAttribute('refX', '13');
+      marker.setAttribute('refY', '7.5');
+      marker.setAttribute('orient', 'auto');
+      marker.setAttribute('markerUnits', 'userSpaceOnUse');
+      const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+      arrow.setAttribute('points', '0,0 0,15 13,7.5');
+      arrow.setAttribute('fill', '#2196f3');
+      arrow.setAttribute('stroke', 'none');
+      marker.appendChild(arrow);
+      defs.appendChild(marker);
+    }
   }
 
   setupPalette() {
@@ -427,12 +216,30 @@ class OrchestrationBuilder {
   }
 
   setupCanvasEvents() {
-    // Pan/zoom
-    this.canvas.addEventListener('mousedown', e => {
-      if (e.target === this.canvas) {
-        this.isPanning = true;
-        this.panStart = { x: e.clientX, y: e.clientY, panX: this.panX, panY: this.panY };
-        this.canvas.style.cursor = 'grabbing';
+    // Test if canvas receives any events
+    this.canvas.addEventListener('click', e => {
+      console.log('Canvas clicked!', e.target);
+    });
+    
+    // Attach pan events to #canvas-inner
+    this.inner.addEventListener('mousedown', e => {
+      console.log('mousedown on canvas-inner', e.target);
+      // Only handle if clicking on the canvas itself (not a block)
+      if (e.target === this.inner) {
+        if (e.shiftKey || this.isMultiSelectMode) {
+          this.isMultiSelecting = true;
+          this.selectionStart = { x: e.offsetX, y: e.offsetY };
+          this.showSelectionBox(e.offsetX, e.offsetY);
+          e.preventDefault();
+        } else {
+          this.isPanning = true;
+          this.panStart = { x: e.clientX, y: e.clientY, panX: this.panX, panY: this.panY };
+          this.inner.style.cursor = 'grabbing';
+          document.body.style.cursor = 'grabbing';
+          console.log('Starting pan');
+          e.preventDefault();
+          e.stopPropagation();
+        }
       }
     });
     document.addEventListener('mousemove', e => {
@@ -440,20 +247,25 @@ class OrchestrationBuilder {
         this.panX = this.panStart.panX + (e.clientX - this.panStart.x);
         this.panY = this.panStart.panY + (e.clientY - this.panStart.y);
         this.updateTransform();
+        console.log('Panning:', this.panX, this.panY);
       }
     });
     document.addEventListener('mouseup', () => {
       if (this.isPanning) {
         this.isPanning = false;
-        this.canvas.style.cursor = 'grab';
+        this.inner.style.cursor = 'grab';
+        document.body.style.cursor = 'grab';
+        console.log('Stopping pan');
       }
     });
+    
     // Zoom with wheel
     this.canvas.addEventListener('wheel', e => {
       e.preventDefault();
       const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
       const newZoom = Math.max(0.2, Math.min(2.5, this.currentZoom * zoomFactor));
       if (newZoom !== this.currentZoom) {
+        // Zoom around mouse position
         const rect = this.canvas.getBoundingClientRect();
         const mouseX = (e.clientX - rect.left - this.panX) / this.currentZoom;
         const mouseY = (e.clientY - rect.top - this.panY) / this.currentZoom;
@@ -461,15 +273,22 @@ class OrchestrationBuilder {
         this.panY -= mouseY * (newZoom - this.currentZoom);
         this.currentZoom = newZoom;
         this.updateTransform();
+        this.redrawConnections();
       }
     });
-    // Multi-select box
-    this.canvas.addEventListener('mousedown', e => {
-      if ((e.shiftKey || this.isMultiSelectMode) && e.target === this.canvas) {
-        this.isMultiSelecting = true;
-        this.selectionStart = { x: e.offsetX, y: e.offsetY };
-        this.showSelectionBox(e.offsetX, e.offsetY);
-        e.preventDefault();
+    
+    // Multi-select mousemove and mouseup
+    this.canvas.addEventListener('mousemove', e => {
+      if (this.isMultiSelecting) {
+        this.updateSelectionBox(e.offsetX, e.offsetY);
+      }
+    });
+    
+    this.canvas.addEventListener('mouseup', e => {
+      if (this.isMultiSelecting) {
+        this.isMultiSelecting = false;
+        this.selectBlocksInBox();
+        this.hideSelectionBox();
       }
     });
     this.canvas.addEventListener('mousemove', e => {
@@ -484,17 +303,19 @@ class OrchestrationBuilder {
         this.hideSelectionBox();
       }
     });
+    
     // Connection selection - moved to document level for better event handling
     document.addEventListener('click', e => {
+      console.log('Document click:', e.target);
       if (e.target.classList.contains('connection-path') || e.target.classList.contains('connection-click-area')) {
+        console.log('Connection clicked!');
         e.stopPropagation();
-        // Find the parent group or the path itself
-        let targetElement = e.target;
-        if (e.target.classList.contains('connection-click-area')) {
-          targetElement = e.target.parentNode;
-        }
-        this.selectConnection(targetElement);
+        // Always resolve to the <g> group if present
+        let group = e.target;
+        if (group.tagName !== 'g') group = group.closest('g');
+        this.selectConnection(group || e.target);
       } else if (!e.target.closest('.orchestration-block') && !e.target.closest('.block-ports')) {
+        console.log('Clearing connection selection');
         this.clearConnectionSelection();
       }
     });
@@ -504,10 +325,12 @@ class OrchestrationBuilder {
     this.zoomInBtn.addEventListener('click', () => {
       this.currentZoom = Math.min(2.5, this.currentZoom * 1.1);
       this.updateTransform();
+      this.redrawConnections(); // Redraw connections after zoom
     });
     this.zoomOutBtn.addEventListener('click', () => {
       this.currentZoom = Math.max(0.2, this.currentZoom * 0.9);
       this.updateTransform();
+      this.redrawConnections(); // Redraw connections after zoom
     });
     this.multiSelectBtn.addEventListener('click', () => {
       this.isMultiSelectMode = !this.isMultiSelectMode;
@@ -557,12 +380,44 @@ class OrchestrationBuilder {
     });
   }
 
-  updateTransform() {
-    this.canvas.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.currentZoom})`;
-    this.svg.style.transform = this.canvas.style.transform;
+  // Helper to update all block DOM positions based on logical x/y, pan, and zoom
+  updateBlockPositions() {
+    const baseWidth = 200;
+    const baseHeight = 100;
     this.blocks.forEach(block => {
+      // Always use base size for block
+      block.el.style.width = `${baseWidth}px`;
+      block.el.style.height = `${baseHeight}px`;
+      // Position block (do not multiply by zoom)
+      block.el.style.left = `${block.x}px`;
+      block.el.style.top = `${block.y}px`;
+      // Scale the entire block
       block.el.style.transform = '';
+      // Remove any inner scaling
+      const inner = block.el.querySelector('.block-inner');
+      if (inner) {
+        inner.style.transform = '';
+        inner.style.width = '100%';
+        inner.style.height = '100%';
+        inner.style.fontSize = '';
+      }
+      // Port: always at bottom center
+      block.el.querySelectorAll('.block-ports').forEach(port => {
+        port.style.width = `14px`;
+        port.style.height = `14px`;
+        port.style.borderWidth = `2px`;
+        port.style.left = `calc(50% - 7px)`;
+        port.style.top = '';
+        port.style.bottom = `-7px`;
+      });
     });
+  }
+
+  updateTransform() {
+    // No CSS transform on canvas or SVG
+    this.inner.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.currentZoom})`;
+    this.inner.style.transformOrigin = 'top left';
+    this.updateBlockPositions();
     this.redrawConnections();
   }
 
@@ -616,23 +471,36 @@ class OrchestrationBuilder {
     el.className = `orchestration-block block-${type}`;
     el.id = id;
     el.dataset.blockType = type;
-    el.style.left = `${x}px`;
-    el.style.top = `${y}px`;
-    el.innerHTML = this.blockHTML(type, id);
-    this.canvas.appendChild(el);
+    // x, y are in SVG/canvas coordinates
     const block = { id, type, el, x, y, name: this.getBlockName(type), config: {} };
+    // Prevent overlap on creation
+    if (this.isOverlapping(block, x, y)) {
+      // Find a non-overlapping position (simple: move down until clear)
+      let tryY = y;
+      while (this.isOverlapping(block, x, tryY)) {
+        tryY += 30;
+      }
+      block.y = tryY;
+    }
     this.blocks.push(block);
+    el.innerHTML = `<div class='block-inner'>${this.blockHTML(type, id)}</div>`;
+    // Append block.el after SVG
+    this.inner.appendChild(el);
+    el.style.zIndex = '10';
+    el.style.pointerEvents = 'auto';
     this.makeBlockDraggable(block);
     this.setupBlockPorts(block);
+    this.updateBlockPositions();
+    // Block selection
     el.addEventListener('click', e => {
-      // Don't select if we're in the middle of a connection
+      console.log('Block clicked:', block.id);
       if (this.connectingPort) return;
-      
       if (!e.shiftKey && !this.isMultiSelectMode) this.clearSelection();
       this.selectBlock(block, true);
       e.stopPropagation();
     });
     el.addEventListener('dblclick', e => {
+      console.log('Block double-clicked:', block.id);
       this.openModal(block);
       e.stopPropagation();
     });
@@ -697,20 +565,32 @@ class OrchestrationBuilder {
     block.el.addEventListener('mousedown', e => {
       if (e.target.classList.contains('block-ports')) return;
       isDragging = true;
-      offset.x = e.clientX - block.el.offsetLeft;
-      offset.y = e.clientY - block.el.offsetTop;
+      const rect = block.el.getBoundingClientRect();
+      const canvasRect = this.canvas.getBoundingClientRect();
+      offset.x = (e.clientX - canvasRect.left) - block.x;
+      offset.y = (e.clientY - canvasRect.top) - block.y;
       this.isDraggingBlock = true;
       document.body.style.userSelect = 'none';
       e.stopPropagation();
     });
     document.addEventListener('mousemove', e => {
       if (isDragging) {
-        const x = (e.clientX - offset.x);
-        const y = (e.clientY - offset.y);
-        block.el.style.left = `${x}px`;
-        block.el.style.top = `${y}px`;
-        block.x = x;
-        block.y = y;
+        const canvasRect = this.canvas.getBoundingClientRect();
+        let newX = (e.clientX - canvasRect.left) - offset.x;
+        let newY = (e.clientY - canvasRect.top) - offset.y;
+        // Improved overlap logic: allow sliding along edges
+        const overlapsXY = this.isOverlapping(block, newX, newY);
+        const overlapsX = this.isOverlapping(block, newX, block.y);
+        const overlapsY = this.isOverlapping(block, block.x, newY);
+        if (!overlapsXY) {
+          block.x = newX;
+          block.y = newY;
+        } else if (!overlapsX) {
+          block.x = newX;
+        } else if (!overlapsY) {
+          block.y = newY;
+        }
+        this.updateBlockPositions();
         this.redrawConnections();
       }
     });
@@ -719,6 +599,7 @@ class OrchestrationBuilder {
         isDragging = false;
         this.isDraggingBlock = false;
         document.body.style.userSelect = '';
+        this.updateBlockPositions();
         this.redrawConnections();
       }
     });
@@ -752,10 +633,14 @@ class OrchestrationBuilder {
 
   updateConnectionPreview = (e) => {
     if (!this.connectingPort) return;
+    // Always use latest logical coordinates for the port
     const { x, y } = this.getPortCenter(this.connectingPort.port);
+    // Get mouse position relative to orchestration-canvas
     const canvasRect = this.canvas.getBoundingClientRect();
-    const endX = e.clientX - canvasRect.left;
-    const endY = e.clientY - canvasRect.top;
+    // Adjust for pan/zoom
+    const invZoom = 1 / this.currentZoom;
+    const endX = (e.clientX - canvasRect.left - this.panX) * invZoom;
+    const endY = (e.clientY - canvasRect.top - this.panY) * invZoom;
     this.connectionPreview.setAttribute('d', `M ${x} ${y} L ${endX} ${endY}`);
   }
 
@@ -831,16 +716,49 @@ class OrchestrationBuilder {
       const { x: x1, y: y1 } = this.getPortCenter(conn.from.port);
       const { x: x2, y: y2 } = this.getPortCenter(conn.to.port);
       const pathData = `M ${x1} ${y1} L ${x2} ${y2}`;
+      const strokeWidth = 3 * this.currentZoom;
+      const isSelected = this.selectedConnection && (conn.path === (this.selectedConnection.tagName === 'g' ? this.selectedConnection : this.selectedConnection.closest('g')));
+      const color = isSelected ? '#2196f3' : '#000';
+      const markerId = isSelected ? 'arrow-marker-blue' : 'arrow-marker-black';
+      
+      console.log(`Redrawing connection: selected=${isSelected}, color=${color}, marker=${markerId}`);
       
       if (conn.path.tagName === 'g') {
-        // Handle grouped paths (visible + click area)
         const clickArea = conn.path.querySelector('.connection-click-area');
         const visiblePath = conn.path.querySelector('.connection-path');
         clickArea.setAttribute('d', pathData);
         visiblePath.setAttribute('d', pathData);
+        clickArea.setAttribute('stroke-width', 8 * this.currentZoom);
+        visiblePath.setAttribute('stroke-width', strokeWidth);
+        
+        // Completely remove and recreate marker reference
+        visiblePath.removeAttribute('marker-end');
+        // Force browser to re-render by temporarily setting a different marker
+        visiblePath.setAttribute('marker-end', 'url(#arrow-marker-black)');
+        visiblePath.setAttribute('marker-end', `url(#${markerId})`);
+        visiblePath.setAttribute('stroke', color);
+        
+        if (isSelected) {
+          visiblePath.classList.add('selected');
+        } else {
+          visiblePath.classList.remove('selected');
+        }
       } else {
-        // Handle single paths (preview)
         conn.path.setAttribute('d', pathData);
+        conn.path.setAttribute('stroke-width', strokeWidth);
+        
+        // Completely remove and recreate marker reference
+        conn.path.removeAttribute('marker-end');
+        // Force browser to re-render by temporarily setting a different marker
+        conn.path.setAttribute('marker-end', 'url(#arrow-marker-black)');
+        conn.path.setAttribute('marker-end', `url(#${markerId})`);
+        conn.path.setAttribute('stroke', color);
+        
+        if (isSelected) {
+          conn.path.classList.add('selected');
+        } else {
+          conn.path.classList.remove('selected');
+        }
       }
     });
   }
@@ -848,10 +766,17 @@ class OrchestrationBuilder {
   createSVGPath(cls = '') {
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute('class', `connection-path${cls ? ' ' + cls : ''}`);
-    path.setAttribute('stroke', cls === 'preview' ? '#2196f3' : '#2196f3');
-    path.setAttribute('stroke-width', '2');
+    path.setAttribute('stroke', cls === 'preview' ? '#2196f3' : '#000');
+    path.setAttribute('stroke-width', '3');
     path.setAttribute('fill', 'none');
     path.style.cursor = 'pointer';
+    // Set pointer-events on connection paths
+    path.setAttribute('pointer-events', 'stroke');
+    
+    // Add arrow marker to the path (except for preview)
+    if (!cls.includes('preview')) {
+      path.setAttribute('marker-end', 'url(#arrow-marker-black)');
+    }
     
     // Add an invisible wider stroke for easier clicking
     if (!cls.includes('preview')) {
@@ -873,27 +798,80 @@ class OrchestrationBuilder {
     return path;
   }
 
+  // In getPortCenter, use scaled width/height for all calculations
   getPortCenter(port) {
+    const baseWidth = 200;
+    const baseHeight = 100;
     if (port.dataset && port.dataset.portType === 'input') {
-      // For virtual input ports, use the center of the block
-      const rect = port.block.el.getBoundingClientRect();
-      const canvasRect = this.canvas.getBoundingClientRect();
-      return {
-        x: rect.left + rect.width / 2 - canvasRect.left,
-        y: rect.top + rect.height / 2 - canvasRect.top
-      };
+      const block = port.block;
+      const blockWidth = baseWidth;
+      const blockHeight = baseHeight;
+      const left = block.x;
+      const right = left + blockWidth;
+      const top = block.y;
+      const bottom = top + blockHeight;
+      const cx = left + blockWidth / 2;
+      const cy = top + blockHeight / 2;
+      let sourceBlock = null;
+      for (const conn of this.connections) {
+        if (conn.to.block === block) {
+          sourceBlock = conn.from.block;
+          break;
+        }
+      }
+      if (!sourceBlock) {
+        return { x: cx, y: cy };
+      }
+      const sourceBlockWidth = baseWidth;
+      const sourceBlockHeight = baseHeight;
+      const sourceX = sourceBlock.x + sourceBlockWidth / 2;
+      const sourceY = sourceBlock.y + sourceBlockHeight;
+      function lineIntersect(x1, y1, x2, y2, x3, y3, x4, y4) {
+        const denom = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
+        if (denom === 0) return null;
+        const ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denom;
+        if (ua < 0 || ua > 1) return null;
+        const ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denom;
+        if (ub < 0 || ub > 1) return null;
+        return {
+          x: x1 + ua * (x2 - x1),
+          y: y1 + ua * (y2 - y1)
+        };
+      }
+      const edges = [
+        [left, top, right, top],
+        [right, top, right, bottom],
+        [right, bottom, left, bottom],
+        [left, bottom, left, top]
+      ];
+      let closest = null;
+      let minDist = Infinity;
+      for (const [x3, y3, x4, y4] of edges) {
+        const pt = lineIntersect(sourceX, sourceY, cx, cy, x3, y3, x4, y4);
+        if (pt) {
+          const dist = Math.hypot(pt.x - sourceX, pt.y - sourceY);
+          if (dist < minDist) {
+            minDist = dist;
+            closest = pt;
+          }
+        }
+      }
+      if (closest) return closest;
+      return { x: cx, y: cy };
     } else {
-      // For real ports, use the port position
-      const rect = port.getBoundingClientRect();
-      const canvasRect = this.canvas.getBoundingClientRect();
+      const block = port.closest('.orchestration-block');
+      const blockObj = this.blocks.find(b => b.el === block);
+      const blockWidth = baseWidth;
+      const blockHeight = baseHeight;
       return {
-        x: rect.left + rect.width / 2 - canvasRect.left,
-        y: rect.top + rect.height / 2 - canvasRect.top
+        x: blockObj.x + blockWidth / 2.15,
+        y: blockObj.y + blockHeight + 1 // 7 = port height / 2
       };
     }
   }
 
   selectConnection(path) {
+    console.log('Selecting connection:', path);
     this.clearConnectionSelection();
     
     // Handle both direct paths and grouped paths
@@ -904,18 +882,31 @@ class OrchestrationBuilder {
     
     targetPath.classList.add('selected');
     this.selectedConnection = path;
+    
+    // Clear block selection when selecting a connection
+    this.clearSelection();
+    console.log('Connection selected:', this.selectedConnection);
+    
+    // Force redraw to update marker colors
+    this.redrawConnections();
   }
 
   clearConnectionSelection() {
+    console.log('Clearing connection selection');
     this.svg.querySelectorAll('.connection-path.selected').forEach(path => {
       path.classList.remove('selected');
     });
     this.selectedConnection = null;
+    
+    // Force redraw to update marker colors
+    this.redrawConnections();
   }
 
   deleteSelectedConnections() {
     if (this.selectedConnection) {
-      const connectionIndex = this.connections.findIndex(conn => conn.path === this.selectedConnection);
+      // Always find the connection by matching the group or any child path
+      const group = this.selectedConnection.tagName === 'g' ? this.selectedConnection : this.selectedConnection.closest('g');
+      const connectionIndex = this.connections.findIndex(conn => conn.path === group);
       if (connectionIndex !== -1) {
         this.deleteConnection(this.connections[connectionIndex]);
         this.selectedConnection = null;
@@ -924,16 +915,25 @@ class OrchestrationBuilder {
   }
 
   clearSelection() {
+    console.log('Clearing block selection');
     this.selectedBlocks.forEach(b => b.el.classList.remove('selected'));
     this.selectedBlocks.clear();
   }
+  
   selectBlock(block, add = false) {
+    console.log('Selecting block:', block.id, 'add:', add);
     if (!add) this.clearSelection();
     block.el.classList.add('selected');
     this.selectedBlocks.add(block);
+    // Clear connection selection when selecting a block
+    this.clearConnectionSelection();
+    console.log('Selected blocks:', this.selectedBlocks.size);
   }
+  
   deleteSelectedBlocks() {
+    console.log('Deleting selected blocks');
     this.selectedBlocks.forEach(block => {
+      console.log('Deleting block:', block.id);
       this.canvas.removeChild(block.el);
       this.blocks = this.blocks.filter(b => b !== block);
       // Remove connections
@@ -1024,12 +1024,14 @@ class OrchestrationBuilder {
   }
   loadBlocks(data) {
     data.forEach(b => {
+      // Use saved logical x/y
       const block = this.createBlock(b.block_type, b.position_x, b.position_y);
       block.id = b.id;
       block.name = b.name;
       block.config = b.config || {};
       block.el.querySelector('.block-title').textContent = b.name;
     });
+    this.updateBlockPositions();
   }
   loadConnections(data) {
     data.forEach(conn => {
@@ -1043,6 +1045,24 @@ class OrchestrationBuilder {
           this.createConnection({ block: fromBlock, port: fromPort }, { block: toBlock, port: virtualPort });
         }
       }
+    });
+  }
+
+  isOverlapping(block, x, y) {
+    const baseWidth = 200;
+    const baseHeight = 100;
+    return this.blocks.some(b => {
+      if (b === block) return false;
+      const bx = b.x;
+      const by = b.y;
+      const ax = x;
+      const ay = y;
+      return (
+        ax < bx + baseWidth &&
+        ax + baseWidth > bx &&
+        ay < by + baseHeight &&
+        ay + baseHeight > by
+      );
     });
   }
 }
@@ -1064,4 +1084,5 @@ document.addEventListener('DOMContentLoaded', () => {
     csrfToken: document.querySelector('meta[name="csrf-token"]').content
   });
 });
+</script> 
 </script> 
