@@ -37,6 +37,8 @@
               <% current_section = 'Tasks'; current_icon = 'fas fa-tasks'; current_path = organization_tasks_path(@organization) %>
             <% elsif current_page?(organization_sites_path(@organization)) || request.path.match?(/\/organizations\/\d+\/sites\/\d+/) %>
               <% current_section = 'Sites'; current_icon = 'fas fa-file-alt'; current_path = organization_sites_path(@organization) %>
+            <% elsif current_page?(organization_orchestrations_path(@organization)) || request.path.match?(/\/organizations\/\d+\/orchestrations\/\d+/) %>
+              <% current_section = 'Orchestrations'; current_icon = 'fas fa-project-diagram'; current_path = organization_orchestrations_path(@organization) %>
             <% elsif current_page?(feed_index_path) %>
               <% current_section = 'Social'; current_icon = 'fas fa-users'; current_path = feed_index_path %>
             <% else %>
@@ -87,6 +89,12 @@
                 <%= link_to organization_sites_path(@organization), class: "dropdown-item d-flex align-items-center py-2 #{current_page?(organization_sites_path(@organization)) || request.path.match?(/\/organizations\/\d+\/sites\/\d+/) ? 'active' : ''}" do %>
                   <i class="fas fa-file-alt me-3 text-muted"></i>
                   <span>Sites</span>
+                <% end %>
+              </li>
+              <li>
+                <%= link_to organization_orchestrations_path(@organization), class: "dropdown-item d-flex align-items-center py-2 #{current_page?(organization_orchestrations_path(@organization)) || request.path.match?(/\/organizations\/\d+\/orchestrations\/\d+/) ? 'active' : ''}" do %>
+                  <i class="fas fa-project-diagram me-3 text-muted"></i>
+                  <span>Orchestrations</span>
                 <% end %>
               </li>
             <% end %>

@@ -1,0 +1,65 @@
+<%= render 'shared/navbar_org' %>
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Orchestrations</h1>
+        <div>
+          <%= link_to 'New Orchestration', new_organization_orchestration_path(@organization), 
+                      class: 'btn btn-primary' %>
+        </div>
+      </div>
+
+      <% if @orchestrations.any? %>
+        <div class="row">
+          <% @orchestrations.each do |orchestration| %>
+            <div class="col-md-6 col-lg-4 mb-4">
+              <div class="card h-100">
+                <div class="card-body">
+                                     <div class="d-flex justify-content-between align-items-start mb-2">
+                     <h5 class="card-title mb-0">
+                       <%= link_to orchestration.name, organization_orchestration_path(@organization, orchestration), 
+                                   class: 'text-decoration-none' %>
+                     </h5>
+                   </div>
+                  
+                  <p class="card-text text-muted small">
+                    Created <%= time_ago_in_words(orchestration.created_at) %> ago
+                  </p>
+                  
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span class="badge <%= orchestration.active? ? 'bg-success' : 'bg-secondary' %>">
+                      <%= orchestration.status.titleize %>
+                    </span>
+                    
+                    <div class="btn-group" role="group">
+                      <%= link_to 'View', organization_orchestration_path(@organization, orchestration), 
+                                  class: 'btn btn-sm btn-outline-primary' %>
+                      <%= link_to 'Edit', edit_organization_orchestration_path(@organization, orchestration), 
+                                  class: 'btn btn-sm btn-outline-secondary' %>
+                      <%= link_to 'Builder', builder_organization_orchestration_path(@organization, orchestration), 
+                                  class: 'btn btn-sm btn-outline-info' %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="text-center py-5">
+          <div class="mb-4">
+            <i class="fas fa-project-diagram fa-3x text-muted"></i>
+          </div>
+          <h3 class="text-muted">No Orchestrations Yet</h3>
+          <p class="text-muted">Create your first orchestration to get started.</p>
+          <div class="mt-3">
+            <%= link_to 'Create Orchestration', new_organization_orchestration_path(@organization), 
+                        class: 'btn btn-primary' %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div> 

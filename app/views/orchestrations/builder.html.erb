@@ -1,0 +1,1067 @@
+<%= render 'shared/navbar_org' %>
+
+<div class="orchestration-builder-container">
+  <!-- Toolbar -->
+  <div class="builder-toolbar bg-light border-bottom p-3">
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center">
+        <h4 class="mb-0 me-3"><%= @orchestration.name %></h4>
+        <span class="badge <%= @orchestration.active? ? 'bg-success' : 'bg-secondary' %>">
+          <%= @orchestration.status.titleize %>
+        </span>
+      </div>
+      <div class="btn-group" role="group">
+        <button type="button" class="btn btn-outline-secondary" id="save-orchestration">
+          <i class="fas fa-save"></i> Save
+        </button>
+        <button type="button" class="btn btn-outline-primary" id="test-orchestration">
+          <i class="fas fa-play"></i> Test
+        </button>
+        <%= link_to 'Back to Orchestrations', organization_orchestrations_path(@organization), class: 'btn btn-outline-secondary' %>
+      </div>
+    </div>
+  </div>
+
+  <div class="builder-main">
+    <!-- Block Palette -->
+    <div class="builder-sidebar bg-white border-end" id="block-palette">
+      <div class="p-3 border-bottom"><h6 class="mb-0">Blocks</h6></div>
+      <div class="block-categories">
+        <div class="block-category"><div class="category-header"><i class="fas fa-bolt"></i> Triggers</div>
+          <div class="block-list"><div class="block-item" data-block-type="trigger" draggable="true"><i class="fas fa-bolt"></i><span>Trigger</span></div></div></div>
+        <div class="block-category"><div class="category-header"><i class="fas fa-desktop"></i> Input</div>
+          <div class="block-list"><div class="block-item" data-block-type="screen" draggable="true"><i class="fas fa-desktop"></i><span>Screen</span></div></div></div>
+        <div class="block-category"><div class="category-header"><i class="fas fa-code-branch"></i> Logic</div>
+          <div class="block-list">
+            <div class="block-item" data-block-type="decision" draggable="true"><i class="fas fa-random"></i><span>Decision</span></div>
+            <div class="block-item" data-block-type="assignment" draggable="true"><i class="fas fa-equals"></i><span>Assignment</span></div>
+            <div class="block-item" data-block-type="loop" draggable="true"><i class="fas fa-redo"></i><span>Loop</span></div>
+          </div></div>
+        <div class="block-category"><div class="category-header"><i class="fas fa-database"></i> Data</div>
+          <div class="block-list">
+            <div class="block-item" data-block-type="create_record" draggable="true"><i class="fas fa-plus-circle"></i><span>Create Record</span></div>
+            <div class="block-item" data-block-type="update_record" draggable="true"><i class="fas fa-edit"></i><span>Update Record</span></div>
+            <div class="block-item" data-block-type="delete_record" draggable="true"><i class="fas fa-trash"></i><span>Delete Record</span></div>
+          </div></div>
+        <div class="block-category"><div class="category-header"><i class="fas fa-bolt"></i> Actions</div>
+          <div class="block-list">
+            <div class="block-item" data-block-type="email" draggable="true"><i class="fas fa-envelope"></i><span>Email</span></div>
+            <div class="block-item" data-block-type="notification" draggable="true"><i class="fas fa-bell"></i><span>Notification</span></div>
+            <div class="block-item" data-block-type="api_call" draggable="true"><i class="fas fa-plug"></i><span>API Call</span></div>
+            <div class="block-item" data-block-type="wait" draggable="true"><i class="fas fa-clock"></i><span>Wait</span></div>
+          </div></div>
+      </div>
+    </div>
+
+    <!-- Canvas Pan/Zoom Wrapper -->
+    <div class="builder-canvas">
+      <div id="canvas-controls">
+        <button id="zoom-out" class="canvas-zoom-btn"><i class="fas fa-search-minus"></i></button>
+        <button id="zoom-in" class="canvas-zoom-btn"><i class="fas fa-search-plus"></i></button>
+        <button id="multi-select" class="canvas-zoom-btn"><i class="fas fa-object-group"></i></button>
+      </div>
+      <div id="canvas-wrapper">
+        <div id="orchestration-canvas"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Block Properties Modal -->
+  <div class="modal" id="block-properties-modal" tabindex="-1" aria-hidden="true" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1050;">
+    <div class="modal-dialog" style="position: relative; width: auto; margin: 1.75rem auto; max-width: 500px;">
+      <div class="modal-content" style="position: relative; display: flex; flex-direction: column; background-color: #fff; border: 1px solid rgba(0,0,0,.2); border-radius: 0.3rem; outline: 0;">
+        <div class="modal-header" style="display: flex; align-items: flex-start; justify-content: space-between; padding: 1rem; border-bottom: 1px solid #dee2e6; border-top-left-radius: calc(0.3rem - 1px); border-top-right-radius: calc(0.3rem - 1px);">
+          <h5 class="modal-title" id="block-modal-title"></h5>
+          <button type="button" class="btn-close" aria-label="Close" style="padding: 0; background: 0 0; border: 0; font-size: 1.5rem; font-weight: 700; line-height: 1; color: #000; text-shadow: 0 1px 0 #fff; opacity: .5; cursor: pointer;">&times;</button>
+        </div>
+        <div class="modal-body" id="block-modal-body" style="position: relative; flex: 1 1 auto; padding: 1rem;"></div>
+        <div class="modal-footer" style="display: flex; align-items: center; justify-content: flex-end; padding: 0.75rem; border-top: 1px solid #dee2e6;">
+          <button type="button" class="btn btn-secondary" style="margin-right: 0.5rem;">Cancel</button>
+          <button type="button" class="btn btn-primary" id="save-block-properties">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modern Orchestration Builder Styles -->
+<style>
+/* --- Layout --- */
+.orchestration-builder-container {
+  height: calc(100vh - 60px);
+  display: flex;
+  flex-direction: column;
+}
+.builder-main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+.builder-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  background: #fff;
+  border-right: 1px solid #e0e0e0;
+  z-index: 20;
+}
+.builder-canvas {
+  flex: 1;
+  position: relative;
+  background: #f8f9fa;
+  overflow: hidden;
+  min-width: 0;
+}
+#canvas-controls {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 30;
+  display: flex;
+  gap: 5px;
+}
+.canvas-zoom-btn {
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 5px 8px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  transition: background 0.2s;
+}
+.canvas-zoom-btn:hover {
+  background: #f0f0f0;
+}
+.canvas-zoom-btn.active {
+  background: #007bff;
+  color: white;
+}
+#canvas-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: visible;
+  background: #f8f9fa;
+}
+#orchestration-canvas {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  min-height: 600px;
+  min-width: 1200px;
+  background: #f8f9fa;
+  outline: none;
+}
+
+/* --- Block Palette --- */
+.block-category {
+  border-bottom: 1px solid #e9ecef;
+}
+.category-header {
+  padding: 12px 16px;
+  background: #f8f9fa;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.block-list {
+  padding: 8px 0;
+}
+.block-item {
+  padding: 8px 16px;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: background 0.2s;
+}
+.block-item:hover {
+  background: #e3f2fd;
+}
+.block-item:active {
+  cursor: grabbing;
+}
+.block-item i {
+  width: 16px;
+  text-align: center;
+}
+
+/* --- Block Styles --- */
+.orchestration-block {
+  position: absolute;
+  width: 200px;
+  min-height: 80px;
+  background: #fff;
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  padding: 16px;
+  cursor: move;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: box-shadow 0.2s, border-color 0.2s;
+  z-index: 10;
+  user-select: none;
+}
+.orchestration-block.selected {
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0,123,255,0.18);
+}
+.orchestration-block.multiple {
+  border-color: #4caf50;
+  box-shadow: 0 0 0 3px rgba(76,175,80,0.18);
+}
+.block-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.block-icon {
+  width: 40px;
+  height: 40px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.block-icon i {
+  font-size: 18px;
+  color: #6c757d;
+}
+.block-info {
+  flex: 1;
+  min-width: 0;
+}
+.block-title {
+  font-weight: 600;
+  font-size: 14px;
+  margin: 0 0 2px 0;
+  color: #222;
+  line-height: 1.2;
+}
+.block-type {
+  font-size: 11px;
+  color: #888;
+  text-transform: uppercase;
+  display: block;
+}
+.block-content {
+  font-size: 12px;
+  color: #6c757d;
+  line-height: 1.3;
+}
+/* Block type colors - Salesforce Flow style */
+.block-trigger .block-icon { background: #ff6b6b; }
+.block-trigger .block-icon i { color: #fff; }
+.block-screen .block-icon { background: #4ecdc4; }
+.block-screen .block-icon i { color: #fff; }
+.block-decision .block-icon { background: #45b7d1; }
+.block-decision .block-icon i { color: #fff; }
+.block-create_record .block-icon { background: #f39c12; }
+.block-create_record .block-icon i { color: #fff; }
+.block-update_record .block-icon { background: #9b59b6; }
+.block-update_record .block-icon i { color: #fff; }
+.block-delete_record .block-icon { background: #e74c3c; }
+.block-delete_record .block-icon i { color: #fff; }
+.block-assignment .block-icon { background: #3498db; }
+.block-assignment .block-icon i { color: #fff; }
+.block-loop .block-icon { background: #1abc9c; }
+.block-loop .block-icon i { color: #fff; }
+.block-email .block-icon { background: #34495e; }
+.block-email .block-icon i { color: #fff; }
+.block-notification .block-icon { background: #e67e22; }
+.block-notification .block-icon i { color: #fff; }
+.block-api_call .block-icon { background: #9b59b6; }
+.block-api_call .block-icon i { color: #fff; }
+.block-wait .block-icon { background: #95a5a6; }
+.block-wait .block-icon i { color: #fff; }
+
+/* --- Ports --- */
+.block-ports {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: #007bff;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  z-index: 20;
+}
+.block-ports:hover {
+  background: #0056b3;
+  transform: scale(1.2);
+}
+.port-output { bottom: -7px; left: 50%; transform: translateX(-50%); }
+
+/* --- SVG Connections --- */
+#connection-svg {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 5;
+}
+.connection-path {
+  stroke: #2196f3;
+  stroke-width: 2;
+  fill: none;
+}
+.connection-path.invalid {
+  stroke: #f44336;
+  stroke-dasharray: 5,5;
+}
+.connection-path.preview {
+  stroke: #2196f3;
+  stroke-width: 2;
+  stroke-dasharray: 5,5;
+  opacity: 0.7;
+}
+.connection-path.selected {
+  stroke: #ff6b6b;
+  stroke-width: 3;
+}
+
+/* --- Modal --- */
+#block-properties-modal .modal-content {
+  border-radius: 10px;
+}
+
+/* --- Multi-select box --- */
+#selection-box {
+  position: absolute;
+  border: 2px dashed #007bff;
+  background: rgba(0,123,255,0.08);
+  z-index: 100;
+  pointer-events: none;
+  display: none;
+}
+</style>
+
+<script>
+// Modern Orchestration Builder Script
+// (Full Salesforce Flow-like UX, pan/zoom, multi-select, modal, SVG lines, keyboard, etc.)
+
+class OrchestrationBuilder {
+  constructor(config) {
+    this.config = config;
+    this.canvas = document.getElementById(config.canvasId);
+    this.palette = document.getElementById(config.paletteId);
+    this.saveBtn = document.getElementById(config.saveBtnId);
+    this.testBtn = document.getElementById(config.testBtnId);
+    this.zoomInBtn = document.getElementById(config.zoomInId);
+    this.zoomOutBtn = document.getElementById(config.zoomOutId);
+    this.multiSelectBtn = document.getElementById(config.multiSelectId);
+    this.saveUrl = config.saveUrl;
+    this.csrfToken = config.csrfToken;
+    this.blocks = [];
+    this.connections = [];
+    this.selectedBlocks = new Set();
+    this.isMultiSelecting = false;
+    this.selectionBox = null;
+    this.currentZoom = 1;
+    this.panX = 0;
+    this.panY = 0;
+    this.isPanning = false;
+    this.isDraggingBlock = false;
+    this.dragOffset = { x: 0, y: 0 };
+    this.connectionPreview = null;
+    this.connectingPort = null;
+    this.blockCounter = 1;
+    this.isMultiSelectMode = false; // Added for multi-select mode
+    this.init();
+  }
+
+  init() {
+    this.setupSVG();
+    this.setupPalette();
+    this.setupCanvasEvents();
+    this.setupControls();
+    this.setupModal();
+    this.loadBlocks(this.config.orchestrationData || []);
+    this.loadConnections(this.config.connectionData || []);
+    this.setupKeyboardShortcuts();
+  }
+
+  setupSVG() {
+    // SVG for connections
+    this.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    this.svg.setAttribute('id', 'connection-svg');
+    this.svg.style.position = 'absolute';
+    this.svg.style.top = '0';
+    this.svg.style.left = '0';
+    this.svg.style.width = '100%';
+    this.svg.style.height = '100%';
+    this.svg.style.pointerEvents = 'auto'; // Changed from 'none' to 'auto'
+    this.svg.style.zIndex = '5';
+    this.canvas.parentNode.insertBefore(this.svg, this.canvas);
+  }
+
+  setupPalette() {
+    // Drag and drop from palette
+    this.palette.querySelectorAll('.block-item').forEach(item => {
+      item.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('block-type', item.dataset.blockType);
+      });
+    });
+    this.canvas.addEventListener('dragover', e => {
+      e.preventDefault();
+    });
+    this.canvas.addEventListener('drop', e => {
+      e.preventDefault();
+      const blockType = e.dataTransfer.getData('block-type');
+      if (blockType) {
+        const rect = this.canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left - this.panX) / this.currentZoom;
+        const y = (e.clientY - rect.top - this.panY) / this.currentZoom;
+        this.createBlock(blockType, x, y);
+      }
+    });
+  }
+
+  setupCanvasEvents() {
+    // Pan/zoom
+    this.canvas.addEventListener('mousedown', e => {
+      if (e.target === this.canvas) {
+        this.isPanning = true;
+        this.panStart = { x: e.clientX, y: e.clientY, panX: this.panX, panY: this.panY };
+        this.canvas.style.cursor = 'grabbing';
+      }
+    });
+    document.addEventListener('mousemove', e => {
+      if (this.isPanning) {
+        this.panX = this.panStart.panX + (e.clientX - this.panStart.x);
+        this.panY = this.panStart.panY + (e.clientY - this.panStart.y);
+        this.updateTransform();
+      }
+    });
+    document.addEventListener('mouseup', () => {
+      if (this.isPanning) {
+        this.isPanning = false;
+        this.canvas.style.cursor = 'grab';
+      }
+    });
+    // Zoom with wheel
+    this.canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+      const newZoom = Math.max(0.2, Math.min(2.5, this.currentZoom * zoomFactor));
+      if (newZoom !== this.currentZoom) {
+        const rect = this.canvas.getBoundingClientRect();
+        const mouseX = (e.clientX - rect.left - this.panX) / this.currentZoom;
+        const mouseY = (e.clientY - rect.top - this.panY) / this.currentZoom;
+        this.panX -= mouseX * (newZoom - this.currentZoom);
+        this.panY -= mouseY * (newZoom - this.currentZoom);
+        this.currentZoom = newZoom;
+        this.updateTransform();
+      }
+    });
+    // Multi-select box
+    this.canvas.addEventListener('mousedown', e => {
+      if ((e.shiftKey || this.isMultiSelectMode) && e.target === this.canvas) {
+        this.isMultiSelecting = true;
+        this.selectionStart = { x: e.offsetX, y: e.offsetY };
+        this.showSelectionBox(e.offsetX, e.offsetY);
+        e.preventDefault();
+      }
+    });
+    this.canvas.addEventListener('mousemove', e => {
+      if (this.isMultiSelecting) {
+        this.updateSelectionBox(e.offsetX, e.offsetY);
+      }
+    });
+    this.canvas.addEventListener('mouseup', e => {
+      if (this.isMultiSelecting) {
+        this.isMultiSelecting = false;
+        this.selectBlocksInBox();
+        this.hideSelectionBox();
+      }
+    });
+    // Connection selection - moved to document level for better event handling
+    document.addEventListener('click', e => {
+      if (e.target.classList.contains('connection-path') || e.target.classList.contains('connection-click-area')) {
+        e.stopPropagation();
+        // Find the parent group or the path itself
+        let targetElement = e.target;
+        if (e.target.classList.contains('connection-click-area')) {
+          targetElement = e.target.parentNode;
+        }
+        this.selectConnection(targetElement);
+      } else if (!e.target.closest('.orchestration-block') && !e.target.closest('.block-ports')) {
+        this.clearConnectionSelection();
+      }
+    });
+  }
+
+  setupControls() {
+    this.zoomInBtn.addEventListener('click', () => {
+      this.currentZoom = Math.min(2.5, this.currentZoom * 1.1);
+      this.updateTransform();
+    });
+    this.zoomOutBtn.addEventListener('click', () => {
+      this.currentZoom = Math.max(0.2, this.currentZoom * 0.9);
+      this.updateTransform();
+    });
+    this.multiSelectBtn.addEventListener('click', () => {
+      this.isMultiSelectMode = !this.isMultiSelectMode;
+      this.multiSelectBtn.classList.toggle('active');
+      if (this.isMultiSelectMode) {
+        this.canvas.style.cursor = 'crosshair';
+      } else {
+        this.canvas.style.cursor = 'grab';
+      }
+    });
+    this.saveBtn.addEventListener('click', () => this.saveOrchestration());
+    this.testBtn.addEventListener('click', () => this.showNotification('Orchestration test started!', 'success'));
+  }
+
+  setupModal() {
+    // Simple custom modal implementation
+    this.modal = document.getElementById(this.config.modalId);
+    this.modalBackdrop = document.createElement('div');
+    this.modalBackdrop.className = 'modal-backdrop';
+    this.modalBackdrop.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1040; display: none;';
+    document.body.appendChild(this.modalBackdrop);
+    
+    document.getElementById('save-block-properties').addEventListener('click', () => {
+      this.hideModal();
+    });
+    
+    // Close modal when clicking backdrop or close button
+    this.modalBackdrop.addEventListener('click', () => this.hideModal());
+    this.modal.querySelector('.btn-close').addEventListener('click', () => this.hideModal());
+    this.modal.querySelector('.btn-secondary').addEventListener('click', () => this.hideModal());
+  }
+
+  setupKeyboardShortcuts() {
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        this.deleteSelectedBlocks();
+        this.deleteSelectedConnections();
+      }
+      if (e.key === 'Escape') {
+        this.cancelConnection();
+        this.isMultiSelectMode = false;
+        this.multiSelectBtn.classList.remove('active');
+        this.canvas.style.cursor = 'grab';
+        this.hideModal(); // Also close modal on escape
+        this.clearConnectionSelection();
+      }
+    });
+  }
+
+  updateTransform() {
+    this.canvas.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.currentZoom})`;
+    this.svg.style.transform = this.canvas.style.transform;
+    this.blocks.forEach(block => {
+      block.el.style.transform = '';
+    });
+    this.redrawConnections();
+  }
+
+  showSelectionBox(x, y) {
+    if (!this.selectionBox) {
+      this.selectionBox = document.createElement('div');
+      this.selectionBox.id = 'selection-box';
+      this.canvas.appendChild(this.selectionBox);
+    }
+    this.selectionBox.style.display = 'block';
+    this.selectionBox.style.left = `${x}px`;
+    this.selectionBox.style.top = `${y}px`;
+    this.selectionBox.style.width = '1px';
+    this.selectionBox.style.height = '1px';
+    this.selectionBox.startX = x;
+    this.selectionBox.startY = y;
+  }
+  updateSelectionBox(x, y) {
+    if (!this.selectionBox) return;
+    const minX = Math.min(this.selectionBox.startX, x);
+    const minY = Math.min(this.selectionBox.startY, y);
+    const width = Math.abs(x - this.selectionBox.startX);
+    const height = Math.abs(y - this.selectionBox.startY);
+    this.selectionBox.style.left = `${minX}px`;
+    this.selectionBox.style.top = `${minY}px`;
+    this.selectionBox.style.width = `${width}px`;
+    this.selectionBox.style.height = `${height}px`;
+  }
+  hideSelectionBox() {
+    if (this.selectionBox) this.selectionBox.style.display = 'none';
+  }
+  selectBlocksInBox() {
+    if (!this.selectionBox) return;
+    const box = this.selectionBox.getBoundingClientRect();
+    this.blocks.forEach(block => {
+      const rect = block.el.getBoundingClientRect();
+      if (
+        rect.left < box.right &&
+        rect.right > box.left &&
+        rect.top < box.bottom &&
+        rect.bottom > box.top
+      ) {
+        this.selectBlock(block, true);
+      }
+    });
+  }
+
+  createBlock(type, x, y) {
+    const id = `block_${this.blockCounter++}`;
+    const el = document.createElement('div');
+    el.className = `orchestration-block block-${type}`;
+    el.id = id;
+    el.dataset.blockType = type;
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+    el.innerHTML = this.blockHTML(type, id);
+    this.canvas.appendChild(el);
+    const block = { id, type, el, x, y, name: this.getBlockName(type), config: {} };
+    this.blocks.push(block);
+    this.makeBlockDraggable(block);
+    this.setupBlockPorts(block);
+    el.addEventListener('click', e => {
+      // Don't select if we're in the middle of a connection
+      if (this.connectingPort) return;
+      
+      if (!e.shiftKey && !this.isMultiSelectMode) this.clearSelection();
+      this.selectBlock(block, true);
+      e.stopPropagation();
+    });
+    el.addEventListener('dblclick', e => {
+      this.openModal(block);
+      e.stopPropagation();
+    });
+    return block;
+  }
+
+  blockHTML(type, id) {
+    return `
+      <div class="block-header">
+        <div class="block-icon">
+          <i class="${this.getBlockIcon(type)}"></i>
+        </div>
+        <div class="block-info">
+          <h6 class="block-title">${this.getBlockName(type)}</h6>
+          <span class="block-type">${type}</span>
+        </div>
+      </div>
+      <div class="block-content">${this.getBlockDescription(type)}</div>
+      <div class="port-output block-ports" data-port-type="output"></div>
+    `;
+  }
+
+  getBlockName(type) {
+    const names = {
+      trigger: 'New Trigger', screen: 'New Screen', decision: 'New Decision',
+      create_record: 'Create Record', update_record: 'Update Record', delete_record: 'Delete Record',
+      assignment: 'New Assignment', loop: 'New Loop', email: 'Send Email', notification: 'Send Notification',
+      api_call: 'API Call', wait: 'Wait'
+    };
+    return names[type] || 'New Block';
+  }
+  getBlockIcon(type) {
+    const icons = {
+      trigger: 'fas fa-bolt',
+      screen: 'fas fa-desktop', 
+      decision: 'fas fa-random',
+      create_record: 'fas fa-plus-circle',
+      update_record: 'fas fa-edit',
+      delete_record: 'fas fa-trash',
+      assignment: 'fas fa-equals',
+      loop: 'fas fa-redo',
+      email: 'fas fa-envelope',
+      notification: 'fas fa-bell',
+      api_call: 'fas fa-plug',
+      wait: 'fas fa-clock'
+    };
+    return icons[type] || 'fas fa-cube';
+  }
+  getBlockDescription(type) {
+    const desc = {
+      trigger: 'Starts the orchestration', screen: 'User interface for data input', decision: 'Conditional logic branching',
+      create_record: 'Create new database record', update_record: 'Update existing record', delete_record: 'Delete database record',
+      assignment: 'Set variable values', loop: 'Repeat actions', email: 'Send email notification', notification: 'Send system notification',
+      api_call: 'External API request', wait: 'Pause execution'
+    };
+    return desc[type] || 'Block configuration';
+  }
+
+  makeBlockDraggable(block) {
+    let isDragging = false;
+    let offset = { x: 0, y: 0 };
+    block.el.addEventListener('mousedown', e => {
+      if (e.target.classList.contains('block-ports')) return;
+      isDragging = true;
+      offset.x = e.clientX - block.el.offsetLeft;
+      offset.y = e.clientY - block.el.offsetTop;
+      this.isDraggingBlock = true;
+      document.body.style.userSelect = 'none';
+      e.stopPropagation();
+    });
+    document.addEventListener('mousemove', e => {
+      if (isDragging) {
+        const x = (e.clientX - offset.x);
+        const y = (e.clientY - offset.y);
+        block.el.style.left = `${x}px`;
+        block.el.style.top = `${y}px`;
+        block.x = x;
+        block.y = y;
+        this.redrawConnections();
+      }
+    });
+    document.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        this.isDraggingBlock = false;
+        document.body.style.userSelect = '';
+        this.redrawConnections();
+      }
+    });
+  }
+
+  setupBlockPorts(block) {
+    // Make the entire block a connection target
+    block.el.addEventListener('mousedown', e => {
+      if (e.target.classList.contains('block-ports')) {
+        e.stopPropagation();
+        this.startConnection(block, e.target);
+      }
+    });
+    
+    // Make the output port draggable
+    block.el.querySelectorAll('.block-ports').forEach(port => {
+      port.addEventListener('mousedown', e => {
+        e.stopPropagation();
+        this.startConnection(block, port);
+      });
+    });
+  }
+
+  startConnection(block, port) {
+    this.connectingPort = { block, port };
+    this.connectionPreview = this.createSVGPath('preview');
+    this.svg.appendChild(this.connectionPreview);
+    document.addEventListener('mousemove', this.updateConnectionPreview);
+    document.addEventListener('mouseup', this.finishConnection);
+  }
+
+  updateConnectionPreview = (e) => {
+    if (!this.connectingPort) return;
+    const { x, y } = this.getPortCenter(this.connectingPort.port);
+    const canvasRect = this.canvas.getBoundingClientRect();
+    const endX = e.clientX - canvasRect.left;
+    const endY = e.clientY - canvasRect.top;
+    this.connectionPreview.setAttribute('d', `M ${x} ${y} L ${endX} ${endY}`);
+  }
+
+  finishConnection = (e) => {
+    if (!this.connectingPort) return;
+    const target = document.elementFromPoint(e.clientX, e.clientY);
+    const targetBlock = this.blocks.find(b => b.el === target || b.el.contains(target));
+    
+    if (targetBlock && targetBlock !== this.connectingPort.block) {
+      // Create a virtual input port at the center of the target block
+      const virtualPort = { dataset: { portType: 'input' }, block: targetBlock };
+      if (this.canConnect(this.connectingPort, { block: targetBlock, port: virtualPort })) {
+        this.createConnection(this.connectingPort, { block: targetBlock, port: virtualPort });
+      } else {
+        console.log('Connection failed:', {
+          fromBlock: this.connectingPort.block.id,
+          toBlock: targetBlock.id,
+          fromType: this.connectingPort.port.dataset.portType,
+          toType: virtualPort.dataset.portType,
+          existingFromConnections: this.connections.filter(c => c.from.block === this.connectingPort.block).length,
+          existingToConnections: this.connections.filter(c => c.to.block === targetBlock).length
+        });
+        this.showNotification('Invalid connection', 'error');
+      }
+    }
+    
+    if (this.connectionPreview && this.connectionPreview.parentNode) {
+      this.svg.removeChild(this.connectionPreview);
+    }
+    this.connectionPreview = null;
+    this.connectingPort = null;
+    document.removeEventListener('mousemove', this.updateConnectionPreview);
+    document.removeEventListener('mouseup', this.finishConnection);
+  }
+
+  canConnect(from, to) {
+    if (from.block === to.block) return false;
+    const fromType = from.port.dataset.portType;
+    const toType = to.port.dataset.portType;
+    if (fromType === toType) return false;
+    if (!["output", "yes", "no"].includes(fromType)) return false;
+    if (toType !== 'input') return false;
+    // Only one outgoing connection per block
+    if (this.connections.some(c => c.from.block === from.block)) {
+      return false;
+    }
+    // Only one incoming per block
+    if (this.connections.some(c => c.to.block === to.block)) {
+      return false;
+    }
+    return true;
+  }
+
+  createConnection(from, to) {
+    const conn = { from, to };
+    conn.path = this.createSVGPath();
+    this.svg.appendChild(conn.path);
+    this.connections.push(conn);
+    this.redrawConnections();
+  }
+
+  deleteConnection(conn) {
+    if (conn.path && conn.path.parentNode) {
+      this.svg.removeChild(conn.path);
+    }
+    const idx = this.connections.indexOf(conn);
+    if (idx !== -1) this.connections.splice(idx, 1);
+    this.redrawConnections();
+  }
+
+  redrawConnections() {
+    this.connections.forEach(conn => {
+      const { x: x1, y: y1 } = this.getPortCenter(conn.from.port);
+      const { x: x2, y: y2 } = this.getPortCenter(conn.to.port);
+      const pathData = `M ${x1} ${y1} L ${x2} ${y2}`;
+      
+      if (conn.path.tagName === 'g') {
+        // Handle grouped paths (visible + click area)
+        const clickArea = conn.path.querySelector('.connection-click-area');
+        const visiblePath = conn.path.querySelector('.connection-path');
+        clickArea.setAttribute('d', pathData);
+        visiblePath.setAttribute('d', pathData);
+      } else {
+        // Handle single paths (preview)
+        conn.path.setAttribute('d', pathData);
+      }
+    });
+  }
+
+  createSVGPath(cls = '') {
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('class', `connection-path${cls ? ' ' + cls : ''}`);
+    path.setAttribute('stroke', cls === 'preview' ? '#2196f3' : '#2196f3');
+    path.setAttribute('stroke-width', '2');
+    path.setAttribute('fill', 'none');
+    path.style.cursor = 'pointer';
+    
+    // Add an invisible wider stroke for easier clicking
+    if (!cls.includes('preview')) {
+      const clickArea = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      clickArea.setAttribute('class', 'connection-click-area');
+      clickArea.setAttribute('stroke', 'transparent');
+      clickArea.setAttribute('stroke-width', '8');
+      clickArea.setAttribute('fill', 'none');
+      clickArea.style.cursor = 'pointer';
+      clickArea.style.pointerEvents = 'auto';
+      
+      // Group the visible path and click area
+      const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      group.appendChild(clickArea);
+      group.appendChild(path);
+      return group;
+    }
+    
+    return path;
+  }
+
+  getPortCenter(port) {
+    if (port.dataset && port.dataset.portType === 'input') {
+      // For virtual input ports, use the center of the block
+      const rect = port.block.el.getBoundingClientRect();
+      const canvasRect = this.canvas.getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2 - canvasRect.left,
+        y: rect.top + rect.height / 2 - canvasRect.top
+      };
+    } else {
+      // For real ports, use the port position
+      const rect = port.getBoundingClientRect();
+      const canvasRect = this.canvas.getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2 - canvasRect.left,
+        y: rect.top + rect.height / 2 - canvasRect.top
+      };
+    }
+  }
+
+  selectConnection(path) {
+    this.clearConnectionSelection();
+    
+    // Handle both direct paths and grouped paths
+    let targetPath = path;
+    if (path.tagName === 'g') {
+      targetPath = path.querySelector('.connection-path');
+    }
+    
+    targetPath.classList.add('selected');
+    this.selectedConnection = path;
+  }
+
+  clearConnectionSelection() {
+    this.svg.querySelectorAll('.connection-path.selected').forEach(path => {
+      path.classList.remove('selected');
+    });
+    this.selectedConnection = null;
+  }
+
+  deleteSelectedConnections() {
+    if (this.selectedConnection) {
+      const connectionIndex = this.connections.findIndex(conn => conn.path === this.selectedConnection);
+      if (connectionIndex !== -1) {
+        this.deleteConnection(this.connections[connectionIndex]);
+        this.selectedConnection = null;
+      }
+    }
+  }
+
+  clearSelection() {
+    this.selectedBlocks.forEach(b => b.el.classList.remove('selected'));
+    this.selectedBlocks.clear();
+  }
+  selectBlock(block, add = false) {
+    if (!add) this.clearSelection();
+    block.el.classList.add('selected');
+    this.selectedBlocks.add(block);
+  }
+  deleteSelectedBlocks() {
+    this.selectedBlocks.forEach(block => {
+      this.canvas.removeChild(block.el);
+      this.blocks = this.blocks.filter(b => b !== block);
+      // Remove connections
+      // Remove all connections related to this block
+      this.connections.filter(conn => conn.from.block === block || conn.to.block === block)
+        .forEach(conn => this.deleteConnection(conn));
+    });
+    this.selectedBlocks.clear();
+    this.redrawConnections();
+  }
+  cancelConnection() {
+    if (this.connectionPreview && this.connectionPreview.parentNode) {
+      this.svg.removeChild(this.connectionPreview);
+    }
+    this.connectionPreview = null;
+    this.connectingPort = null;
+  }
+  openModal(block) {
+    // Populate modal fields
+    document.getElementById('block-modal-title').textContent = this.getBlockName(block.type);
+    document.getElementById('block-modal-body').innerHTML = `
+      <div class="mb-3">
+        <label class="form-label">Block Name</label>
+        <input type="text" class="form-control" id="modal-block-name" value="${block.name}">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Configuration</label>
+        <textarea class="form-control" id="modal-block-config" rows="3">${block.config.text || ''}</textarea>
+      </div>
+    `;
+    this.modal.block = block;
+    this.modal.style.display = 'block';
+    this.modalBackdrop.style.display = 'block';
+  }
+  hideModal() {
+    this.modal.style.display = 'none';
+    this.modalBackdrop.style.display = 'none';
+    if (this.modal.block) {
+      const name = document.getElementById('modal-block-name').value;
+      const config = document.getElementById('modal-block-config').value;
+      this.modal.block.name = name;
+      this.modal.block.config.text = config;
+      this.modal.block.el.querySelector('.block-title').textContent = name;
+    }
+    this.modal.block = null;
+  }
+  showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = 'alert alert-' + (type === 'success' ? 'success' : 'danger') + ' position-fixed';
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999;';
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 3000);
+  }
+  saveOrchestration() {
+    const blocks = this.blocks.map(block => ({
+      id: block.id,
+      block_type: block.type,
+      name: block.name,
+      position_x: parseInt(block.el.style.left),
+      position_y: parseInt(block.el.style.top),
+      config: block.config
+    }));
+    const connections = this.connections.map(conn => ({
+      from: { block: conn.from.block.id, port: conn.from.port.dataset.portType },
+      to: { block: conn.to.block.id, port: conn.to.port.dataset.portType }
+    }));
+    fetch(this.saveUrl, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-CSRF-Token': this.csrfToken
+      },
+      body: JSON.stringify({
+        orchestration: {
+          layout_data: blocks,
+          connections_data: connections
+        }
+      })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) this.showNotification('Orchestration saved!', 'success');
+      else this.showNotification('Error saving orchestration', 'error');
+    })
+    .catch(() => this.showNotification('Error saving orchestration', 'error'));
+  }
+  loadBlocks(data) {
+    data.forEach(b => {
+      const block = this.createBlock(b.block_type, b.position_x, b.position_y);
+      block.id = b.id;
+      block.name = b.name;
+      block.config = b.config || {};
+      block.el.querySelector('.block-title').textContent = b.name;
+    });
+  }
+  loadConnections(data) {
+    data.forEach(conn => {
+      const fromBlock = this.blocks.find(b => b.id === conn.from.block);
+      const toBlock = this.blocks.find(b => b.id === conn.to.block);
+      if (fromBlock && toBlock) {
+        const fromPort = fromBlock.el.querySelector(`[data-port-type="${conn.from.port}"]`);
+        // Create virtual input port for target block
+        const virtualPort = { dataset: { portType: 'input' }, block: toBlock };
+        if (fromPort) {
+          this.createConnection({ block: fromBlock, port: fromPort }, { block: toBlock, port: virtualPort });
+        }
+      }
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  new OrchestrationBuilder({
+    canvasId: 'orchestration-canvas',
+    svgId: 'connection-svg',
+    paletteId: 'block-palette',
+    modalId: 'block-properties-modal',
+    saveBtnId: 'save-orchestration',
+    testBtnId: 'test-orchestration',
+    zoomInId: 'zoom-in',
+    zoomOutId: 'zoom-out',
+    multiSelectId: 'multi-select',
+    orchestrationData: <%= raw (@orchestration.layout_data || []).to_json %>,
+    connectionData: <%= raw (@orchestration.connections_data || []).to_json %>,
+    saveUrl: '<%= organization_orchestration_path(@organization, @orchestration) %>',
+    csrfToken: document.querySelector('meta[name="csrf-token"]').content
+  });
+});
+</script> 

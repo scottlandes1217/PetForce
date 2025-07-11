@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_07_09_085301) do
+ActiveRecord::Schema[7.1].define(version: 2025_07_11_051106) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -201,6 +201,51 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_09_085301) do
     t.index ["organizer_id"], name: "index_events_on_organizer_id"
   end
 
+  create_table "orchestration_blocks", force: :cascade do |t|
+    t.bigint "orchestration_id", null: false
+    t.string "block_type", null: false
+    t.string "name", null: false
+    t.integer "position_x", null: false
+    t.integer "position_y", null: false
+    t.text "config_data"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["orchestration_id", "block_type"], name: "index_orchestration_blocks_on_orchestration_id_and_block_type"
+    t.index ["orchestration_id"], name: "index_orchestration_blocks_on_orchestration_id"
+    t.index ["position_x", "position_y"], name: "index_orchestration_blocks_on_position_x_and_position_y"
+  end
+
+  create_table "orchestration_executions", force: :cascade do |t|
+    t.bigint "orchestration_id", null: false
+    t.bigint "user_id"
+    t.string "status", default: "pending", null: false
+    t.string "execution_type", null: false
+    t.text "input_data"
+    t.text "output_data"
+    t.text "error_data"
+    t.datetime "started_at"
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_orchestration_executions_on_created_at"
+    t.index ["orchestration_id", "status"], name: "index_orchestration_executions_on_orchestration_id_and_status"
+    t.index ["orchestration_id"], name: "index_orchestration_executions_on_orchestration_id"
+    t.index ["user_id", "created_at"], name: "index_orchestration_executions_on_user_id_and_created_at"
+    t.index ["user_id"], name: "index_orchestration_executions_on_user_id"
+  end
+
+  create_table "orchestrations", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "status", default: "draft", null: false
+    t.bigint "organization_id", null: false
+    t.text "layout_data"
+    t.text "connections_data"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["organization_id"], name: "index_orchestrations_on_organization_id"
+    t.index ["status"], name: "index_orchestrations_on_status"
+  end
+
   create_table "organization_assets", force: :cascade do |t|
     t.bigint "organization_id", null: false
     t.datetime "created_at", null: false
@@ -344,6 +389,53 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_09_085301) do
     t.index ["organization_id"], name: "index_sites_on_organization_id"
   end
 
+  create_table "studio_blocks", force: :cascade do |t|
+    t.bigint "studio_id", null: false
+    t.string "block_type", null: false
+    t.string "name", null: false
+    t.integer "position_x", null: false
+    t.integer "position_y", null: false
+    t.text "config_data"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["position_x", "position_y"], name: "index_studio_blocks_on_position_x_and_position_y"
+    t.index ["studio_id", "block_type"], name: "index_studio_blocks_on_studio_id_and_block_type"
+    t.index ["studio_id"], name: "index_studio_blocks_on_studio_id"
+  end
+
+  create_table "studio_executions", force: :cascade do |t|
+    t.bigint "studio_id", null: false
+    t.bigint "user_id"
+    t.string "status", default: "pending", null: false
+    t.string "execution_type", null: false
+    t.text "input_data"
+    t.text "output_data"
+    t.text "error_data"
+    t.datetime "started_at"
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_studio_executions_on_created_at"
+    t.index ["studio_id", "status"], name: "index_studio_executions_on_studio_id_and_status"
+    t.index ["studio_id"], name: "index_studio_executions_on_studio_id"
+    t.index ["user_id", "created_at"], name: "index_studio_executions_on_user_id_and_created_at"
+    t.index ["user_id"], name: "index_studio_executions_on_user_id"
+  end
+
+  create_table "studios", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "studio_type", null: false
+    t.string "status", default: "draft", null: false
+    t.bigint "organization_id", null: false
+    t.text "layout_data"
+    t.text "connections_data"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["organization_id", "studio_type"], name: "index_studios_on_organization_id_and_studio_type"
+    t.index ["organization_id"], name: "index_studios_on_organization_id"
+    t.index ["status"], name: "index_studios_on_status"
+  end
+
   create_table "tasks", force: :cascade do |t|
     t.string "status", default: "Scheduled", null: false
     t.string "subject", null: false
@@ -422,6 +514,10 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_09_085301) do
   add_foreign_key "events", "calendars"
   add_foreign_key "events", "organizations"
   add_foreign_key "events", "users", column: "organizer_id"
+  add_foreign_key "orchestration_blocks", "orchestrations"
+  add_foreign_key "orchestration_executions", "orchestrations"
+  add_foreign_key "orchestration_executions", "users"
+  add_foreign_key "orchestrations", "organizations"
   add_foreign_key "organization_assets", "organizations"
   add_foreign_key "organization_fields", "organizations"
   add_foreign_key "organization_users", "organizations"
@@ -437,6 +533,10 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_09_085301) do
   add_foreign_key "reactions", "users"
   add_foreign_key "site_submissions", "sites"
   add_foreign_key "sites", "organizations"
+  add_foreign_key "studio_blocks", "studios"
+  add_foreign_key "studio_executions", "studios"
+  add_foreign_key "studio_executions", "users"
+  add_foreign_key "studios", "organizations"
   add_foreign_key "tasks", "pets"
   add_foreign_key "user_ad_rewards", "ads"
   add_foreign_key "user_ad_rewards", "users"

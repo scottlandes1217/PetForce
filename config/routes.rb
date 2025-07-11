@@ -99,6 +99,19 @@ resources :organizations do
   resources :tasks, only: [:index, :new, :create, :edit, :update, :destroy, :show], controller: 'organization_tasks'
   resources :organization_assets, only: [:index, :create]
   
+  # Orchestrations
+  resources :orchestrations do
+    member do
+      get :builder
+      post :execute
+    end
+    resources :orchestration_blocks, only: [:index, :show, :create, :update, :destroy], controller: 'api/orchestration_blocks' do
+      collection do
+        post :reorder
+      end
+    end
+  end
+  
   # Search routes
   get 'search', to: 'search#index'
   get 'search/quick', to: 'search#quick_search'

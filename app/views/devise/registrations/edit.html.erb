@@ -33,7 +33,7 @@
 
 <div class="field">
   <%= f.label :role %><br />
-  <%= f.select :role, User::ROLES.map { |role| [role.humanize, role] }, {}, class: "form-select" %>
+  <%= f.select :role, User.roles.keys.map { |role| [role.humanize, role] }, {}, class: "form-select" %>
 </div>
 
 
