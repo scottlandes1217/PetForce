@@ -59,7 +59,8 @@ import SearchController from "./controllers/search_controller";
 application.register("search", SearchController);
 
 // Other imports
-import "bootstrap";
+// Bootstrap is loaded via CDN in the layout to ensure global availability
+// import "bootstrap";
 import "@popperjs/core";
 
 // Import channels

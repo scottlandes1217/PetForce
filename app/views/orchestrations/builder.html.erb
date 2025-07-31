@@ -130,6 +130,7 @@ class OrchestrationBuilder {
     this.setupCanvasEvents();
     this.setupControls();
     this.setupModal();
+    this.setupGlobalDragHandlers(); // Setup global drag handlers
     this.updateTransform(); // Set transform before loading blocks/connections
     this.loadBlocks(this.config.orchestrationData || []);
     this.loadConnections(this.config.connectionData || []);
@@ -157,10 +158,10 @@ class OrchestrationBuilder {
       this.svg.appendChild(defs);
     }
     
-    // Create black arrow marker
-    if (!this.svg.querySelector('#arrow-marker-black')) {
+    // Create gray arrow marker
+    if (!this.svg.querySelector('#arrow-marker-gray')) {
       const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
-      marker.setAttribute('id', 'arrow-marker-black');
+      marker.setAttribute('id', 'arrow-marker-gray');
       marker.setAttribute('markerWidth', '15');
       marker.setAttribute('markerHeight', '15');
       marker.setAttribute('refX', '13');
@@ -169,7 +170,7 @@ class OrchestrationBuilder {
       marker.setAttribute('markerUnits', 'userSpaceOnUse');
       const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
       arrow.setAttribute('points', '0,0 0,15 13,7.5');
-      arrow.setAttribute('fill', '#000');
+      arrow.setAttribute('fill', '#888');
       arrow.setAttribute('stroke', 'none');
       marker.appendChild(arrow);
       defs.appendChild(marker);
@@ -216,106 +217,82 @@ class OrchestrationBuilder {
   }
 
   setupCanvasEvents() {
-    // Test if canvas receives any events
+    // Canvas click to deselect blocks
     this.canvas.addEventListener('click', e => {
       console.log('Canvas clicked!', e.target);
-    });
-    
-    // Attach pan events to #canvas-inner
-    this.inner.addEventListener('mousedown', e => {
-      console.log('mousedown on canvas-inner', e.target);
-      // Only handle if clicking on the canvas itself (not a block)
-      if (e.target === this.inner) {
-        if (e.shiftKey || this.isMultiSelectMode) {
-          this.isMultiSelecting = true;
-          this.selectionStart = { x: e.offsetX, y: e.offsetY };
-          this.showSelectionBox(e.offsetX, e.offsetY);
-          e.preventDefault();
-        } else {
-          this.isPanning = true;
-          this.panStart = { x: e.clientX, y: e.clientY, panX: this.panX, panY: this.panY };
-          this.inner.style.cursor = 'grabbing';
-          document.body.style.cursor = 'grabbing';
-          console.log('Starting pan');
-          e.preventDefault();
-          e.stopPropagation();
-        }
+      if (!e.target.closest('.orchestration-block') && !e.target.closest('.block-ports')) {
+        this.clearSelection();
       }
     });
+    
+    // Canvas mousedown for panning and multi-select
+    this.canvas.addEventListener('mousedown', e => {
+      console.log('Canvas mousedown:', e.target, 'shiftKey:', e.shiftKey, 'multiSelectMode:', this.isMultiSelectMode);
+      
+      // Don't start if clicking on a block or port
+      if (e.target.closest('.orchestration-block') || e.target.closest('.block-ports')) {
+        return;
+      }
+      
+      // Don't start if we're already dragging a block
+      if (this.isDraggingBlock) return;
+      
+      if (e.shiftKey || this.isMultiSelectMode) {
+        console.log('Starting multi-select box');
+        this.isMultiSelecting = true;
+        this.selectionStart = { x: e.offsetX, y: e.offsetY };
+        this.showSelectionBox(e.offsetX, e.offsetY);
+        e.preventDefault();
+      } else {
+        console.log('Starting pan');
+        this.isPanning = true;
+        this.panStart = { x: e.clientX, y: e.clientY, panX: this.panX, panY: this.panY };
+        this.canvas.style.cursor = 'grabbing';
+        e.preventDefault();
+      }
+    });
+    
+    // Global mousemove for panning and selection box
     document.addEventListener('mousemove', e => {
       if (this.isPanning) {
         this.panX = this.panStart.panX + (e.clientX - this.panStart.x);
         this.panY = this.panStart.panY + (e.clientY - this.panStart.y);
         this.updateTransform();
-        console.log('Panning:', this.panX, this.panY);
+      }
+      
+      if (this.isMultiSelecting) {
+        const rect = this.canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        this.updateSelectionBox(x, y);
       }
     });
-    document.addEventListener('mouseup', () => {
+    
+    // Global mouseup
+    document.addEventListener('mouseup', e => {
       if (this.isPanning) {
         this.isPanning = false;
-        this.inner.style.cursor = 'grab';
-        document.body.style.cursor = 'grab';
+        this.canvas.style.cursor = 'grab';
         console.log('Stopping pan');
       }
-    });
-    
-    // Zoom with wheel
-    this.canvas.addEventListener('wheel', e => {
-      e.preventDefault();
-      const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-      const newZoom = Math.max(0.2, Math.min(2.5, this.currentZoom * zoomFactor));
-      if (newZoom !== this.currentZoom) {
-        // Zoom around mouse position
-        const rect = this.canvas.getBoundingClientRect();
-        const mouseX = (e.clientX - rect.left - this.panX) / this.currentZoom;
-        const mouseY = (e.clientY - rect.top - this.panY) / this.currentZoom;
-        this.panX -= mouseX * (newZoom - this.currentZoom);
-        this.panY -= mouseY * (newZoom - this.currentZoom);
-        this.currentZoom = newZoom;
-        this.updateTransform();
-        this.redrawConnections();
-      }
-    });
-    
-    // Multi-select mousemove and mouseup
-    this.canvas.addEventListener('mousemove', e => {
+      
       if (this.isMultiSelecting) {
-        this.updateSelectionBox(e.offsetX, e.offsetY);
-      }
-    });
-    
-    this.canvas.addEventListener('mouseup', e => {
-      if (this.isMultiSelecting) {
-        this.isMultiSelecting = false;
-        this.selectBlocksInBox();
-        this.hideSelectionBox();
-      }
-    });
-    this.canvas.addEventListener('mousemove', e => {
-      if (this.isMultiSelecting) {
-        this.updateSelectionBox(e.offsetX, e.offsetY);
-      }
-    });
-    this.canvas.addEventListener('mouseup', e => {
-      if (this.isMultiSelecting) {
+        console.log('Finishing multi-select');
         this.isMultiSelecting = false;
         this.selectBlocksInBox();
         this.hideSelectionBox();
       }
     });
     
-    // Connection selection - moved to document level for better event handling
+    // Connection selection
     document.addEventListener('click', e => {
-      console.log('Document click:', e.target);
       if (e.target.classList.contains('connection-path') || e.target.classList.contains('connection-click-area')) {
         console.log('Connection clicked!');
         e.stopPropagation();
-        // Always resolve to the <g> group if present
         let group = e.target;
         if (group.tagName !== 'g') group = group.closest('g');
         this.selectConnection(group || e.target);
       } else if (!e.target.closest('.orchestration-block') && !e.target.closest('.block-ports')) {
-        console.log('Clearing connection selection');
         this.clearConnectionSelection();
       }
     });
@@ -335,10 +312,13 @@ class OrchestrationBuilder {
     this.multiSelectBtn.addEventListener('click', () => {
       this.isMultiSelectMode = !this.isMultiSelectMode;
       this.multiSelectBtn.classList.toggle('active');
+      console.log('Multi-select mode toggled:', this.isMultiSelectMode);
       if (this.isMultiSelectMode) {
         this.canvas.style.cursor = 'crosshair';
+        this.showNotification('Multi-select mode ON - drag to select blocks', 'info');
       } else {
         this.canvas.style.cursor = 'grab';
+        this.showNotification('Multi-select mode OFF', 'info');
       }
     });
     this.saveBtn.addEventListener('click', () => this.saveOrchestration());
@@ -365,7 +345,9 @@ class OrchestrationBuilder {
 
   setupKeyboardShortcuts() {
     document.addEventListener('keydown', e => {
+      console.log('KEYDOWN', e.key, document.activeElement);
       if (e.key === 'Delete' || e.key === 'Backspace') {
+        console.log('Delete/Backspace pressed, selectedBlocks:', this.selectedBlocks);
         this.deleteSelectedBlocks();
         this.deleteSelectedConnections();
       }
@@ -452,14 +434,19 @@ class OrchestrationBuilder {
   selectBlocksInBox() {
     if (!this.selectionBox) return;
     const box = this.selectionBox.getBoundingClientRect();
+    console.log('Selection box:', box);
+    
     this.blocks.forEach(block => {
       const rect = block.el.getBoundingClientRect();
+      console.log('Block rect:', block.id, rect);
+      
       if (
         rect.left < box.right &&
         rect.right > box.left &&
         rect.top < box.bottom &&
         rect.bottom > box.top
       ) {
+        console.log('Selecting block in box:', block.id);
         this.selectBlock(block, true);
       }
     });
@@ -491,11 +478,26 @@ class OrchestrationBuilder {
     this.makeBlockDraggable(block);
     this.setupBlockPorts(block);
     this.updateBlockPositions();
-    // Block selection
+    // Block selection - simplified
     el.addEventListener('click', e => {
-      console.log('Block clicked:', block.id);
-      if (this.connectingPort) return;
-      if (!e.shiftKey && !this.isMultiSelectMode) this.clearSelection();
+      console.log('Block clicked:', block.id, 'metaKey:', e.metaKey, 'ctrlKey:', e.ctrlKey, 'shiftKey:', e.shiftKey);
+      
+      // Don't handle click if we're connecting or dragging
+      if (this.connectingPort || (this.globalDragState && this.globalDragState.isDragging)) {
+        console.log('Ignoring click - connecting or dragging');
+        return;
+      }
+      
+      // Check for modifier keys
+      const isMultiSelect = e.metaKey || e.ctrlKey || e.shiftKey;
+      
+      if (!isMultiSelect) {
+        console.log('Single selection - clearing others');
+        this.clearSelection();
+      } else {
+        console.log('Multi-selection - keeping others');
+      }
+      
       this.selectBlock(block, true);
       e.stopPropagation();
     });
@@ -560,44 +562,138 @@ class OrchestrationBuilder {
   }
 
   makeBlockDraggable(block) {
-    let isDragging = false;
-    let offset = { x: 0, y: 0 };
-    block.el.addEventListener('mousedown', e => {
-      if (e.target.classList.contains('block-ports')) return;
-      isDragging = true;
-      const rect = block.el.getBoundingClientRect();
-      const canvasRect = this.canvas.getBoundingClientRect();
-      offset.x = (e.clientX - canvasRect.left) - block.x;
-      offset.y = (e.clientY - canvasRect.top) - block.y;
-      this.isDraggingBlock = true;
-      document.body.style.userSelect = 'none';
+    // Global drag state - shared across all blocks
+    if (!this.globalDragState) {
+      this.globalDragState = {
+        isDragging: false,
+        draggedBlocks: [],
+        initialPositions: [],
+        offset: { x: 0, y: 0 }
+      };
+    }
+
+    const dragHandler = e => {
+      console.log('BLOCK mousedown', e.target);
       e.stopPropagation();
-    });
-    document.addEventListener('mousemove', e => {
-      if (isDragging) {
-        const canvasRect = this.canvas.getBoundingClientRect();
-        let newX = (e.clientX - canvasRect.left) - offset.x;
-        let newY = (e.clientY - canvasRect.top) - offset.y;
-        // Improved overlap logic: allow sliding along edges
-        const overlapsXY = this.isOverlapping(block, newX, newY);
-        const overlapsX = this.isOverlapping(block, newX, block.y);
-        const overlapsY = this.isOverlapping(block, block.x, newY);
-        if (!overlapsXY) {
-          block.x = newX;
-          block.y = newY;
-        } else if (!overlapsX) {
-          block.x = newX;
-        } else if (!overlapsY) {
-          block.y = newY;
+      e.preventDefault();
+      
+      // Prevent drag if clicking on a port
+      if (e.target.closest('.block-ports')) return;
+      
+      // Find the correct block element and object
+      const blockEl = e.target.closest('.orchestration-block');
+      const blockObj = this.blocks.find(b => b.el === blockEl);
+      if (!blockObj) return;
+      
+      console.log('Starting drag for block:', blockObj.id, 'selected blocks:', this.selectedBlocks.size);
+      
+      // Start global drag state
+      this.globalDragState.isDragging = true;
+      this.isDraggingBlock = true;
+      
+      // Determine which blocks to drag
+      if (this.selectedBlocks.has(blockObj) && this.selectedBlocks.size > 1) {
+        // Multi-block drag - drag all selected blocks
+        this.globalDragState.draggedBlocks = Array.from(this.selectedBlocks);
+        console.log('Multi-block drag:', this.globalDragState.draggedBlocks.length, 'blocks');
+      } else {
+        // Single block drag - if not already selected, select it
+        if (!this.selectedBlocks.has(blockObj)) {
+          this.clearSelection();
+          this.selectBlock(blockObj, true);
         }
+        this.globalDragState.draggedBlocks = [blockObj];
+        console.log('Single block drag');
+      }
+      
+      // Store initial positions
+      this.globalDragState.initialPositions = this.globalDragState.draggedBlocks.map(b => ({ 
+        block: b, 
+        x: b.x, 
+        y: b.y 
+      }));
+      
+      // Calculate offset from mouse to block position
+      const canvasRect = this.canvas.getBoundingClientRect();
+      this.globalDragState.offset.x = (e.clientX - canvasRect.left) - blockObj.x;
+      this.globalDragState.offset.y = (e.clientY - canvasRect.top) - blockObj.y;
+      
+      document.body.style.userSelect = 'none';
+    };
+    
+    // Attach drag handler to both block.el and .block-inner
+    block.el.addEventListener('mousedown', dragHandler);
+    const inner = block.el.querySelector('.block-inner');
+    if (inner) inner.addEventListener('mousedown', dragHandler);
+  }
+
+  // Global mousemove handler for all block dragging
+  setupGlobalDragHandlers() {
+    document.addEventListener('mousemove', e => {
+      if (this.globalDragState && this.globalDragState.isDragging && !this.isPanning) {
+        const canvasRect = this.canvas.getBoundingClientRect();
+        
+        // Calculate new position for the primary dragged block
+        const primaryBlock = this.globalDragState.draggedBlocks[0];
+        let newX = (e.clientX - canvasRect.left) - this.globalDragState.offset.x;
+        let newY = (e.clientY - canvasRect.top) - this.globalDragState.offset.y;
+        
+        if (this.globalDragState.draggedBlocks.length > 1) {
+          // Multi-block drag
+          const dx = newX - primaryBlock.x;
+          const dy = newY - primaryBlock.y;
+          
+          // Check if all blocks can move together
+          let canMoveXY = true, canMoveX = true, canMoveY = true;
+          
+          for (const { block, x: bx, y: by } of this.globalDragState.initialPositions) {
+            if (this.isOverlapping(block, bx + dx, by + dy, block)) canMoveXY = false;
+            if (this.isOverlapping(block, bx + dx, by, block)) canMoveX = false;
+            if (this.isOverlapping(block, bx, by + dy, block)) canMoveY = false;
+          }
+          
+          // Apply movement based on what's possible
+          if (canMoveXY) {
+            this.globalDragState.initialPositions.forEach(({ block, x: bx, y: by }) => {
+              block.x = bx + dx;
+              block.y = by + dy;
+            });
+          } else if (canMoveX) {
+            this.globalDragState.initialPositions.forEach(({ block, x: bx }) => {
+              block.x = bx + dx;
+            });
+          } else if (canMoveY) {
+            this.globalDragState.initialPositions.forEach(({ block, y: by }) => {
+              block.y = by + dy;
+            });
+          }
+        } else {
+          // Single block drag
+          const overlapsXY = this.isOverlapping(primaryBlock, newX, newY);
+          const overlapsX = this.isOverlapping(primaryBlock, newX, primaryBlock.y);
+          const overlapsY = this.isOverlapping(primaryBlock, primaryBlock.x, newY);
+          
+          if (!overlapsXY) {
+            primaryBlock.x = newX;
+            primaryBlock.y = newY;
+          } else if (!overlapsX) {
+            primaryBlock.x = newX;
+          } else if (!overlapsY) {
+            primaryBlock.y = newY;
+          }
+        }
+        
         this.updateBlockPositions();
         this.redrawConnections();
       }
     });
+    
     document.addEventListener('mouseup', () => {
-      if (isDragging) {
-        isDragging = false;
+      if (this.globalDragState && this.globalDragState.isDragging) {
+        this.globalDragState.isDragging = false;
         this.isDraggingBlock = false;
+        this.globalDragState.draggedBlocks = [];
+        this.globalDragState.initialPositions = [];
         document.body.style.userSelect = '';
         this.updateBlockPositions();
         this.redrawConnections();
@@ -718,8 +814,8 @@ class OrchestrationBuilder {
       const pathData = `M ${x1} ${y1} L ${x2} ${y2}`;
       const strokeWidth = 3 * this.currentZoom;
       const isSelected = this.selectedConnection && (conn.path === (this.selectedConnection.tagName === 'g' ? this.selectedConnection : this.selectedConnection.closest('g')));
-      const color = isSelected ? '#2196f3' : '#000';
-      const markerId = isSelected ? 'arrow-marker-blue' : 'arrow-marker-black';
+      const color = isSelected ? '#2196f3' : '#888';
+      const markerId = isSelected ? 'arrow-marker-blue' : 'arrow-marker-gray';
       
       console.log(`Redrawing connection: selected=${isSelected}, color=${color}, marker=${markerId}`);
       
@@ -766,7 +862,7 @@ class OrchestrationBuilder {
   createSVGPath(cls = '') {
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute('class', `connection-path${cls ? ' ' + cls : ''}`);
-    path.setAttribute('stroke', cls === 'preview' ? '#2196f3' : '#000');
+    path.setAttribute('stroke', cls === 'preview' ? '#2196f3' : '#888');
     path.setAttribute('stroke-width', '3');
     path.setAttribute('fill', 'none');
     path.style.cursor = 'pointer';
@@ -931,10 +1027,10 @@ class OrchestrationBuilder {
   }
   
   deleteSelectedBlocks() {
-    console.log('Deleting selected blocks');
+    console.log('deleteSelectedBlocks called, selectedBlocks:', this.selectedBlocks);
     this.selectedBlocks.forEach(block => {
       console.log('Deleting block:', block.id);
-      this.canvas.removeChild(block.el);
+      this.inner.removeChild(block.el);
       this.blocks = this.blocks.filter(b => b !== block);
       // Remove connections
       // Remove all connections related to this block
@@ -1048,11 +1144,11 @@ class OrchestrationBuilder {
     });
   }
 
-  isOverlapping(block, x, y) {
+  isOverlapping(block, x, y, ignoreBlock = null) {
     const baseWidth = 200;
     const baseHeight = 100;
     return this.blocks.some(b => {
-      if (b === block) return false;
+      if (b === block || b === ignoreBlock) return false;
       const bx = b.x;
       const by = b.y;
       const ax = x;
@@ -1084,5 +1180,4 @@ document.addEventListener('DOMContentLoaded', () => {
     csrfToken: document.querySelector('meta[name="csrf-token"]').content
   });
 });
-</script> 
 </script> 

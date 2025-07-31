@@ -1,0 +1,251 @@
+<%= render 'shared/navbar_org' %>
+
+<div class="container my-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="mb-0">Add New Field to <%= @custom_table.display_name %></h3>
+        </div>
+        <div class="card-body">
+          <%= form_with model: [@organization, @custom_table, @custom_field], local: true do |form| %>
+            <% if @custom_field.errors.any? %>
+              <div class="alert alert-danger">
+                <h5><%= pluralize(@custom_field.errors.count, "error") %> prohibited this field from being saved:</h5>
+                <ul>
+                  <% @custom_field.errors.full_messages.each do |message| %>
+                    <li><%= message %></li>
+                  <% end %>
+                </ul>
+              </div>
+            <% end %>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <%= form.label :name, "Field Name", class: "form-label" %>
+                  <%= form.text_field :name, class: "form-control", placeholder: "e.g., Email, Phone, Status" %>
+                  <div class="form-text">A unique name for this field</div>
+                </div>
+              </div>
+              
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <%= form.label :display_name, "Display Name", class: "form-label" %>
+                  <%= form.text_field :display_name, class: "form-control", placeholder: "e.g., Email Address, Phone Number" %>
+                  <div class="form-text">The name that will be displayed to users</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <%= form.label :api_name, "API Name", class: "form-label" %>
+                  <%= form.text_field :api_name, class: "form-control", placeholder: "Will be auto-generated if left blank" %>
+                  <div class="form-text">Technical name used in APIs</div>
+                </div>
+              </div>
+              
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <%= form.label :field_type, "Field Type", class: "form-label" %>
+                  <%= form.select :field_type, 
+                      CustomField.field_types.keys.map { |type| [type.titleize, type] },
+                      { prompt: "Select field type" },
+                      { class: "form-select", id: "field_type_select" } %>
+                  <div class="form-text">Choose the type of data this field will store</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Picklist Options (shown only for picklist fields) -->
+            <div id="picklist_options" style="display: none;">
+              <div class="mb-3">
+                <%= form.label :picklist_values, "Picklist Values", class: "form-label" %>
+                <div id="picklist_values_container">
+                  <div class="input-group mb-2">
+                    <input type="text" class="form-control picklist-value" placeholder="Enter option value">
+                    <button type="button" class="btn btn-outline-danger remove-picklist-value">Remove</button>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="add_picklist_value">Add Option</button>
+                <div class="form-text">Enter the options for this picklist field</div>
+              </div>
+            </div>
+
+            <!-- Formula Options (shown only for formula fields) -->
+            <div id="formula_options" style="display: none;">
+              <div class="mb-3">
+                <%= form.label :formula, "Formula", class: "form-label" %>
+                <%= form.text_area :formula, class: "form-control", rows: 3, placeholder: "Enter formula expression..." %>
+                <div class="form-text">Enter the formula expression for this calculated field</div>
+              </div>
+            </div>
+
+            <!-- Lookup Options (shown only for lookup fields) -->
+            <div id="lookup_options" style="display: none;">
+              <div class="mb-3">
+                <%= form.label :lookup_table_id, "Lookup Table", class: "form-label" %>
+                <%= form.select :lookup_table_id, 
+                    @organization.custom_tables.active.map { |table| [table.display_name, table.id] },
+                    { prompt: "Select lookup table" },
+                    { class: "form-select" } %>
+                <div class="form-text">Select the table to lookup values from</div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <%= form.label :description, "Description", class: "form-label" %>
+              <%= form.text_area :description, class: "form-control", rows: 2, placeholder: "Describe what this field is used for..." %>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <div class="form-check">
+                    <%= form.check_box :required, class: "form-check-input" %>
+                    <%= form.label :required, "Required", class: "form-check-label" %>
+                    <div class="form-text">Records must have a value for this field</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <div class="form-check">
+                    <%= form.check_box :unique, class: "form-check-input" %>
+                    <%= form.label :unique, "Unique", class: "form-check-label" %>
+                    <div class="form-text">Each record must have a unique value for this field</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <div class="form-check">
+                    <%= form.check_box :active, class: "form-check-input" %>
+                    <%= form.label :active, "Active", class: "form-check-label" %>
+                    <div class="form-text">Active fields can be used in records</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <div class="form-check">
+                    <%= form.check_box :hidden, class: "form-check-input" %>
+                    <%= form.label :hidden, "Hidden", class: "form-check-label" %>
+                    <div class="form-text">Hidden fields are not shown to users</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <div class="form-check">
+                    <%= form.check_box :read_only, class: "form-check-input" %>
+                    <%= form.label :read_only, "Read Only", class: "form-check-label" %>
+                    <div class="form-text">Read-only fields cannot be edited</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between">
+              <%= link_to "Cancel", organization_custom_table_custom_fields_path(@organization, @custom_table), class: "btn btn-secondary" %>
+              <%= form.submit "Create Field", class: "btn btn-primary" %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const nameField = document.getElementById('custom_field_name');
+  const displayNameField = document.getElementById('custom_field_display_name');
+  const apiNameField = document.getElementById('custom_field_api_name');
+  const fieldTypeSelect = document.getElementById('field_type_select');
+  const picklistOptions = document.getElementById('picklist_options');
+  const formulaOptions = document.getElementById('formula_options');
+  const lookupOptions = document.getElementById('lookup_options');
+
+  // Auto-generate display name from name
+  nameField.addEventListener('input', function() {
+    if (displayNameField.value === '' || displayNameField.value === nameField.value) {
+      displayNameField.value = nameField.value;
+    }
+  });
+
+  // Auto-generate API name from name
+  nameField.addEventListener('input', function() {
+    if (apiNameField.value === '' || apiNameField.value === nameField.value.toLowerCase().replace(/[^a-z0-9]/g, '_')) {
+      apiNameField.value = nameField.value.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    }
+  });
+
+  // Show/hide field type specific options
+  fieldTypeSelect.addEventListener('change', function() {
+    const selectedType = this.value;
+    
+    // Hide all options first
+    picklistOptions.style.display = 'none';
+    formulaOptions.style.display = 'none';
+    lookupOptions.style.display = 'none';
+    
+    // Show relevant options
+    if (['picklist', 'multipicklist'].includes(selectedType)) {
+      picklistOptions.style.display = 'block';
+    } else if (['formula', 'rollup'].includes(selectedType)) {
+      formulaOptions.style.display = 'block';
+    } else if (selectedType === 'lookup') {
+      lookupOptions.style.display = 'block';
+    }
+  });
+
+  // Picklist value management
+  const addPicklistValueBtn = document.getElementById('add_picklist_value');
+  const picklistContainer = document.getElementById('picklist_values_container');
+
+  addPicklistValueBtn.addEventListener('click', function() {
+    const newInput = document.createElement('div');
+    newInput.className = 'input-group mb-2';
+    newInput.innerHTML = `
+      <input type="text" class="form-control picklist-value" placeholder="Enter option value">
+      <button type="button" class="btn btn-outline-danger remove-picklist-value">Remove</button>
+    `;
+    picklistContainer.appendChild(newInput);
+  });
+
+  // Remove picklist value
+  picklistContainer.addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-picklist-value')) {
+      e.target.closest('.input-group').remove();
+    }
+  });
+
+  // Collect picklist values before form submission
+  document.querySelector('form').addEventListener('submit', function(e) {
+    if (fieldTypeSelect.value === 'picklist' || fieldTypeSelect.value === 'multipicklist') {
+      const values = [];
+      document.querySelectorAll('.picklist-value').forEach(input => {
+        if (input.value.trim()) {
+          values.push(input.value.trim());
+        }
+      });
+      
+      // Create hidden input for picklist values
+      const hiddenInput = document.createElement('input');
+      hiddenInput.type = 'hidden';
+      hiddenInput.name = 'custom_field[picklist_values][]';
+      hiddenInput.value = JSON.stringify(values);
+      this.appendChild(hiddenInput);
+    }
+  });
+});
+</script> 

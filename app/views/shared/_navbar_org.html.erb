@@ -97,6 +97,21 @@
                   <span>Orchestrations</span>
                 <% end %>
               </li>
+              
+              <% @organization.custom_tables.in_navigation.active.each do |table| %>
+                <li>
+                  <%= link_to organization_custom_table_path(@organization, table), class: "dropdown-item d-flex align-items-center py-2 #{current_page?(organization_custom_table_path(@organization, table)) || request.path.match?(/\/organizations\/\d+\/custom_tables\/#{table.id}\//) ? 'active' : ''}" do %>
+                    <% if table.font_awesome_icon? %>
+                      <i class="<%= table.font_awesome_icon %> me-3 text-muted"></i>
+                    <% elsif table.uploaded_icon? && table.icon.attached? %>
+                      <img src="<%= url_for(table.icon) %>" alt="<%= table.display_name %>" style="max-width: 16px; max-height: 16px;" class="me-3">
+                    <% else %>
+                      <i class="fas fa-database me-3 text-muted"></i>
+                    <% end %>
+                    <span><%= table.display_name %></span>
+                  <% end %>
+                </li>
+              <% end %>
             <% end %>
             <li>
               <%= link_to feed_index_path, class: "dropdown-item d-flex align-items-center py-2 #{current_page?(feed_index_path) ? 'active' : ''}" do %>
@@ -165,6 +180,12 @@
               <%= link_to organization_organization_fields_path(@organization), class: "dropdown-item d-flex align-items-center py-2" do %>
                 <i class="fas fa-list me-3 text-muted"></i>
                 <span>Manage Fields</span>
+              <% end %>
+            </li>
+            <li>
+              <%= link_to organization_custom_tables_path(@organization), class: "dropdown-item d-flex align-items-center py-2" do %>
+                <i class="fas fa-database me-3 text-muted"></i>
+                <span>Custom Tables</span>
               <% end %>
             </li>
           <% end %>

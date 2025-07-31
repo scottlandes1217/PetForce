@@ -81,6 +81,13 @@ resources :organizations do
     resources :tasks, only: [:index, :new, :create, :edit, :update, :destroy, :show]
   end
   resources :organization_fields, only: [:index, :create, :update, :destroy]
+  
+  # Custom Tables and Fields
+  resources :custom_tables do
+    resources :custom_fields, only: [:index, :show, :new, :create, :edit, :update, :destroy]
+    resources :custom_records, only: [:index, :show, :new, :create, :edit, :update, :destroy]
+  end
+  
   resources :sites do
     member do
       get :builder
