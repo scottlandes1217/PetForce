@@ -1,5 +1,5 @@
 class CustomField < ApplicationRecord
-  belongs_to :custom_table
+  belongs_to :custom_table, optional: true
   has_many :custom_field_values, dependent: :destroy
 
   # Field types similar to Salesforce
@@ -22,9 +22,10 @@ class CustomField < ApplicationRecord
     rollup: 15
   }
 
-  validates :name, presence: true, uniqueness: { scope: :custom_table_id }
+  validates :name, presence: true, uniqueness: { scope: [:custom_table_id, :table_type, :table_id] }
   validates :display_name, presence: true
-  validates :api_name, presence: true, uniqueness: { scope: :custom_table_id }, format: { with: /\A[a-zA-Z][a-zA-Z0-9_]*\z/, message: "must start with a letter and contain only letters, numbers, and underscores" }
+  validates :api_name, presence: true, uniqueness: { scope: [:custom_table_id, :table_type, :table_id] }, format: { with: /\A[a-zA-Z][a-zA-Z0-9_]*\z/, message: "must start with a letter and contain only letters, numbers, and underscores" }
+  validate :must_have_table_reference
   validates :field_type, presence: true
   validates :required, inclusion: { in: [true, false] }
   validates :unique, inclusion: { in: [true, false] }
@@ -51,6 +52,18 @@ class CustomField < ApplicationRecord
   # Serialize picklist values as JSON
   serialize :picklist_values, coder: JSON
 
+  def picklist?
+    field_type == 'picklist' || field_type == 'multipicklist'
+  end
+
+  def formula?
+    field_type == 'formula' || field_type == 'rollup'
+  end
+
+  def lookup?
+    field_type == 'lookup'
+  end
+
   private
 
   def generate_api_name
@@ -60,7 +73,12 @@ class CustomField < ApplicationRecord
     counter = 1
     generated_name = base_name
     
-    while self.class.exists?(api_name: generated_name, custom_table_id: custom_table_id)
+    scope_conditions = {}
+    scope_conditions[:custom_table_id] = custom_table_id if custom_table_id.present?
+    scope_conditions[:table_type] = table_type if table_type.present?
+    scope_conditions[:table_id] = table_id if table_id.present?
+    
+    while self.class.exists?(api_name: generated_name, **scope_conditions)
       generated_name = "#{base_name}_#{counter}"
       counter += 1
     end
@@ -84,15 +102,9 @@ class CustomField < ApplicationRecord
     self.read_only ||= false
   end
 
-  def picklist?
-    picklist? || multipicklist?
-  end
-
-  def formula?
-    formula? || rollup?
-  end
-
-  def lookup?
-    lookup?
+  def must_have_table_reference
+    if custom_table_id.blank? && (table_type.blank? || table_id.blank?)
+      errors.add(:base, "Custom field must belong to either a custom table or a built-in table")
+    end
   end
 end 

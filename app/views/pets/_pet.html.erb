@@ -33,14 +33,14 @@
       <div class="flag-icons ms-3">
         <% if pet.flags.present? %>
           <% pet.flags.each do |flag| %>
-            <% flag_field = pet.organization.organization_fields.find_by(field_type: :flags, value: flag) %>
-            <% if flag_field&.icon&.attached? %>
-              <%= image_tag flag_field.icon, 
+            <% flag_icon = get_flag_icon(pet.organization, flag) %>
+            <% if flag_icon %>
+              <%= image_tag flag_icon, 
                            class: "flag-icon", 
                            title: flag,
                            style: "width: 24px; height: 24px; margin-right: 4px;" %>
             <% else %>
-              <span class="text-danger">[No icon for <%= flag %>]</span>
+              <span class="badge bg-secondary me-1"><%= flag %></span>
             <% end %>
           <% end %>
         <% else %>

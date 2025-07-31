@@ -52,7 +52,7 @@
                 <div class="btn-group btn-group-sm">
                   <%= link_to "View", organization_custom_table_path(@organization, table), class: "btn btn-outline-primary" %>
                   <%= link_to "Edit", edit_organization_custom_table_path(@organization, table), class: "btn btn-outline-secondary" %>
-                  <%= link_to "Fields", organization_custom_table_custom_fields_path(@organization, table), class: "btn btn-outline-info" %>
+                  <%= link_to "Fields", organization_organization_table_fields_path(@organization, table.api_name), class: "btn btn-outline-info" %>
                   <%= link_to "Records", organization_custom_table_custom_records_path(@organization, table), class: "btn btn-outline-success" %>
                 </div>
               </div>

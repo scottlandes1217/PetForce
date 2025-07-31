@@ -18,8 +18,9 @@
         <div class="card-body">
           <%= form_with model: @task, url: organization_task_path(@organization, @task), method: :patch, local: true do |f| %>
             <div class="form-group mb-3">
-              <%= f.label :pet_id, "Pet", class: "form-label" %>
-              <%= f.select :pet_id, @pets.map { |pet| [pet.name, pet.id] }, { selected: @task.pet_id }, { class: "form-control", required: true } %>
+              <%= f.label :pet_id, "Pet (Optional)", class: "form-label" %>
+              <%= f.select :pet_id, [["No Pet", ""]] + @pets.map { |pet| [pet.name, pet.id] }, { selected: @task.pet_id }, { class: "form-control" } %>
+              <small class="form-text text-muted">Leave as "No Pet" to create an organization-level task</small>
             </div>
 
             <div class="form-group mb-3">

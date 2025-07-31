@@ -38,7 +38,11 @@
               <%= link_to task.subject, edit_organization_task_path(@organization, task) %>
             </td>
             <td>
-              <%= link_to task.pet.name, organization_pet_path(@organization, task.pet) %>
+              <% if task.pet.present? %>
+                <%= link_to task.pet.name, organization_pet_path(@organization, task.pet) %>
+              <% else %>
+                <span class="text-muted">Organization Task</span>
+              <% end %>
             </td>
             <td>
               <span class="badge <%= task.status.downcase %>">

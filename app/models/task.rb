@@ -1,13 +1,15 @@
 class Task < ApplicationRecord
     STATUSES = %w[Scheduled Pending On-Hold Overdue Completed].freeze
   
-    belongs_to :pet
+    belongs_to :pet, optional: true
+    belongs_to :organization, optional: true
     has_many :event_tasks, dependent: :destroy
     has_many :events, through: :event_tasks
   
     validates :status, inclusion: { in: STATUSES }
     validates :subject, presence: true
     validates :duration_minutes, numericality: { only_integer: true, greater_than_or_equal_to: 0 }, allow_nil: true
+    validate :must_have_pet_or_organization
 
 
 
@@ -76,8 +78,16 @@ class Task < ApplicationRecord
 
     private
 
+    def must_have_pet_or_organization
+      if pet_id.blank? && organization_id.blank?
+        errors.add(:base, "Task must belong to either a pet or an organization")
+      end
+    end
+
     def cleanup_flags
       Rails.logger.info "Task #{id}: cleanup_flags called after deletion"
+      return unless pet.present? # Only cleanup flags for pet-related tasks
+      
       # Get the pet's current flags
       current_pet_flags = Array(pet.flags)
       # Get the flags that were on this task
@@ -106,6 +116,8 @@ class Task < ApplicationRecord
       Rails.logger.info "Task #{id}: sync_flags_with_pet called"
       Rails.logger.info "Task #{id}: Current status: #{status}"
       Rails.logger.info "Task #{id}: Current flags: #{flag_list.inspect}"
+      return unless pet.present? # Only sync flags for pet-related tasks
+      
       Rails.logger.info "Task #{id}: Pet current flags: #{pet.flags.inspect}"
       Rails.logger.info "Task #{id}: Status changed? #{saved_change_to_status?}"
       Rails.logger.info "Task #{id}: Flag list changed? #{saved_change_to_flag_list?}"

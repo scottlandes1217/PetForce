@@ -4,7 +4,7 @@ class OrganizationTasksController < ApplicationController
 
   def index
     @query = params[:query]
-    base_tasks = Task.joins(pet: :organization).where(organizations: { id: @organization.id }).includes(:pet)
+    base_tasks = @organization.tasks.includes(:pet)
     
     if @query.present?
       @tasks = base_tasks.where("tasks.subject ILIKE :query OR tasks.description ILIKE :query OR pets.name ILIKE :query", query: "%#{@query}%")
@@ -26,7 +26,11 @@ class OrganizationTasksController < ApplicationController
 
   def create
     @task = Task.new(task_params)
-    @task.pet = @organization.pets.find(params[:task][:pet_id])
+    @task.organization = @organization
+    
+    if params[:task][:pet_id].present?
+      @task.pet = @organization.pets.find(params[:task][:pet_id])
+    end
     
     if @task.save
       redirect_to organization_tasks_path(@organization), notice: "Task created successfully."
@@ -65,7 +69,7 @@ class OrganizationTasksController < ApplicationController
   end
 
   def set_task
-    @task = Task.joins(pet: :organization).where(organizations: { id: @organization.id }).find(params[:id])
+    @task = @organization.tasks.find(params[:id])
     unless @task
       redirect_to organization_tasks_path(@organization), alert: "Task not found"
     end
@@ -80,6 +84,7 @@ class OrganizationTasksController < ApplicationController
       :completed_at,
       :duration_minutes,
       :task_type,
+      :pet_id,
       flag_list: []
     )
   end

@@ -1,32 +1,39 @@
-<%= render 'shared/navbar_org' %>
-
 <div class="container my-5">
   <div class="row">
     <div class="col-md-8 offset-md-2">
       <div class="card">
         <div class="card-header">
-          <h2 class="mb-0">Create Custom Field</h2>
+          <h2 class="mb-0">Edit Custom Field</h2>
         </div>
         <div class="card-body">
           <%= form_with model: [@organization, @custom_table, @custom_field], local: true do |f| %>
             <div class="mb-3">
               <%= f.label :name, "Field Name", class: "form-label" %>
-              <%= f.text_field :name, class: "form-control", required: true %>
+              <%= f.text_field :name, class: "form-control", required: true, readonly: built_in_field?(@custom_field) %>
               <div class="form-text">Internal name for the field (e.g., "pet_breed")</div>
+              <% if built_in_field?(@custom_field) %>
+                <div class="form-text text-muted">Built-in fields cannot be renamed</div>
+              <% end %>
             </div>
 
             <div class="mb-3">
               <%= f.label :display_name, "Display Name", class: "form-label" %>
-              <%= f.text_field :display_name, class: "form-control", required: true %>
+              <%= f.text_field :display_name, class: "form-control", required: true, readonly: built_in_field?(@custom_field) %>
               <div class="form-text">User-friendly name shown in forms and lists</div>
+              <% if built_in_field?(@custom_field) %>
+                <div class="form-text text-muted">Built-in fields cannot be renamed</div>
+              <% end %>
             </div>
 
             <div class="mb-3">
               <%= f.label :field_type, "Field Type", class: "form-label" %>
               <%= f.select :field_type, 
                           CustomField.field_types.keys.map { |type| [type.titleize, type] },
-                          { prompt: "Select field type" },
-                          { class: "form-control", required: true } %>
+                          { selected: @custom_field.field_type },
+                          { class: "form-control", required: true, disabled: built_in_field?(@custom_field) } %>
+              <% if built_in_field?(@custom_field) %>
+                <div class="form-text text-muted">Built-in fields cannot change type</div>
+              <% end %>
             </div>
 
             <div class="mb-3">
@@ -36,10 +43,15 @@
             </div>
 
             <!-- Picklist Values (only show for picklist fields) -->
-            <div class="mb-3" id="picklist-values-section" style="display: none;">
+            <div class="mb-3" id="picklist-values-section" style="<%= @custom_field.picklist? ? '' : 'display: none;' %>">
               <%= f.label :picklist_values, "Picklist Values", class: "form-label" %>
               <div id="picklist-values-container">
-                <!-- Values will be added dynamically -->
+                <% (@custom_field.picklist_values || []).each_with_index do |value, index| %>
+                  <div class="input-group mb-2">
+                    <input type="text" name="custom_field[picklist_values][]" value="<%= value %>" class="form-control">
+                    <button type="button" class="btn btn-outline-danger remove-picklist-value">Remove</button>
+                  </div>
+                <% end %>
               </div>
               <button type="button" class="btn btn-outline-primary btn-sm" id="add-picklist-value">Add Value</button>
               <div class="form-text">Add the possible values for this picklist field</div>
@@ -69,7 +81,7 @@
               <div class="col-md-6">
                 <div class="mb-3">
                   <div class="form-check">
-                    <%= f.check_box :active, class: "form-check-input", checked: true %>
+                    <%= f.check_box :active, class: "form-check-input" %>
                     <%= f.label :active, "Active", class: "form-check-label" %>
                   </div>
                 </div>
@@ -93,7 +105,7 @@
 
             <div class="d-flex justify-content-between">
               <%= link_to "Cancel", organization_organization_table_fields_path(@organization, @custom_table.api_name), class: "btn btn-secondary" %>
-              <%= f.submit "Create Field", class: "btn btn-primary" %>
+              <%= f.submit "Update Field", class: "btn btn-primary" %>
             </div>
           <% end %>
         </div>

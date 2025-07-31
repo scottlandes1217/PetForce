@@ -7,9 +7,7 @@ class Pet < ApplicationRecord
   has_many_attached :gallery_photos
   has_many :tasks, dependent: :destroy
 
-  belongs_to :species, class_name: "OrganizationField", optional: true
-  belongs_to :unit, class_name: "OrganizationField", optional: true
-  belongs_to :location, class_name: "OrganizationField", optional: true
+
   belongs_to :mother, class_name: "Pet", optional: true
   belongs_to :father, class_name: "Pet", optional: true
 
@@ -39,13 +37,12 @@ class Pet < ApplicationRecord
     super || []
   end
 
-  # Get breed names from breed IDs
+  # Get breed names from breed values
   def breed_names
     return [] if breed.blank?
     
-    organization.organization_fields
-                .where(field_type: :breed, id: breed)
-                .pluck(:value)
+    # Breed now stores string values directly, not IDs
+    breed.map(&:titleize)
   end
 
   # Get color names from color IDs

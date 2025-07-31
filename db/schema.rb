@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_07_31_040048) do
+ActiveRecord::Schema[7.1].define(version: 2025_07_31_062136) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -181,10 +181,13 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_31_040048) do
     t.text "description"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "table_type"
+    t.integer "table_id"
     t.index ["custom_table_id", "api_name"], name: "index_custom_fields_on_custom_table_id_and_api_name", unique: true
     t.index ["custom_table_id", "name"], name: "index_custom_fields_on_custom_table_id_and_name", unique: true
     t.index ["custom_table_id"], name: "index_custom_fields_on_custom_table_id"
     t.index ["field_type"], name: "index_custom_fields_on_field_type"
+    t.index ["table_type", "table_id"], name: "index_custom_fields_on_table_type_and_table_id"
   end
 
   create_table "custom_records", force: :cascade do |t|
@@ -317,17 +320,6 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_31_040048) do
     t.index ["organization_id"], name: "index_organization_assets_on_organization_id"
   end
 
-  create_table "organization_fields", force: :cascade do |t|
-    t.bigint "organization_id", null: false
-    t.integer "field_type"
-    t.string "value"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.string "icon"
-    t.integer "priority"
-    t.index ["organization_id"], name: "index_organization_fields_on_organization_id"
-  end
-
   create_table "organization_users", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.bigint "organization_id", null: false
@@ -366,7 +358,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_31_040048) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "sex", default: 2, null: false
-    t.integer "species_id"
+    t.string "species"
     t.json "color"
     t.integer "coat_type"
     t.integer "size"
@@ -374,8 +366,8 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_31_040048) do
     t.float "weight_oz"
     t.date "entered_shelter"
     t.date "left_shelter"
-    t.integer "unit_id"
-    t.integer "location_id"
+    t.string "unit"
+    t.string "location"
     t.date "date_of_birth"
     t.boolean "dob_estimated", default: false
     t.string "microchip"
@@ -504,7 +496,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_31_040048) do
     t.string "status", default: "Scheduled", null: false
     t.string "subject", null: false
     t.text "description"
-    t.bigint "pet_id", null: false
+    t.bigint "pet_id"
     t.datetime "completed_at"
     t.datetime "start_time"
     t.integer "duration_minutes"
@@ -512,6 +504,8 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_31_040048) do
     t.string "flag_list", default: [], array: true
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "organization_id"
+    t.index ["organization_id"], name: "index_tasks_on_organization_id"
     t.index ["pet_id"], name: "index_tasks_on_pet_id"
   end
 
@@ -588,7 +582,6 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_31_040048) do
   add_foreign_key "orchestration_executions", "users"
   add_foreign_key "orchestrations", "organizations"
   add_foreign_key "organization_assets", "organizations"
-  add_foreign_key "organization_fields", "organizations"
   add_foreign_key "organization_users", "organizations"
   add_foreign_key "organization_users", "users"
   add_foreign_key "pets", "organizations"
@@ -606,6 +599,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_31_040048) do
   add_foreign_key "studio_executions", "studios"
   add_foreign_key "studio_executions", "users"
   add_foreign_key "studios", "organizations"
+  add_foreign_key "tasks", "organizations"
   add_foreign_key "tasks", "pets"
   add_foreign_key "user_ad_rewards", "ads"
   add_foreign_key "user_ad_rewards", "users"

@@ -97,7 +97,7 @@
               <div class="alert alert-info">
                 <i class="fas fa-info-circle me-2"></i>
                 No fields have been defined for this table yet. 
-                <%= link_to "Add fields", organization_custom_table_custom_fields_path(@organization, @custom_table) %> to start collecting data.
+                <%= link_to "Add fields", organization_organization_table_fields_path(@organization, @custom_table.api_name) %> to start collecting data.
               </div>
             <% end %>
 

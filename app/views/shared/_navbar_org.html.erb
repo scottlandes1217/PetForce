@@ -176,16 +176,11 @@
                 <span>Edit Organization</span>
               <% end %>
             </li>
+
             <li>
-              <%= link_to organization_organization_fields_path(@organization), class: "dropdown-item d-flex align-items-center py-2" do %>
-                <i class="fas fa-list me-3 text-muted"></i>
-                <span>Manage Fields</span>
-              <% end %>
-            </li>
-            <li>
-              <%= link_to organization_custom_tables_path(@organization), class: "dropdown-item d-flex align-items-center py-2" do %>
-                <i class="fas fa-database me-3 text-muted"></i>
-                <span>Custom Tables</span>
+              <%= link_to organization_tables_path(@organization), class: "dropdown-item d-flex align-items-center py-2" do %>
+                <i class="fas fa-table me-3 text-muted"></i>
+                <span>Tables</span>
               <% end %>
             </li>
           <% end %>

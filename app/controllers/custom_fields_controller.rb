@@ -4,7 +4,8 @@ class CustomFieldsController < ApplicationController
   before_action :set_custom_field, only: [:show, :edit, :update, :destroy]
 
   def index
-    @custom_fields = @custom_table.custom_fields.order(:name)
+    # Redirect to the unified fields page instead of showing individual custom table fields
+    redirect_to organization_organization_table_fields_path(@organization, @custom_table.api_name)
   end
 
   def show
@@ -18,7 +19,7 @@ class CustomFieldsController < ApplicationController
     @custom_field = @custom_table.custom_fields.build(custom_field_params)
     
     if @custom_field.save
-      redirect_to organization_custom_table_custom_fields_path(@organization, @custom_table), 
+      redirect_to organization_organization_table_fields_path(@organization, @custom_table.api_name), 
                   notice: 'Custom field was successfully created.'
     else
       render :new, status: :unprocessable_entity
@@ -29,18 +30,34 @@ class CustomFieldsController < ApplicationController
   end
 
   def update
-    if @custom_field.update(custom_field_params)
-      redirect_to organization_custom_table_custom_fields_path(@organization, @custom_table), 
-                  notice: 'Custom field was successfully updated.'
+    # For built-in fields, only allow updating certain attributes
+    if built_in_field?(@custom_field)
+      allowed_params = custom_field_params.slice(:description, :picklist_values)
+      if @custom_field.update(allowed_params)
+        redirect_to organization_organization_table_fields_path(@organization, @custom_table.api_name), 
+                    notice: 'Built-in field was successfully updated.'
+      else
+        render :edit, status: :unprocessable_entity
+      end
     else
-      render :edit, status: :unprocessable_entity
+      if @custom_field.update(custom_field_params)
+        redirect_to organization_organization_table_fields_path(@organization, @custom_table.api_name), 
+                    notice: 'Custom field was successfully updated.'
+      else
+        render :edit, status: :unprocessable_entity
+      end
     end
   end
 
   def destroy
-    @custom_field.destroy
-    redirect_to organization_custom_table_custom_fields_path(@organization, @custom_table), 
-                notice: 'Custom field was successfully deleted.'
+    if built_in_field?(@custom_field)
+      redirect_to organization_organization_table_fields_path(@organization, @custom_table.api_name), 
+                  alert: 'Built-in fields cannot be deleted.'
+    else
+      @custom_field.destroy
+      redirect_to organization_organization_table_fields_path(@organization, @custom_table.api_name), 
+                  notice: 'Custom field was successfully deleted.'
+    end
   end
 
   private
@@ -50,7 +67,16 @@ class CustomFieldsController < ApplicationController
   end
 
   def set_custom_table
-    @custom_table = @organization.custom_tables.find(params[:custom_table_id])
+    # Check if this is a built-in table (pets, tasks, events)
+    built_in_tables = ['pets', 'tasks', 'events']
+    
+    if built_in_tables.include?(params[:custom_table_id])
+      # For built-in tables, ensure the custom table exists
+      @custom_table = ensure_built_in_custom_table_exists(params[:custom_table_id])
+    else
+      # For regular custom tables
+      @custom_table = @organization.custom_tables.find(params[:custom_table_id])
+    end
   end
 
   def set_custom_field
@@ -63,5 +89,61 @@ class CustomFieldsController < ApplicationController
       :active, :hidden, :read_only, :description, :formula, :lookup_table_id,
       picklist_values: []
     )
+  end
+
+  def ensure_built_in_custom_table_exists(table_type)
+    # Create the built-in custom table if it doesn't exist
+    table_config = case table_type
+    when 'pets'
+      {
+        name: 'pets',
+        display_name: 'Pets',
+        api_name: 'pets',
+        description: 'Built-in table for managing pets',
+        icon_type: 'font_awesome',
+        font_awesome_icon: 'fas fa-paw',
+        add_to_navigation: false
+      }
+    when 'tasks'
+      {
+        name: 'tasks',
+        display_name: 'Tasks',
+        api_name: 'tasks',
+        description: 'Built-in table for managing tasks',
+        icon_type: 'font_awesome',
+        font_awesome_icon: 'fas fa-tasks',
+        add_to_navigation: false
+      }
+    when 'events'
+      {
+        name: 'events',
+        display_name: 'Events',
+        api_name: 'events',
+        description: 'Built-in table for managing events',
+        icon_type: 'font_awesome',
+        font_awesome_icon: 'fas fa-calendar',
+        add_to_navigation: false
+      }
+    end
+
+    @organization.custom_tables.find_or_create_by(api_name: table_config[:api_name]) do |table|
+      table.assign_attributes(table_config)
+    end
+  end
+
+  def built_in_field?(custom_field)
+    # Built-in fields are those that correspond to core pet/task/event attributes
+    built_in_api_names = [
+      'pet_species_field',
+      'pet_breed_field', 
+      'pet_color_field',
+      'pet_flags_field',
+      'pet_location_field',
+      'pet_unit_field',
+      'task_unit_field',
+      'task_location_field'
+    ]
+    
+    built_in_api_names.include?(custom_field.api_name)
   end
 end 

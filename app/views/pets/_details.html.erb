@@ -100,29 +100,29 @@
 
     <!-- Species (Single field) -->
     <div class="field-container">
-      <strong>Species:</strong>
-      <span class="value" data-field="species_id" data-edit-field-target="value">
-        <% if @pet.species_id.present? && @pet.species&.value.present? %>
-          <%= @pet.species.value.titleize %>
+      <strong><%= get_custom_field_display_name(@organization, 'pets', 'species') %>:</strong>
+      <span class="value" data-field="species" data-edit-field-target="value">
+        <% if @pet.species.present? %>
+          <%= @pet.species.titleize %>
         <% else %>
           Not Set
         <% end %>
       </span>
       <button class="edit-button" 
-              data-field="species_id" 
+              data-field="species" 
               data-edit-field-target="editButton" 
               data-action="click->edit-field#edit">
         <i class="fas fa-pencil-alt"></i>
       </button>
       <select class="edit-input" 
-              data-field="species_id" 
+              data-field="species" 
               data-edit-field-target="input" 
               style="display: none;">
         <option value="">Not Set</option>
-        <% @organization.organization_fields.species.each do |species_option| %>
-          <option value="<%= species_option.id %>" 
-                  <%= "selected" if @pet.species_id == species_option.id %>>
-            <%= species_option.value.titleize %>
+        <% get_custom_field_values(@organization, 'pets', 'species').each do |species_value| %>
+          <option value="<%= species_value %>" 
+                  <%= "selected" if @pet.species == species_value %>>
+            <%= species_value.titleize %>
           </option>
         <% end %>
       </select>
@@ -130,7 +130,7 @@
 
     <!-- Breed (Multi-select) -->
     <div class="field-container">
-      <strong>Breed:</strong>
+      <strong><%= get_custom_field_display_name(@organization, 'pets', 'breed') %>:</strong>
       <span class="value" data-field="breed" data-edit-field-target="value">
         <!-- DEBUG: <%= @pet.breed_names.inspect %> -->
         <!-- DEBUG: <%= @pet.breed_names.any?.inspect %> -->
@@ -151,10 +151,10 @@
               data-field="breed" 
               data-edit-field-target="input" 
               style="display: none;">
-        <% @organization.organization_fields.breed.each do |breed_option| %>
-          <option value="<%= breed_option.id.to_s %>" 
-                  <%= "selected" if @pet.breed.map(&:to_s).include?(breed_option.id.to_s) %>>
-            <%= breed_option.value.titleize %>
+        <% get_custom_field_values(@organization, 'pets', 'breed').each do |breed_value| %>
+          <option value="<%= breed_value %>" 
+                  <%= "selected" if @pet.breed.include?(breed_value) %>>
+            <%= breed_value.titleize %>
           </option>
         <% end %>
       </select>
@@ -162,7 +162,7 @@
 
     <!-- Color (Multi-select) -->
     <div class="field-container">
-      <strong>Color:</strong>
+      <strong><%= get_custom_field_display_name(@organization, 'pets', 'color') %>:</strong>
       <span class="value" data-field="color" data-edit-field-target="value">
         <% if @pet.color_names.any? %>
           <%= @pet.color_names.join(", ") %>
@@ -181,10 +181,40 @@
               data-field="color" 
               data-edit-field-target="input" 
               style="display: none;">
-        <% @organization.organization_fields.color.each do |color_option| %>
-          <option value="<%= color_option.value %>" 
-                  <%= "selected" if @pet.color.include?(color_option.value) %>>
-            <%= color_option.value.titleize %>
+        <% get_custom_field_values(@organization, 'pets', 'color').each do |color_value| %>
+          <option value="<%= color_value %>" 
+                  <%= "selected" if @pet.color.include?(color_value) %>>
+            <%= color_value.titleize %>
+          </option>
+        <% end %>
+      </select>
+    </div>
+
+    <!-- Flags (Multi-select) -->
+    <div class="field-container">
+      <strong><%= get_custom_field_display_name(@organization, 'pets', 'flags') %>:</strong>
+      <span class="value" data-field="flags" data-edit-field-target="value">
+        <% if @pet.flags.any? %>
+          <%= @pet.flags.join(", ") %>
+        <% else %>
+          Not Set
+        <% end %>
+      </span>
+      <button class="edit-button" 
+              data-field="flags" 
+              data-edit-field-target="editButton" 
+              data-action="click->edit-field#edit">
+        <i class="fas fa-pencil-alt"></i>
+      </button>
+      <select multiple 
+              class="edit-input" 
+              data-field="flags" 
+              data-edit-field-target="input" 
+              style="display: none;">
+        <% get_custom_field_values(@organization, 'pets', 'flags').each do |flag_value| %>
+          <option value="<%= flag_value %>" 
+                  <%= "selected" if @pet.flags.include?(flag_value) %>>
+            <%= flag_value.titleize %>
           </option>
         <% end %>
       </select>
@@ -221,9 +251,9 @@
   <div class="col-md-6">
     <!-- Location -->
     <div class="field-container">
-      <span class="label">Location:</span>
+      <span class="label"><%= get_custom_field_display_name(@organization, 'pets', 'location') %>:</span>
       <span class="value" data-field="location" data-edit-field-target="value">
-        <%= @pet.location&.value || "Not set" %>
+        <%= @pet.location.present? ? @pet.location : "Not set" %>
       </span>
       <button class="edit-button" 
               data-field="location" 
@@ -236,9 +266,9 @@
               data-edit-field-target="input" 
               style="display: none;">
         <option value="">Select Location</option>
-        <% @organization.organization_fields.where(field_type: :location).each do |field| %>
-          <option value="<%= field.id %>" <%= 'selected' if @pet.location_id == field.id %>>
-            <%= field.value %>
+        <% get_custom_field_values(@organization, 'pets', 'location').each do |location_value| %>
+          <option value="<%= location_value %>" <%= 'selected' if @pet.location == location_value %>>
+            <%= location_value %>
           </option>
         <% end %>
       </select>
@@ -324,10 +354,10 @@
 
     <!-- Location & Unit (Grouped: location_unit) -->
     <div class="field-container">
-      <strong>Location & Unit:</strong>
+      <strong>Location & <%= get_custom_field_display_name(@organization, 'tasks', 'unit') %>:</strong>
       <span class="value" data-field="location_unit" data-edit-field-target="value">
-        <% location_value = @pet.location&.value.to_s.strip %>
-        <% unit_value = @pet.unit&.value.to_s.strip %>
+        <% location_value = @pet.location.to_s.strip %>
+        <% unit_value = @pet.unit.to_s.strip %>
         <% if location_value.present? && unit_value.present? %>
           <%= "#{location_value} - #{unit_value}" %>
         <% elsif location_value.present? %>
@@ -347,27 +377,27 @@
       </button>
       <div class="edit-input-group" data-group="location_unit" style="display: none;">
         <select class="edit-input" 
-                data-field="location_id" 
+                data-field="location" 
                 data-group="location_unit" 
                 data-edit-field-target="input">
           <option value="">Not Set</option>
-          <% @organization.organization_fields.location.each do |location_option| %>
-            <option value="<%= location_option.id %>" 
-                    <%= "selected" if @pet.location_id == location_option.id %>>
-              <%= location_option.value %>
+          <% get_custom_field_values(@organization, 'pets', 'location').each do |location_value| %>
+            <option value="<%= location_value %>" 
+                    <%= "selected" if @pet.location == location_value %>>
+              <%= location_value %>
             </option>
           <% end %>
         </select>
 
         <select class="edit-input" 
-                data-field="unit_id" 
+                data-field="unit" 
                 data-group="location_unit" 
                 data-edit-field-target="input">
           <option value="">Not Set</option>
-          <% @organization.organization_fields.unit.each do |unit_option| %>
-            <option value="<%= unit_option.id %>" 
-                    <%= "selected" if @pet.unit_id == unit_option.id %>>
-              <%= unit_option.value %>
+          <% get_custom_field_values(@organization, 'tasks', 'unit').each do |unit_value| %>
+            <option value="<%= unit_value %>" 
+                    <%= "selected" if @pet.unit == unit_value %>>
+              <%= unit_value %>
             </option>
           <% end %>
         </select>
