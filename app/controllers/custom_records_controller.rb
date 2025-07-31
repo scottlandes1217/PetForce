@@ -1,38 +1,38 @@
 class CustomRecordsController < ApplicationController
   before_action :set_organization
-  before_action :set_custom_table
+  before_action :set_custom_object
   before_action :set_custom_record, only: [:show, :edit, :update, :destroy]
 
   def index
-    @custom_records = @custom_table.custom_records.includes(:custom_field_values).order(:name)
+    @custom_records = @custom_object.custom_records.includes(:custom_field_values).order(:name)
   end
 
   def show
-    @custom_fields = @custom_table.custom_fields.active.visible.order(:name)
+    @custom_fields = @custom_object.custom_fields.active.visible.order(:name)
   end
 
   def new
-    @custom_record = @custom_table.custom_records.build
-    @custom_fields = @custom_table.custom_fields.active.visible.order(:name)
+    @custom_record = @custom_object.custom_records.build
+    @custom_fields = @custom_object.custom_fields.active.visible.order(:name)
   end
 
   def create
-    @custom_record = @custom_table.custom_records.build(custom_record_params)
+    @custom_record = @custom_object.custom_records.build(custom_record_params)
     
     if @custom_record.save
       # Set field values
       set_field_values
       
-      redirect_to organization_custom_table_custom_record_path(@organization, @custom_table, @custom_record), 
+      redirect_to organization_custom_object_custom_record_path(@organization, @custom_object, @custom_record), 
                   notice: 'Record was successfully created.'
     else
-      @custom_fields = @custom_table.custom_fields.active.visible.order(:name)
+      @custom_fields = @custom_object.custom_fields.active.visible.order(:name)
       render :new, status: :unprocessable_entity
     end
   end
 
   def edit
-    @custom_fields = @custom_table.custom_fields.active.visible.order(:name)
+    @custom_fields = @custom_object.custom_fields.active.visible.order(:name)
   end
 
   def update
@@ -40,17 +40,17 @@ class CustomRecordsController < ApplicationController
       # Update field values
       update_field_values
       
-      redirect_to organization_custom_table_custom_record_path(@organization, @custom_table, @custom_record), 
+      redirect_to organization_custom_object_custom_record_path(@organization, @custom_object, @custom_record), 
                   notice: 'Record was successfully updated.'
     else
-      @custom_fields = @custom_table.custom_fields.active.visible.order(:name)
+      @custom_fields = @custom_object.custom_fields.active.visible.order(:name)
       render :edit, status: :unprocessable_entity
     end
   end
 
   def destroy
     @custom_record.destroy
-    redirect_to organization_custom_table_custom_records_path(@organization, @custom_table), 
+    redirect_to organization_custom_object_custom_records_path(@organization, @custom_object), 
                 notice: 'Record was successfully deleted.'
   end
 
@@ -60,12 +60,12 @@ class CustomRecordsController < ApplicationController
     @organization = Organization.find(params[:organization_id])
   end
 
-  def set_custom_table
-    @custom_table = @organization.custom_tables.find(params[:custom_table_id])
+  def set_custom_object
+    @custom_object = @organization.custom_objects.find(params[:custom_object_id])
   end
 
   def set_custom_record
-    @custom_record = @custom_table.custom_records.find(params[:id])
+    @custom_record = @custom_object.custom_records.find(params[:id])
   end
 
   def custom_record_params

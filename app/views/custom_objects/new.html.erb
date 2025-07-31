@@ -5,34 +5,34 @@
     <div class="col-md-8">
       <div class="card">
         <div class="card-header">
-          <h3 class="mb-0">Edit Custom Table</h3>
+          <h3 class="mb-0">Create New Custom Table</h3>
         </div>
         <div class="card-body">
-          <%= form_with model: [@organization, @custom_table], local: true do |form| %>
-            <% if @custom_table.errors.any? %>
-              <div class="alert alert-danger">
-                <h5><%= pluralize(@custom_table.errors.count, "error") %> prohibited this custom table from being saved:</h5>
-                <ul>
-                  <% @custom_table.errors.full_messages.each do |message| %>
-                    <li><%= message %></li>
-                  <% end %>
-                </ul>
-              </div>
-            <% end %>
+          <%= form_with model: [@organization, @custom_object], local: true do |form| %>
+                          <% if @custom_object.errors.any? %>
+                <div class="alert alert-danger">
+                  <h5><%= pluralize(@custom_object.errors.count, "error") %> prohibited this custom object from being saved:</h5>
+                  <ul>
+                    <% @custom_object.errors.full_messages.each do |message| %>
+                      <li><%= message %></li>
+                    <% end %>
+                  </ul>
+                </div>
+              <% end %>
 
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
                   <%= form.label :name, "Table Name", class: "form-label" %>
-                  <%= form.text_field :name, class: "form-control" %>
-                  <div class="form-text">A unique name for your table</div>
+                  <%= form.text_field :name, class: "form-control", placeholder: "e.g., Customer, Product, Service" %>
+                  <div class="form-text">A unique name for your table (e.g., "Customer", "Product")</div>
                 </div>
               </div>
               
               <div class="col-md-6">
                 <div class="mb-3">
                   <%= form.label :display_name, "Display Name", class: "form-label" %>
-                  <%= form.text_field :display_name, class: "form-control" %>
+                  <%= form.text_field :display_name, class: "form-control", placeholder: "e.g., Customers, Products" %>
                   <div class="form-text">The name that will be displayed to users</div>
                 </div>
               </div>
@@ -40,14 +40,14 @@
 
             <div class="mb-3">
               <%= form.label :api_name, "API Name", class: "form-label" %>
-              <%= form.text_field :api_name, class: "form-control", readonly: true %>
-              <div class="form-text">API name cannot be changed after creation</div>
+              <%= form.text_field :api_name, class: "form-control", placeholder: "Will be auto-generated if left blank" %>
+              <div class="form-text">Technical name used in APIs (auto-generated from table name if left blank)</div>
             </div>
 
             <div class="mb-3">
               <%= form.label :font_awesome_icon, "Table Icon", class: "form-label" %>
               <div class="input-group">
-                <%= form.text_field :font_awesome_icon, value: @custom_table.uploaded_icon? ? 'custom' : @custom_table.font_awesome_icon, class: "form-control", id: "selected-icon-input", readonly: true %>
+                <%= form.text_field :font_awesome_icon, value: 'fas fa-database', class: "form-control", id: "selected-icon-input", readonly: true %>
                 <button type="button" class="btn btn-outline-secondary" id="icon-picker-btn">
                   <i class="fas fa-icons"></i> Choose Icon
                 </button>
@@ -58,21 +58,15 @@
               <div class="form-text">Click "Choose Icon" to browse Font Awesome icons or "Custom Upload" to upload your own image</div>
             </div>
 
-            <div id="upload-options" class="mb-3" style="<%= @custom_table.font_awesome_icon? ? 'display: none;' : '' %>">
+            <div id="upload-options" class="mb-3" style="display: none;">
               <%= form.label :icon, "Upload Custom Image", class: "form-label" %>
-              <% if @custom_table.uploaded_icon? && @custom_table.icon.attached? %>
-                <div class="mb-2">
-                  <img src="<%= url_for(@custom_table.icon) %>" alt="Current icon" style="max-width: 50px; max-height: 50px;" class="me-2">
-                  <small class="text-muted">Current icon</small>
-                </div>
-              <% end %>
               <%= form.file_field :icon, class: "form-control", accept: "image/*" %>
               <div class="form-text">Upload a custom image for your table (PNG, JPG, GIF recommended)</div>
             </div>
 
             <div class="mb-3">
               <%= form.label :description, "Description", class: "form-label" %>
-              <%= form.text_area :description, class: "form-control", rows: 3 %>
+              <%= form.text_area :description, class: "form-control", rows: 3, placeholder: "Describe what this table is used for..." %>
             </div>
 
             <div class="row">
@@ -98,14 +92,8 @@
             </div>
 
             <div class="d-flex justify-content-between">
-              <%= link_to "Cancel", organization_custom_table_path(@organization, @custom_table), class: "btn btn-secondary" %>
-              <div>
-                <%= link_to "Delete Table", organization_custom_table_path(@organization, @custom_table), 
-                    method: :delete, 
-                    data: { confirm: "Are you sure? This will delete all fields and records in this table." },
-                    class: "btn btn-danger" %>
-                <%= form.submit "Update Table", class: "btn btn-primary" %>
-              </div>
+              <%= link_to "Cancel", organization_custom_objects_path(@organization), class: "btn btn-secondary" %>
+              <%= form.submit "Create Table", class: "btn btn-primary" %>
             </div>
           <% end %>
         </div>
@@ -140,6 +128,9 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  const nameField = document.getElementById('custom_object_name');
+  const displayNameField = document.getElementById('custom_object_display_name');
+  const apiNameField = document.getElementById('custom_object_api_name');
   const selectedIconInput = document.getElementById('selected-icon-input');
   const iconPickerBtn = document.getElementById('icon-picker-btn');
   const customUploadBtn = document.getElementById('custom-upload-btn');
@@ -192,6 +183,7 @@ document.addEventListener('DOMContentLoaded', function() {
     { name: 'Tools', class: 'fas fa-tools', category: 'Tools' },
     { name: 'Screwdriver', class: 'fas fa-screwdriver', category: 'Tools' },
     { name: 'Hammer', class: 'fas fa-hammer', category: 'Tools' },
+    { name: 'Cog', class: 'fas fa-cog', category: 'Tools' },
     
     // Communication
     { name: 'Phone', class: 'fas fa-phone', category: 'Communication' },
@@ -241,13 +233,6 @@ document.addEventListener('DOMContentLoaded', function() {
     { name: 'Calendar Times', class: 'fas fa-calendar-times', category: 'Time' },
     
     // Objects & Items
-    { name: 'Book', class: 'fas fa-book', category: 'Objects' },
-    { name: 'Book Open', class: 'fas fa-book-open', category: 'Objects' },
-    { name: 'Graduation Cap', class: 'fas fa-graduation-cap', category: 'Objects' },
-    { name: 'Briefcase', class: 'fas fa-briefcase', category: 'Objects' },
-    { name: 'Suitcase', class: 'fas fa-suitcase', category: 'Objects' },
-    { name: 'Car', class: 'fas fa-car', category: 'Objects' },
-    { name: 'Plane', class: 'fas fa-plane', category: 'Objects' },
     { name: 'Book', class: 'fas fa-book', category: 'Objects' },
     { name: 'Book Open', class: 'fas fa-book-open', category: 'Objects' },
     { name: 'Graduation Cap', class: 'fas fa-graduation-cap', category: 'Objects' },
@@ -349,8 +334,22 @@ document.addEventListener('DOMContentLoaded', function() {
     { name: 'Diamond', class: 'fas fa-diamond', category: 'Misc' }
   ];
 
-  let selectedIcon = selectedIconInput.value === 'custom' ? 'fas fa-database' : selectedIconInput.value;
+  let selectedIcon = 'fas fa-database';
   let filteredIcons = [...icons];
+
+  // Auto-generate display name from name
+  nameField.addEventListener('input', function() {
+    if (displayNameField.value === '' || displayNameField.value === nameField.value) {
+      displayNameField.value = nameField.value;
+    }
+  });
+
+  // Auto-generate API name from name
+  nameField.addEventListener('input', function() {
+    if (apiNameField.value === '' || apiNameField.value === nameField.value.toLowerCase().replace(/[^a-z0-9]/g, '_')) {
+      apiNameField.value = nameField.value.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    }
+  });
 
   // Populate icon grid
   function populateIconGrid(iconsToShow = icons) {

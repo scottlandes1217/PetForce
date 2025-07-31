@@ -1,4 +1,4 @@
-class CustomTable < ApplicationRecord
+class CustomObject < ApplicationRecord
   belongs_to :organization
   has_many :custom_fields, dependent: :destroy
   has_many :custom_records, dependent: :destroy
@@ -8,13 +8,13 @@ class CustomTable < ApplicationRecord
 
   validates :name, presence: true, uniqueness: { scope: :organization_id }
   validates :display_name, presence: true
-  validates :api_name, presence: true, uniqueness: { scope: :organization_id }, format: { with: /\A[a-zA-Z][a-zA-Z0-9_]*\z/, message: "must start with a letter and contain only letters, numbers, and underscores" }
+  validates :api_name, presence: true, uniqueness: { scope: :organization_id }
   validates :icon_type, inclusion: { in: %w[font_awesome uploaded] }
   validates :font_awesome_icon, presence: true, if: :font_awesome_icon?
   validates :icon, presence: true, if: :uploaded_icon?
   validates :add_to_navigation, inclusion: { in: [true, false] }
   
-  before_validation :generate_api_name, on: :create
+  before_validation :generate_api_name, if: :name_changed?
   before_validation :ensure_api_name_format
 
   scope :active, -> { where(active: true) }
@@ -45,14 +45,14 @@ class CustomTable < ApplicationRecord
     
     base_name = name.parameterize.underscore
     counter = 1
-    generated_name = base_name
+    new_api_name = base_name
     
-    while self.class.exists?(api_name: generated_name, organization_id: organization_id)
-      generated_name = "#{base_name}_#{counter}"
+    while self.class.where(organization: organization, api_name: new_api_name).exists?
+      new_api_name = "#{base_name}_#{counter}"
       counter += 1
     end
     
-    self.api_name = generated_name
+    self.api_name = new_api_name
   end
 
   def ensure_api_name_format
@@ -60,6 +60,6 @@ class CustomTable < ApplicationRecord
     
     # Ensure it starts with a letter and contains only valid characters
     self.api_name = api_name.gsub(/[^a-zA-Z0-9_]/, '_')
-    self.api_name = "table_#{api_name}" unless api_name.match?(/\A[a-zA-Z]/)
+    self.api_name = "object_#{api_name}" unless api_name.match?(/\A[a-zA-Z]/)
   end
 end 

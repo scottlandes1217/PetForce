@@ -1,25 +1,25 @@
 class CustomFieldsController < ApplicationController
   before_action :set_organization
-  before_action :set_custom_table
+  before_action :set_custom_object
   before_action :set_custom_field, only: [:show, :edit, :update, :destroy]
 
   def index
-    # Redirect to the unified fields page instead of showing individual custom table fields
-    redirect_to organization_organization_table_fields_path(@organization, @custom_table.api_name)
+    # Redirect to the unified fields page instead of showing individual custom object fields
+    redirect_to organization_organization_object_fields_path(@organization, @custom_object.api_name)
   end
 
   def show
   end
 
   def new
-    @custom_field = @custom_table.custom_fields.build
+    @custom_field = @custom_object.custom_fields.build
   end
 
   def create
-    @custom_field = @custom_table.custom_fields.build(custom_field_params)
+    @custom_field = @custom_object.custom_fields.build(custom_field_params)
     
     if @custom_field.save
-      redirect_to organization_organization_table_fields_path(@organization, @custom_table.api_name), 
+      redirect_to organization_organization_object_fields_path(@organization, @custom_object.api_name), 
                   notice: 'Custom field was successfully created.'
     else
       render :new, status: :unprocessable_entity
@@ -34,14 +34,14 @@ class CustomFieldsController < ApplicationController
     if built_in_field?(@custom_field)
       allowed_params = custom_field_params.slice(:description, :picklist_values)
       if @custom_field.update(allowed_params)
-        redirect_to organization_organization_table_fields_path(@organization, @custom_table.api_name), 
+        redirect_to organization_organization_object_fields_path(@organization, @custom_object.api_name), 
                     notice: 'Built-in field was successfully updated.'
       else
         render :edit, status: :unprocessable_entity
       end
     else
       if @custom_field.update(custom_field_params)
-        redirect_to organization_organization_table_fields_path(@organization, @custom_table.api_name), 
+        redirect_to organization_organization_object_fields_path(@organization, @custom_object.api_name), 
                     notice: 'Custom field was successfully updated.'
       else
         render :edit, status: :unprocessable_entity
@@ -51,11 +51,11 @@ class CustomFieldsController < ApplicationController
 
   def destroy
     if built_in_field?(@custom_field)
-      redirect_to organization_organization_table_fields_path(@organization, @custom_table.api_name), 
+      redirect_to organization_organization_object_fields_path(@organization, @custom_object.api_name), 
                   alert: 'Built-in fields cannot be deleted.'
     else
       @custom_field.destroy
-      redirect_to organization_organization_table_fields_path(@organization, @custom_table.api_name), 
+      redirect_to organization_organization_object_fields_path(@organization, @custom_object.api_name), 
                   notice: 'Custom field was successfully deleted.'
     end
   end
@@ -66,21 +66,21 @@ class CustomFieldsController < ApplicationController
     @organization = Organization.find(params[:organization_id])
   end
 
-  def set_custom_table
-    # Check if this is a built-in table (pets, tasks, events)
-    built_in_tables = ['pets', 'tasks', 'events']
+  def set_custom_object
+    # Check if this is a built-in object (pets, tasks, events)
+    built_in_objects = ['pets', 'tasks', 'events']
     
-    if built_in_tables.include?(params[:custom_table_id])
-      # For built-in tables, ensure the custom table exists
-      @custom_table = ensure_built_in_custom_table_exists(params[:custom_table_id])
+    if built_in_objects.include?(params[:custom_object_id])
+      # For built-in objects, ensure the custom object exists
+      @custom_object = ensure_built_in_custom_object_exists(params[:custom_object_id])
     else
-      # For regular custom tables
-      @custom_table = @organization.custom_tables.find(params[:custom_table_id])
+      # For regular custom objects
+      @custom_object = @organization.custom_objects.find(params[:custom_object_id])
     end
   end
 
   def set_custom_field
-    @custom_field = @custom_table.custom_fields.find(params[:id])
+    @custom_field = @custom_object.custom_fields.find(params[:id])
   end
 
   def custom_field_params
@@ -91,15 +91,15 @@ class CustomFieldsController < ApplicationController
     )
   end
 
-  def ensure_built_in_custom_table_exists(table_type)
-    # Create the built-in custom table if it doesn't exist
-    table_config = case table_type
+  def ensure_built_in_custom_object_exists(object_type)
+    # Create the built-in custom object if it doesn't exist
+    object_config = case object_type
     when 'pets'
       {
         name: 'pets',
         display_name: 'Pets',
         api_name: 'pets',
-        description: 'Built-in table for managing pets',
+        description: 'Built-in object for managing pets',
         icon_type: 'font_awesome',
         font_awesome_icon: 'fas fa-paw',
         add_to_navigation: false
@@ -109,7 +109,7 @@ class CustomFieldsController < ApplicationController
         name: 'tasks',
         display_name: 'Tasks',
         api_name: 'tasks',
-        description: 'Built-in table for managing tasks',
+        description: 'Built-in object for managing tasks',
         icon_type: 'font_awesome',
         font_awesome_icon: 'fas fa-tasks',
         add_to_navigation: false
@@ -119,15 +119,15 @@ class CustomFieldsController < ApplicationController
         name: 'events',
         display_name: 'Events',
         api_name: 'events',
-        description: 'Built-in table for managing events',
+        description: 'Built-in object for managing events',
         icon_type: 'font_awesome',
         font_awesome_icon: 'fas fa-calendar',
         add_to_navigation: false
       }
     end
 
-    @organization.custom_tables.find_or_create_by(api_name: table_config[:api_name]) do |table|
-      table.assign_attributes(table_config)
+    @organization.custom_objects.find_or_create_by(api_name: object_config[:api_name]) do |obj|
+      obj.assign_attributes(object_config)
     end
   end
 

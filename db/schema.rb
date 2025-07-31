@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_07_31_062136) do
+ActiveRecord::Schema[7.1].define(version: 2025_07_31_070142) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -165,7 +165,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_31_062136) do
   end
 
   create_table "custom_fields", force: :cascade do |t|
-    t.bigint "custom_table_id", null: false
+    t.bigint "custom_object_id", null: false
     t.string "name", null: false
     t.string "display_name", null: false
     t.string "api_name", null: false
@@ -183,26 +183,14 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_31_062136) do
     t.datetime "updated_at", null: false
     t.string "table_type"
     t.integer "table_id"
-    t.index ["custom_table_id", "api_name"], name: "index_custom_fields_on_custom_table_id_and_api_name", unique: true
-    t.index ["custom_table_id", "name"], name: "index_custom_fields_on_custom_table_id_and_name", unique: true
-    t.index ["custom_table_id"], name: "index_custom_fields_on_custom_table_id"
+    t.index ["custom_object_id", "api_name"], name: "index_custom_fields_on_custom_object_id_and_api_name", unique: true
+    t.index ["custom_object_id", "name"], name: "index_custom_fields_on_custom_object_id_and_name", unique: true
+    t.index ["custom_object_id"], name: "index_custom_fields_on_custom_object_id"
     t.index ["field_type"], name: "index_custom_fields_on_field_type"
     t.index ["table_type", "table_id"], name: "index_custom_fields_on_table_type_and_table_id"
   end
 
-  create_table "custom_records", force: :cascade do |t|
-    t.bigint "custom_table_id", null: false
-    t.string "name", null: false
-    t.string "external_id"
-    t.text "description"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["custom_table_id", "external_id"], name: "index_custom_records_on_custom_table_id_and_external_id", unique: true
-    t.index ["custom_table_id"], name: "index_custom_records_on_custom_table_id"
-    t.index ["name"], name: "index_custom_records_on_name"
-  end
-
-  create_table "custom_tables", force: :cascade do |t|
+  create_table "custom_objects", force: :cascade do |t|
     t.bigint "organization_id", null: false
     t.string "name", null: false
     t.string "display_name", null: false
@@ -215,9 +203,21 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_31_062136) do
     t.boolean "add_to_navigation", default: false, null: false
     t.string "icon_type", default: "font_awesome", null: false
     t.string "font_awesome_icon", default: "fas fa-database"
-    t.index ["organization_id", "api_name"], name: "index_custom_tables_on_organization_id_and_api_name", unique: true
-    t.index ["organization_id", "name"], name: "index_custom_tables_on_organization_id_and_name", unique: true
-    t.index ["organization_id"], name: "index_custom_tables_on_organization_id"
+    t.index ["organization_id", "api_name"], name: "index_custom_objects_on_organization_id_and_api_name", unique: true
+    t.index ["organization_id", "name"], name: "index_custom_objects_on_organization_id_and_name", unique: true
+    t.index ["organization_id"], name: "index_custom_objects_on_organization_id"
+  end
+
+  create_table "custom_records", force: :cascade do |t|
+    t.bigint "custom_object_id", null: false
+    t.string "name", null: false
+    t.string "external_id"
+    t.text "description"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["custom_object_id", "external_id"], name: "index_custom_records_on_custom_object_id_and_external_id", unique: true
+    t.index ["custom_object_id"], name: "index_custom_records_on_custom_object_id"
+    t.index ["name"], name: "index_custom_records_on_name"
   end
 
   create_table "event_participants", force: :cascade do |t|
@@ -567,9 +567,9 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_31_062136) do
   add_foreign_key "comments", "users"
   add_foreign_key "custom_field_values", "custom_fields"
   add_foreign_key "custom_field_values", "custom_records"
-  add_foreign_key "custom_fields", "custom_tables"
-  add_foreign_key "custom_records", "custom_tables"
-  add_foreign_key "custom_tables", "organizations"
+  add_foreign_key "custom_fields", "custom_objects"
+  add_foreign_key "custom_objects", "organizations"
+  add_foreign_key "custom_records", "custom_objects"
   add_foreign_key "event_participants", "events"
   add_foreign_key "event_participants", "users"
   add_foreign_key "event_tasks", "events"

@@ -1,10 +1,10 @@
 class CustomRecord < ApplicationRecord
-  belongs_to :custom_table
+  belongs_to :custom_object
   has_many :custom_field_values, dependent: :destroy
-  has_many :custom_fields, through: :custom_table
+  has_many :custom_fields, through: :custom_object
 
   validates :name, presence: true
-  validates :external_id, uniqueness: { scope: :custom_table_id }, allow_nil: true
+  validates :external_id, uniqueness: { scope: :custom_object_id }, allow_nil: true
 
   before_create :generate_external_id
 
@@ -50,10 +50,10 @@ class CustomRecord < ApplicationRecord
     
     # Generate a unique external ID based on table name and record ID
     counter = 1
-    base_id = "#{custom_table.api_name}_#{id || 'new'}"
+    base_id = "#{custom_object.api_name}_#{id || 'new'}"
     generated_id = base_id
     
-    while self.class.exists?(external_id: generated_id, custom_table_id: custom_table_id)
+          while self.class.exists?(external_id: generated_id, custom_object_id: custom_object_id)
       generated_id = "#{base_id}_#{counter}"
       counter += 1
     end

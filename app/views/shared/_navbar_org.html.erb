@@ -98,9 +98,9 @@
                 <% end %>
               </li>
               
-              <% @organization.custom_tables.in_navigation.active.each do |table| %>
+              <% @organization.custom_objects.in_navigation.active.each do |table| %>
                 <li>
-                  <%= link_to organization_custom_table_path(@organization, table), class: "dropdown-item d-flex align-items-center py-2 #{current_page?(organization_custom_table_path(@organization, table)) || request.path.match?(/\/organizations\/\d+\/custom_tables\/#{table.id}\//) ? 'active' : ''}" do %>
+                                      <%= link_to organization_custom_object_path(@organization, table), class: "dropdown-item d-flex align-items-center py-2 #{current_page?(organization_custom_object_path(@organization, table)) || request.path.match?(/\/organizations\/\d+\/custom_objects\/#{table.id}\//) ? 'active' : ''}" do %>
                     <% if table.font_awesome_icon? %>
                       <i class="<%= table.font_awesome_icon %> me-3 text-muted"></i>
                     <% elsif table.uploaded_icon? && table.icon.attached? %>
@@ -178,9 +178,9 @@
             </li>
 
             <li>
-              <%= link_to organization_tables_path(@organization), class: "dropdown-item d-flex align-items-center py-2" do %>
+              <%= link_to organization_objects_path(@organization), class: "dropdown-item d-flex align-items-center py-2" do %>
                 <i class="fas fa-table me-3 text-muted"></i>
-                <span>Tables</span>
+                <span>Objects</span>
               <% end %>
             </li>
           <% end %>

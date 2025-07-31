@@ -5,10 +5,10 @@
     <div class="col-md-8">
       <div class="card">
         <div class="card-header">
-          <h3 class="mb-0">Add New Record to <%= @custom_table.display_name %></h3>
+          <h3 class="mb-0">Add New Record to <%= @custom_object.display_name %></h3>
         </div>
         <div class="card-body">
-          <%= form_with model: [@organization, @custom_table, @custom_record], local: true do |form| %>
+                      <%= form_with model: [@organization, @custom_object, @custom_record], local: true do |form| %>
             <% if @custom_record.errors.any? %>
               <div class="alert alert-danger">
                 <h5><%= pluralize(@custom_record.errors.count, "error") %> prohibited this record from being saved:</h5>
@@ -97,12 +97,12 @@
               <div class="alert alert-info">
                 <i class="fas fa-info-circle me-2"></i>
                 No fields have been defined for this table yet. 
-                <%= link_to "Add fields", organization_organization_table_fields_path(@organization, @custom_table.api_name) %> to start collecting data.
+                <%= link_to "Add fields", organization_organization_object_fields_path(@organization, @custom_object.api_name) %> to start collecting data.
               </div>
             <% end %>
 
             <div class="d-flex justify-content-between">
-              <%= link_to "Cancel", organization_custom_table_custom_records_path(@organization, @custom_table), class: "btn btn-secondary" %>
+              <%= link_to "Cancel", organization_custom_object_custom_records_path(@organization, @custom_object), class: "btn btn-secondary" %>
               <%= form.submit "Create Record", class: "btn btn-primary" %>
             </div>
           <% end %>

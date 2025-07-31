@@ -81,33 +81,33 @@ resources :organizations do
   end
 
   
-                  # Tables (both custom and built-in)
-  get 'tables', to: 'tables#index'
+                  # Objects (both custom and built-in)
+  get 'objects', to: 'objects#index'
   
-  # Custom Tables and Fields
-  resources :custom_tables do
+  # Custom Objects and Fields
+  resources :custom_objects do
     resources :custom_fields, only: [:index, :show, :new, :create, :edit, :update, :destroy]
     resources :custom_records, only: [:index, :show, :new, :create, :edit, :update, :destroy]
   end
   
-  # Built-in Table Fields
+  # Built-in Object Fields
   resources :pets do
-    resources :custom_fields, only: [:index, :show, :new, :create, :edit, :update, :destroy], controller: 'built_in_table_fields'
+    resources :custom_fields, only: [:index, :show, :new, :create, :edit, :update, :destroy], controller: 'custom_fields'
   end
   resources :tasks, only: [:index, :new, :create, :edit, :update, :destroy, :show], controller: 'organization_tasks' do
-    resources :custom_fields, only: [:index, :show, :new, :create, :edit, :update, :destroy], controller: 'built_in_table_fields'
+    resources :custom_fields, only: [:index, :show, :new, :create, :edit, :update, :destroy], controller: 'custom_fields'
   end
   resources :events, only: [:index, :show, :edit, :update, :destroy] do
-    resources :custom_fields, only: [:index, :show, :new, :create, :edit, :update, :destroy], controller: 'built_in_table_fields'
+    resources :custom_fields, only: [:index, :show, :new, :create, :edit, :update, :destroy], controller: 'custom_fields'
   end
   
-  # Organization-level custom fields for built-in tables
-  get 'pets/custom_fields', to: 'built_in_table_fields#organization_index', as: :organization_pets_custom_fields
-  get 'tasks/custom_fields', to: 'built_in_table_fields#organization_index', as: :organization_tasks_custom_fields
-  get 'events/custom_fields', to: 'built_in_table_fields#organization_index', as: :organization_events_custom_fields
+  # Organization-level custom fields for built-in objects
+  get 'pets/custom_fields', to: 'custom_fields#organization_index', as: :organization_pets_custom_fields
+  get 'tasks/custom_fields', to: 'custom_fields#organization_index', as: :organization_tasks_custom_fields
+  get 'events/custom_fields', to: 'custom_fields#organization_index', as: :organization_events_custom_fields
   
-  # Unified table fields view
-  get 'tables/:table_type/fields', to: 'table_fields#index', as: :organization_table_fields
+  # Unified object fields view
+  get 'objects/:object_type/fields', to: 'object_fields#index', as: :organization_object_fields
   
   resources :sites do
     member do

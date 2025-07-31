@@ -1,5 +1,5 @@
 class CustomField < ApplicationRecord
-  belongs_to :custom_table, optional: true
+  belongs_to :custom_object, optional: true
   has_many :custom_field_values, dependent: :destroy
 
   # Field types similar to Salesforce
@@ -22,9 +22,9 @@ class CustomField < ApplicationRecord
     rollup: 15
   }
 
-  validates :name, presence: true, uniqueness: { scope: [:custom_table_id, :table_type, :table_id] }
+  validates :name, presence: true, uniqueness: { scope: [:custom_object_id, :table_type, :table_id] }
   validates :display_name, presence: true
-  validates :api_name, presence: true, uniqueness: { scope: [:custom_table_id, :table_type, :table_id] }, format: { with: /\A[a-zA-Z][a-zA-Z0-9_]*\z/, message: "must start with a letter and contain only letters, numbers, and underscores" }
+  validates :api_name, presence: true, uniqueness: { scope: [:custom_object_id, :table_type, :table_id] }, format: { with: /\A[a-zA-Z][a-zA-Z0-9_]*\z/, message: "must start with a letter and contain only letters, numbers, and underscores" }
   validate :must_have_table_reference
   validates :field_type, presence: true
   validates :required, inclusion: { in: [true, false] }
@@ -74,7 +74,7 @@ class CustomField < ApplicationRecord
     generated_name = base_name
     
     scope_conditions = {}
-    scope_conditions[:custom_table_id] = custom_table_id if custom_table_id.present?
+    scope_conditions[:custom_object_id] = custom_object_id if custom_object_id.present?
     scope_conditions[:table_type] = table_type if table_type.present?
     scope_conditions[:table_id] = table_id if table_id.present?
     
@@ -103,8 +103,8 @@ class CustomField < ApplicationRecord
   end
 
   def must_have_table_reference
-    if custom_table_id.blank? && (table_type.blank? || table_id.blank?)
-      errors.add(:base, "Custom field must belong to either a custom table or a built-in table")
+    if custom_object_id.blank? && (table_type.blank? || table_id.blank?)
+      errors.add(:base, "Custom field must belong to either a custom object or a built-in table")
     end
   end
 end 

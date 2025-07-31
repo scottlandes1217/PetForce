@@ -1,16 +1,16 @@
-class TableFieldsController < ApplicationController
+class ObjectFieldsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_organization
-  before_action :set_table_type
-  before_action :ensure_custom_table_exists
+  before_action :set_object_type
+  before_action :ensure_custom_object_exists
 
   def index
     @query = params[:query]
     
-    # Get all custom fields for this table type
-    @custom_fields = @custom_table.custom_fields.order(:display_name)
+    # Get all custom fields for this object type
+    @custom_fields = @custom_object.custom_fields.order(:display_name)
     
-    # Get built-in fields for this table type (if any)
+    # Get built-in fields for this object type (if any)
     @built_in_fields = get_built_in_fields
     
     # Combine all fields
@@ -33,20 +33,20 @@ class TableFieldsController < ApplicationController
     @organization = Organization.find(params[:organization_id])
   end
 
-  def set_table_type
-    @table_type = params[:table_type]
-    @table_display_name = @table_type.titleize
+  def set_object_type
+    @object_type = params[:object_type]
+    @object_display_name = @object_type.titleize
   end
 
-  def ensure_custom_table_exists
-    # Ensure the custom table exists for this table type
-    table_config = case @table_type
+  def ensure_custom_object_exists
+    # Ensure the custom object exists for this object type
+    object_config = case @object_type
     when 'pets'
       {
         name: 'pets',
         display_name: 'Pets',
         api_name: 'pets',
-        description: 'Built-in table for managing pets',
+        description: 'Built-in object for managing pets',
         icon_type: 'font_awesome',
         font_awesome_icon: 'fas fa-paw',
         add_to_navigation: false
@@ -56,7 +56,7 @@ class TableFieldsController < ApplicationController
         name: 'tasks',
         display_name: 'Tasks',
         api_name: 'tasks',
-        description: 'Built-in table for managing tasks',
+        description: 'Built-in object for managing tasks',
         icon_type: 'font_awesome',
         font_awesome_icon: 'fas fa-tasks',
         add_to_navigation: false
@@ -66,27 +66,27 @@ class TableFieldsController < ApplicationController
         name: 'events',
         display_name: 'Events',
         api_name: 'events',
-        description: 'Built-in table for managing events',
+        description: 'Built-in object for managing events',
         icon_type: 'font_awesome',
         font_awesome_icon: 'fas fa-calendar',
         add_to_navigation: false
       }
     else
-      # For custom tables, find the existing table
-      @custom_table = @organization.custom_tables.find_by(api_name: @table_type)
-      return if @custom_table
+      # For custom objects, find the existing object
+      @custom_object = @organization.custom_objects.find_by(api_name: @object_type)
+      return if @custom_object
       
-      redirect_to organization_tables_path(@organization), alert: "Table not found"
+      redirect_to organization_objects_path(@organization), alert: "Object not found"
     end
 
-    @custom_table = @organization.custom_tables.find_or_create_by(api_name: table_config[:api_name]) do |table|
-      table.assign_attributes(table_config)
+    @custom_object = @organization.custom_objects.find_or_create_by(api_name: object_config[:api_name]) do |obj|
+      obj.assign_attributes(object_config)
     end
   end
 
   def get_built_in_fields
-    # Define built-in fields for each table type
-    case @table_type
+    # Define built-in fields for each object type
+    case @object_type
     when 'pets'
       [
         OpenStruct.new(
@@ -334,6 +334,4 @@ class TableFieldsController < ApplicationController
       []
     end
   end
-
-
 end
