@@ -104,11 +104,11 @@
                     <% if table.font_awesome_icon? %>
                       <i class="<%= table.font_awesome_icon %> me-3 text-muted"></i>
                     <% elsif table.uploaded_icon? && table.icon.attached? %>
-                      <img src="<%= url_for(table.icon) %>" alt="<%= table.display_name %>" style="max-width: 16px; max-height: 16px;" class="me-3">
+                      <img src="<%= url_for(table.icon) %>" alt="<%= table.name %>" style="max-width: 16px; max-height: 16px;" class="me-3">
                     <% else %>
                       <i class="fas fa-database me-3 text-muted"></i>
                     <% end %>
-                    <span><%= table.display_name %></span>
+                                            <span><%= table.name %></span>
                   <% end %>
                 </li>
               <% end %>

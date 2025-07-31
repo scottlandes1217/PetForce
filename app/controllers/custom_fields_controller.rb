@@ -96,8 +96,7 @@ class CustomFieldsController < ApplicationController
     object_config = case object_type
     when 'pets'
       {
-        name: 'pets',
-        display_name: 'Pets',
+        name: 'Pets',
         api_name: 'pets',
         description: 'Built-in object for managing pets',
         icon_type: 'font_awesome',
@@ -106,8 +105,7 @@ class CustomFieldsController < ApplicationController
       }
     when 'tasks'
       {
-        name: 'tasks',
-        display_name: 'Tasks',
+        name: 'Tasks',
         api_name: 'tasks',
         description: 'Built-in object for managing tasks',
         icon_type: 'font_awesome',
@@ -116,8 +114,7 @@ class CustomFieldsController < ApplicationController
       }
     when 'events'
       {
-        name: 'events',
-        display_name: 'Events',
+        name: 'Events',
         api_name: 'events',
         description: 'Built-in object for managing events',
         icon_type: 'font_awesome',

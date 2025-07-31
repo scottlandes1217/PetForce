@@ -8,7 +8,7 @@ class ObjectFieldsController < ApplicationController
     @query = params[:query]
     
     # Get all custom fields for this object type
-    @custom_fields = @custom_object.custom_fields.order(:display_name)
+    @custom_fields = @custom_object.custom_fields.order(:name)
     
     # Get built-in fields for this object type (if any)
     @built_in_fields = get_built_in_fields
@@ -20,7 +20,6 @@ class ObjectFieldsController < ApplicationController
     # Apply search filter if query present
     if @query.present?
       @all_fields = @all_fields.select do |field|
-        field.display_name.downcase.include?(@query.downcase) ||
         field.name.downcase.include?(@query.downcase) ||
         (field.respond_to?(:description) && field.description&.downcase&.include?(@query.downcase))
       end

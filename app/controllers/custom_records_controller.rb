@@ -23,7 +23,7 @@ class CustomRecordsController < ApplicationController
       # Set field values
       set_field_values
       
-      redirect_to organization_custom_object_custom_record_path(@organization, @custom_object, @custom_record), 
+      redirect_to organization_objects_path(@organization), 
                   notice: 'Record was successfully created.'
     else
       @custom_fields = @custom_object.custom_fields.active.visible.order(:name)
@@ -40,7 +40,7 @@ class CustomRecordsController < ApplicationController
       # Update field values
       update_field_values
       
-      redirect_to organization_custom_object_custom_record_path(@organization, @custom_object, @custom_record), 
+      redirect_to organization_objects_path(@organization), 
                   notice: 'Record was successfully updated.'
     else
       @custom_fields = @custom_object.custom_fields.active.visible.order(:name)
@@ -50,7 +50,7 @@ class CustomRecordsController < ApplicationController
 
   def destroy
     @custom_record.destroy
-    redirect_to organization_custom_object_custom_records_path(@organization, @custom_object), 
+    redirect_to organization_objects_path(@organization), 
                 notice: 'Record was successfully deleted.'
   end
 

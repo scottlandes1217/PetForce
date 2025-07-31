@@ -31,8 +31,8 @@
               
               <div class="col-md-6">
                 <div class="mb-3">
-                  <%= form.label :display_name, "Display Name", class: "form-label" %>
-                  <%= form.text_field :display_name, class: "form-control", placeholder: "e.g., Customers, Products" %>
+                              <%= form.label :name, "Name", class: "form-label" %>
+            <%= form.text_field :name, class: "form-control", placeholder: "e.g., Customers, Products" %>
                   <div class="form-text">The name that will be displayed to users</div>
                 </div>
               </div>
@@ -92,7 +92,7 @@
             </div>
 
             <div class="d-flex justify-content-between">
-              <%= link_to "Cancel", organization_custom_objects_path(@organization), class: "btn btn-secondary" %>
+              <%= link_to "Cancel", organization_objects_path(@organization), class: "btn btn-secondary" %>
               <%= form.submit "Create Table", class: "btn btn-primary" %>
             </div>
           <% end %>
@@ -129,7 +129,6 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   const nameField = document.getElementById('custom_object_name');
-  const displayNameField = document.getElementById('custom_object_display_name');
   const apiNameField = document.getElementById('custom_object_api_name');
   const selectedIconInput = document.getElementById('selected-icon-input');
   const iconPickerBtn = document.getElementById('icon-picker-btn');

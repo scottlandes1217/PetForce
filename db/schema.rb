@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_07_31_070142) do
+ActiveRecord::Schema[7.1].define(version: 2025_07_31_073750) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -193,7 +193,6 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_31_070142) do
   create_table "custom_objects", force: :cascade do |t|
     t.bigint "organization_id", null: false
     t.string "name", null: false
-    t.string "display_name", null: false
     t.string "api_name", null: false
     t.boolean "active", default: true, null: false
     t.text "description"

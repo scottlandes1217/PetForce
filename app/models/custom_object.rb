@@ -7,7 +7,6 @@ class CustomObject < ApplicationRecord
   has_one_attached :icon
 
   validates :name, presence: true, uniqueness: { scope: :organization_id }
-  validates :display_name, presence: true
   validates :api_name, presence: true, uniqueness: { scope: :organization_id }
   validates :icon_type, inclusion: { in: %w[font_awesome uploaded] }
   validates :font_awesome_icon, presence: true, if: :font_awesome_icon?

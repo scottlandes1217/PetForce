@@ -6,12 +6,12 @@
       <% if @custom_object.font_awesome_icon? %>
         <i class="<%= @custom_object.font_awesome_icon %> me-3" style="font-size: 3rem; color: #6c757d;"></i>
       <% elsif @custom_object.uploaded_icon? && @custom_object.icon.attached? %>
-        <img src="<%= url_for(@custom_object.icon) %>" alt="<%= @custom_object.display_name %>" style="max-width: 48px; max-height: 48px;" class="me-3">
+                        <img src="<%= url_for(@custom_object.icon) %>" alt="<%= @custom_object.name %>" style="max-width: 48px; max-height: 48px;" class="me-3">
       <% else %>
         <i class="fas fa-database me-3" style="font-size: 3rem; color: #6c757d;"></i>
       <% end %>
       <div>
-        <h2><%= @custom_object.display_name %></h2>
+                      <h2><%= @custom_object.name %></h2>
         <p class="text-muted mb-0">
           API Name: <code><%= @custom_object.api_name %></code>
           <% if @custom_object.description.present? %>

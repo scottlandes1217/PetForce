@@ -8,13 +8,13 @@ class ObjectsController < ApplicationController
     # Get all custom objects and convert them to the same format as built-in objects
     # Filter out custom objects that correspond to built-in objects to avoid duplicates
     built_in_api_names = ['pets', 'tasks', 'events']
-    @custom_objects = @organization.custom_objects.order(:display_name)
+    @custom_objects = @organization.custom_objects.order(:name)
       .where.not(api_name: built_in_api_names)
       .map do |obj|
         OpenStruct.new(
-          id: obj.id,
-          name: obj.api_name,
-          display_name: obj.display_name,
+                      id: obj.id,
+            name: obj.api_name,
+            display_name: obj.name,
           description: obj.description,
           type: 'custom',
           record_count: obj.custom_records.count,
@@ -37,7 +37,7 @@ class ObjectsController < ApplicationController
     # Apply search filter if query present
     if @query.present?
       @all_objects = @all_objects.select do |object|
-        object.display_name.downcase.include?(@query.downcase) ||
+        object.name.downcase.include?(@query.downcase) ||
         object.name.downcase.include?(@query.downcase) ||
         (object.respond_to?(:description) && object.description&.downcase&.include?(@query.downcase))
       end
@@ -55,8 +55,7 @@ class ObjectsController < ApplicationController
     [
       {
         id: 'pets',
-        name: 'pets',
-        display_name: 'Pets',
+        name: 'Pets',
         description: 'Built-in object for managing pets',
         type: 'built_in',
         record_count: @organization.pets.count,
@@ -68,8 +67,7 @@ class ObjectsController < ApplicationController
       },
       {
         id: 'tasks',
-        name: 'tasks',
-        display_name: 'Tasks',
+        name: 'Tasks',
         description: 'Built-in object for managing tasks',
         type: 'built_in',
         record_count: @organization.tasks.count,
@@ -81,8 +79,7 @@ class ObjectsController < ApplicationController
       },
       {
         id: 'events',
-        name: 'events',
-        display_name: 'Events',
+        name: 'Events',
         description: 'Built-in object for managing events',
         type: 'built_in',
         record_count: Event.where(organization: @organization).count,
@@ -109,8 +106,7 @@ class ObjectsController < ApplicationController
     object_config = case object_type
     when 'pets'
       {
-        name: 'pets',
-        display_name: 'Pets',
+        name: 'Pets',
         api_name: 'pets',
         description: 'Built-in object for managing pets',
         icon_type: 'font_awesome',
@@ -119,8 +115,7 @@ class ObjectsController < ApplicationController
       }
     when 'tasks'
       {
-        name: 'tasks',
-        display_name: 'Tasks',
+        name: 'Tasks',
         api_name: 'tasks',
         description: 'Built-in object for managing tasks',
         icon_type: 'font_awesome',
@@ -129,8 +124,7 @@ class ObjectsController < ApplicationController
       }
     when 'events'
       {
-        name: 'events',
-        display_name: 'Events',
+        name: 'Events',
         api_name: 'events',
         description: 'Built-in object for managing events',
         icon_type: 'font_awesome',
