@@ -1,28 +1,28 @@
-class OrchestrationsController < ApplicationController
+class FlowsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_organization
-  before_action :set_orchestration, only: [:show, :edit, :update, :destroy, :builder, :execute]
+  before_action :set_flow, only: [:show, :edit, :update, :destroy, :builder, :execute]
   before_action :ensure_user_belongs_to_organization
 
   def index
-    @orchestrations = @organization.orchestrations.order(created_at: :desc)
+    @flows = @organization.flows.order(created_at: :desc)
   end
 
   def show
-    @orchestration_blocks = @orchestration.orchestration_blocks.order(:position_y, :position_x)
-    @recent_executions = @orchestration.orchestration_executions.recent.limit(10)
+    @flow_blocks = @flow.flow_blocks.order(:position_y, :position_x)
+    @recent_executions = @flow.flow_executions.recent.limit(10)
   end
 
   def new
-    @orchestration = @organization.orchestrations.build
+    @flow = @organization.flows.build
   end
 
   def create
-    @orchestration = @organization.orchestrations.build(orchestration_params)
+    @flow = @organization.flows.build(flow_params)
     
-    if @orchestration.save
-      redirect_to builder_organization_orchestration_path(@organization, @orchestration), 
-                  notice: 'Orchestration was successfully created.'
+    if @flow.save
+      redirect_to builder_organization_flow_path(@organization, @flow), 
+                  notice: 'Flow was successfully created.'
     else
       render :new, status: :unprocessable_entity
     end
@@ -33,25 +33,25 @@ class OrchestrationsController < ApplicationController
 
   def update
     Rails.logger.info "Update params: #{params.inspect}"
-    Rails.logger.info "Orchestration params: #{orchestration_params.inspect}"
+    Rails.logger.info "Flow params: #{flow_params.inspect}"
     
     begin
-      if @orchestration.update(orchestration_params)
+      if @flow.update(flow_params)
         respond_to do |format|
           format.html { 
-            redirect_to organization_orchestration_path(@organization, @orchestration), 
-                        notice: 'Orchestration was successfully updated.'
+            redirect_to organization_flow_path(@organization, @flow), 
+                        notice: 'Flow was successfully updated.'
           }
           format.json { 
-            render json: { success: true, message: 'Orchestration saved successfully' }
+            render json: { success: true, message: 'Flow saved successfully' }
           }
         end
       else
-        Rails.logger.error "Update errors: #{@orchestration.errors.full_messages}"
+        Rails.logger.error "Update errors: #{@flow.errors.full_messages}"
         respond_to do |format|
           format.html { render :edit, status: :unprocessable_entity }
           format.json { 
-            render json: { success: false, errors: @orchestration.errors.full_messages }, 
+            render json: { success: false, errors: @flow.errors.full_messages }, 
                    status: :unprocessable_entity 
           }
         end
@@ -70,9 +70,9 @@ class OrchestrationsController < ApplicationController
   end
 
   def destroy
-    @orchestration.destroy
-    redirect_to organization_orchestrations_path(@organization), 
-                notice: 'Orchestration was successfully deleted.'
+    @flow.destroy
+    redirect_to organization_flows_path(@organization), 
+                notice: 'Flow was successfully deleted.'
   end
 
   def builder
@@ -80,17 +80,17 @@ class OrchestrationsController < ApplicationController
   end
 
   def execute
-    execution = @orchestration.orchestration_executions.create!(
+    execution = @flow.flow_executions.create!(
       user: current_user,
       execution_type: 'manual',
       status: 'pending'
     )
     
     # TODO: Queue the execution job
-    # OrchestrationExecutionJob.perform_later(execution.id)
+    # FlowExecutionJob.perform_later(execution.id)
     
-    redirect_to organization_orchestration_path(@organization, @orchestration), 
-                notice: 'Orchestration execution started.'
+    redirect_to organization_flow_path(@organization, @flow), 
+                notice: 'Flow execution started.'
   end
 
   private
@@ -99,8 +99,8 @@ class OrchestrationsController < ApplicationController
     @organization = Organization.find(params[:organization_id])
   end
 
-  def set_orchestration
-    @orchestration = @organization.orchestrations.find(params[:id])
+  def set_flow
+    @flow = @organization.flows.find(params[:id])
   end
 
   def ensure_user_belongs_to_organization
@@ -113,14 +113,14 @@ class OrchestrationsController < ApplicationController
     end
   end
 
-  def orchestration_params
+  def flow_params
     # Handle JSON parameters for layout and connections data
-    permitted_params = params.require(:orchestration).permit(:name, :status)
+    permitted_params = params.require(:flow).permit(:name, :status)
     
     # Handle layout_data and connections_data as JSON
-    if params[:orchestration][:layout_data].present?
+    if params[:flow][:layout_data].present?
       # Convert to JSON if it's a string, otherwise use as-is
-      layout_data = params[:orchestration][:layout_data]
+      layout_data = params[:flow][:layout_data]
       begin
         if layout_data.is_a?(String)
           permitted_params[:layout_data] = JSON.parse(layout_data)
@@ -139,9 +139,9 @@ class OrchestrationsController < ApplicationController
       end
     end
     
-    if params[:orchestration][:connections_data].present?
+    if params[:flow][:connections_data].present?
       # Convert to JSON if it's a string, otherwise use as-is
-      connections_data = params[:orchestration][:connections_data]
+      connections_data = params[:flow][:connections_data]
       begin
         if connections_data.is_a?(String)
           permitted_params[:connections_data] = JSON.parse(connections_data)

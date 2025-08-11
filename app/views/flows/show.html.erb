@@ -5,27 +5,27 @@
     <div class="col-12">
       <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h1><%= @orchestration.name %></h1>
+          <h1><%= @flow.name %></h1>
           <div class="d-flex align-items-center gap-2">
-            <span class="badge <%= @orchestration.active? ? 'bg-success' : 'bg-secondary' %>">
-              <%= @orchestration.status.titleize %>
-            </span>
-            <span class="text-muted">Created <%= time_ago_in_words(@orchestration.created_at) %> ago</span>
+                          <span class="badge <%= @flow.active? ? 'bg-success' : 'bg-secondary' %>">
+                <%= @flow.status.titleize %>
+              </span>
+              <span class="text-muted">Created <%= time_ago_in_words(@flow.created_at) %> ago</span>
           </div>
         </div>
         
         <div class="btn-group" role="group">
-          <%= link_to 'Edit', edit_organization_orchestration_path(@organization, @orchestration), 
+          <%= link_to 'Edit', edit_organization_flow_path(@organization, @flow), 
                       class: 'btn btn-outline-secondary' %>
-          <%= link_to 'Builder', builder_organization_orchestration_path(@organization, @orchestration), 
+          <%= link_to 'Builder', builder_organization_flow_path(@organization, @flow), 
                       class: 'btn btn-primary' %>
-          <%= link_to 'Execute', execute_organization_orchestration_path(@organization, @orchestration), 
+          <%= link_to 'Execute', execute_organization_flow_path(@organization, @flow), 
                       method: :post, class: 'btn btn-success' %>
         </div>
       </div>
 
       <div class="row">
-        <!-- Orchestration Overview -->
+        <!-- Flow Overview -->
         <div class="col-md-8">
           <div class="card mb-4">
             <div class="card-header">
@@ -36,7 +36,7 @@
                 <div class="col-md-6">
                   <h6>Blocks</h6>
                   <p class="text-muted">
-                    <%= @orchestration_blocks.count %> blocks configured
+                    <%= @flow_blocks.count %> blocks configured
                   </p>
                   
 
@@ -44,12 +44,12 @@
                 <div class="col-md-6">
                   <h6>Status</h6>
                   <p class="text-muted">
-                    <%= @orchestration.status.titleize %>
+                    <%= @flow.status.titleize %>
                   </p>
                   
                   <h6>Last Modified</h6>
                   <p class="text-muted">
-                    <%= @orchestration.updated_at.strftime("%B %d, %Y at %I:%M %p") %>
+                    <%= @flow.updated_at.strftime("%B %d, %Y at %I:%M %p") %>
                   </p>
                 </div>
               </div>
@@ -62,9 +62,9 @@
               <h5 class="mb-0">Blocks</h5>
             </div>
             <div class="card-body">
-              <% if @orchestration_blocks.any? %>
+              <% if @flow_blocks.any? %>
                 <div class="list-group list-group-flush">
-                  <% @orchestration_blocks.each do |block| %>
+                  <% @flow_blocks.each do |block| %>
                     <div class="list-group-item d-flex justify-content-between align-items-center">
                       <div>
                         <h6 class="mb-1"><%= block.name %></h6>
@@ -83,7 +83,7 @@
                 <div class="text-center py-4">
                   <i class="fas fa-puzzle-piece fa-2x text-muted mb-3"></i>
                   <p class="text-muted">No blocks configured yet</p>
-                  <%= link_to 'Add Blocks', builder_organization_orchestration_path(@organization, @orchestration), 
+                  <%= link_to 'Add Blocks', builder_organization_flow_path(@organization, @flow), 
                               class: 'btn btn-primary' %>
                 </div>
               <% end %>
@@ -131,7 +131,7 @@
                 <div class="text-center py-4">
                   <i class="fas fa-play-circle fa-2x text-muted mb-3"></i>
                   <p class="text-muted">No executions yet</p>
-                  <%= link_to 'Execute Now', execute_organization_orchestration_path(@organization, @orchestration), 
+                  <%= link_to 'Execute Now', execute_organization_flow_path(@organization, @flow), 
                               method: :post, class: 'btn btn-success btn-sm' %>
                 </div>
               <% end %>

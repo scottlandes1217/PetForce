@@ -1,23 +1,23 @@
 <%= render 'shared/navbar_org' %>
 
-<div class="orchestration-builder-container">
+<div class="flow-builder-container">
   <!-- Toolbar -->
   <div class="builder-toolbar bg-light border-bottom p-3">
     <div class="d-flex justify-content-between align-items-center">
       <div class="d-flex align-items-center">
-        <h4 class="mb-0 me-3"><%= @orchestration.name %></h4>
-        <span class="badge <%= @orchestration.active? ? 'bg-success' : 'bg-secondary' %>">
-          <%= @orchestration.status.titleize %>
+        <h4 class="mb-0 me-3"><%= @flow.name %></h4>
+        <span class="badge <%= @flow.active? ? 'bg-success' : 'bg-secondary' %>">
+          <%= @flow.status.titleize %>
         </span>
       </div>
       <div class="btn-group" role="group">
-        <button type="button" class="btn btn-outline-secondary" id="save-orchestration">
+        <button type="button" class="btn btn-outline-secondary" id="save-flow">
           <i class="fas fa-save"></i> Save
         </button>
-        <button type="button" class="btn btn-outline-primary" id="test-orchestration">
+        <button type="button" class="btn btn-outline-primary" id="test-flow">
           <i class="fas fa-play"></i> Test
         </button>
-        <%= link_to 'Back to Orchestrations', organization_orchestrations_path(@organization), class: 'btn btn-outline-secondary' %>
+        <%= link_to 'Back to Flows', organization_flows_path(@organization), class: 'btn btn-outline-secondary' %>
       </div>
     </div>
   </div>
@@ -61,7 +61,7 @@
         <button id="multi-select" class="canvas-zoom-btn"><i class="fas fa-object-group"></i></button>
       </div>
       <div id="canvas-wrapper">
-        <div id="orchestration-canvas">
+        <div id="flow-canvas">
           <div id="canvas-inner"></div>
         </div>
       </div>
@@ -86,13 +86,13 @@
   </div>
 </div>
 
-<%= stylesheet_link_tag "orchestration_builder", media: "all" %>
+    <%= stylesheet_link_tag "flow_builder", media: "all" %>
 
 <script>
-// Modern Orchestration Builder Script
+// Modern Flow Builder Script
 // (Full Salesforce Flow-like UX, pan/zoom, multi-select, modal, SVG lines, keyboard, etc.)
 
-class OrchestrationBuilder {
+class FlowBuilder {
   constructor(config) {
     this.config = config;
     this.canvas = document.getElementById(config.canvasId);
@@ -132,7 +132,7 @@ class OrchestrationBuilder {
     this.setupModal();
     this.setupGlobalDragHandlers(); // Setup global drag handlers
     this.updateTransform(); // Set transform before loading blocks/connections
-    this.loadBlocks(this.config.orchestrationData || []);
+    this.loadBlocks(this.config.flowData || []);
     this.loadConnections(this.config.connectionData || []);
     this.setupKeyboardShortcuts();
     // Ensure pointer-events: auto on #canvas-inner
@@ -220,7 +220,7 @@ class OrchestrationBuilder {
     // Canvas click to deselect blocks
     this.canvas.addEventListener('click', e => {
       console.log('Canvas clicked!', e.target);
-      if (!e.target.closest('.orchestration-block') && !e.target.closest('.block-ports')) {
+              if (!e.target.closest('.flow-block') && !e.target.closest('.block-ports')) {
         this.clearSelection();
       }
     });
@@ -230,7 +230,7 @@ class OrchestrationBuilder {
       console.log('Canvas mousedown:', e.target, 'shiftKey:', e.shiftKey, 'multiSelectMode:', this.isMultiSelectMode);
       
       // Don't start if clicking on a block or port
-      if (e.target.closest('.orchestration-block') || e.target.closest('.block-ports')) {
+              if (e.target.closest('.flow-block') || e.target.closest('.block-ports')) {
         return;
       }
       
@@ -292,7 +292,7 @@ class OrchestrationBuilder {
         let group = e.target;
         if (group.tagName !== 'g') group = group.closest('g');
         this.selectConnection(group || e.target);
-      } else if (!e.target.closest('.orchestration-block') && !e.target.closest('.block-ports')) {
+              } else if (!e.target.closest('.flow-block') && !e.target.closest('.block-ports')) {
         this.clearConnectionSelection();
       }
     });
@@ -321,8 +321,8 @@ class OrchestrationBuilder {
         this.showNotification('Multi-select mode OFF', 'info');
       }
     });
-    this.saveBtn.addEventListener('click', () => this.saveOrchestration());
-    this.testBtn.addEventListener('click', () => this.showNotification('Orchestration test started!', 'success'));
+            this.saveBtn.addEventListener('click', () => this.saveFlow());
+        this.testBtn.addEventListener('click', () => this.showNotification('Flow test started!', 'success'));
   }
 
   setupModal() {
@@ -455,7 +455,7 @@ class OrchestrationBuilder {
   createBlock(type, x, y) {
     const id = `block_${this.blockCounter++}`;
     const el = document.createElement('div');
-    el.className = `orchestration-block block-${type}`;
+            el.className = `flow-block block-${type}`;
     el.id = id;
     el.dataset.blockType = type;
     // x, y are in SVG/canvas coordinates
@@ -553,7 +553,7 @@ class OrchestrationBuilder {
   }
   getBlockDescription(type) {
     const desc = {
-      trigger: 'Starts the orchestration', screen: 'User interface for data input', decision: 'Conditional logic branching',
+              trigger: 'Starts the flow', screen: 'User interface for data input', decision: 'Conditional logic branching',
       create_record: 'Create new database record', update_record: 'Update existing record', delete_record: 'Delete database record',
       assignment: 'Set variable values', loop: 'Repeat actions', email: 'Send email notification', notification: 'Send system notification',
       api_call: 'External API request', wait: 'Pause execution'
@@ -581,7 +581,7 @@ class OrchestrationBuilder {
       if (e.target.closest('.block-ports')) return;
       
       // Find the correct block element and object
-      const blockEl = e.target.closest('.orchestration-block');
+      const blockEl = e.target.closest('.flow-block');
       const blockObj = this.blocks.find(b => b.el === blockEl);
       if (!blockObj) return;
       
@@ -731,7 +731,7 @@ class OrchestrationBuilder {
     if (!this.connectingPort) return;
     // Always use latest logical coordinates for the port
     const { x, y } = this.getPortCenter(this.connectingPort.port);
-    // Get mouse position relative to orchestration-canvas
+            // Get mouse position relative to flow-canvas
     const canvasRect = this.canvas.getBoundingClientRect();
     // Adjust for pan/zoom
     const invZoom = 1 / this.currentZoom;
@@ -955,7 +955,7 @@ class OrchestrationBuilder {
       if (closest) return closest;
       return { x: cx, y: cy };
     } else {
-      const block = port.closest('.orchestration-block');
+              const block = port.closest('.flow-block');
       const blockObj = this.blocks.find(b => b.el === block);
       const blockWidth = baseWidth;
       const blockHeight = baseHeight;
@@ -1084,7 +1084,7 @@ class OrchestrationBuilder {
     document.body.appendChild(notification);
     setTimeout(() => notification.remove(), 3000);
   }
-  saveOrchestration() {
+  saveFlow() {
     const blocks = this.blocks.map(block => ({
       id: block.id,
       block_type: block.type,
@@ -1105,7 +1105,7 @@ class OrchestrationBuilder {
         'X-CSRF-Token': this.csrfToken
       },
       body: JSON.stringify({
-        orchestration: {
+        flow: {
           layout_data: blocks,
           connections_data: connections
         }
@@ -1113,10 +1113,10 @@ class OrchestrationBuilder {
     })
     .then(r => r.json())
     .then(data => {
-      if (data.success) this.showNotification('Orchestration saved!', 'success');
-      else this.showNotification('Error saving orchestration', 'error');
-    })
-    .catch(() => this.showNotification('Error saving orchestration', 'error'));
+              if (data.success) this.showNotification('Flow saved!', 'success');
+        else this.showNotification('Error saving flow', 'error');
+      })
+      .catch(() => this.showNotification('Error saving flow', 'error'));
   }
   loadBlocks(data) {
     data.forEach(b => {
@@ -1164,19 +1164,19 @@ class OrchestrationBuilder {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  new OrchestrationBuilder({
-    canvasId: 'orchestration-canvas',
+  new FlowBuilder({
+  canvasId: 'flow-canvas',
     svgId: 'connection-svg',
     paletteId: 'block-palette',
     modalId: 'block-properties-modal',
-    saveBtnId: 'save-orchestration',
-    testBtnId: 'test-orchestration',
+    saveBtnId: 'save-flow',
+    testBtnId: 'test-flow',
     zoomInId: 'zoom-in',
     zoomOutId: 'zoom-out',
     multiSelectId: 'multi-select',
-    orchestrationData: <%= raw (@orchestration.layout_data || []).to_json %>,
-    connectionData: <%= raw (@orchestration.connections_data || []).to_json %>,
-    saveUrl: '<%= organization_orchestration_path(@organization, @orchestration) %>',
+    flowData: <%= raw (@flow.layout_data || []).to_json %>,
+    connectionData: <%= raw (@flow.connections_data || []).to_json %>,
+    saveUrl: '<%= organization_flow_path(@organization, @flow) %>',
     csrfToken: document.querySelector('meta[name="csrf-token"]').content
   });
 });

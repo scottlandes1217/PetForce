@@ -1,5 +1,5 @@
-class OrchestrationBlock < ApplicationRecord
-  belongs_to :orchestration
+class FlowBlock < ApplicationRecord
+  belongs_to :flow
   
   validates :block_type, presence: true, inclusion: { 
     in: %w[trigger screen decision create_record update_record delete_record assignment loop wait email notification api_call] 

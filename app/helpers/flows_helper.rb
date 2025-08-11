@@ -1,4 +1,4 @@
-module OrchestrationsHelper
+module FlowsHelper
   def get_block_type_color(block_type)
     case block_type
     when 'trigger'
@@ -67,7 +67,7 @@ module OrchestrationsHelper
   def get_block_description(block_type)
     case block_type
     when 'trigger'
-      'Event that starts the orchestration'
+      'Event that starts the flow'
     when 'screen'
       'User interface for data input and display'
     when 'decision'

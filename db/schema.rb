@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_07_31_073750) do
+ActiveRecord::Schema[7.1].define(version: 2025_08_11_061440) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -267,8 +267,8 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_31_073750) do
     t.index ["organizer_id"], name: "index_events_on_organizer_id"
   end
 
-  create_table "orchestration_blocks", force: :cascade do |t|
-    t.bigint "orchestration_id", null: false
+  create_table "flow_blocks", force: :cascade do |t|
+    t.bigint "flow_id", null: false
     t.string "block_type", null: false
     t.string "name", null: false
     t.integer "position_x", null: false
@@ -276,13 +276,13 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_31_073750) do
     t.text "config_data"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["orchestration_id", "block_type"], name: "index_orchestration_blocks_on_orchestration_id_and_block_type"
-    t.index ["orchestration_id"], name: "index_orchestration_blocks_on_orchestration_id"
-    t.index ["position_x", "position_y"], name: "index_orchestration_blocks_on_position_x_and_position_y"
+    t.index ["flow_id", "block_type"], name: "index_flow_blocks_on_flow_id_and_block_type"
+    t.index ["flow_id"], name: "index_flow_blocks_on_flow_id"
+    t.index ["position_x", "position_y"], name: "index_flow_blocks_on_position_x_and_position_y"
   end
 
-  create_table "orchestration_executions", force: :cascade do |t|
-    t.bigint "orchestration_id", null: false
+  create_table "flow_executions", force: :cascade do |t|
+    t.bigint "flow_id", null: false
     t.bigint "user_id"
     t.string "status", default: "pending", null: false
     t.string "execution_type", null: false
@@ -293,14 +293,14 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_31_073750) do
     t.datetime "completed_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["created_at"], name: "index_orchestration_executions_on_created_at"
-    t.index ["orchestration_id", "status"], name: "index_orchestration_executions_on_orchestration_id_and_status"
-    t.index ["orchestration_id"], name: "index_orchestration_executions_on_orchestration_id"
-    t.index ["user_id", "created_at"], name: "index_orchestration_executions_on_user_id_and_created_at"
-    t.index ["user_id"], name: "index_orchestration_executions_on_user_id"
+    t.index ["created_at"], name: "index_flow_executions_on_created_at"
+    t.index ["flow_id", "status"], name: "index_flow_executions_on_flow_id_and_status"
+    t.index ["flow_id"], name: "index_flow_executions_on_flow_id"
+    t.index ["user_id", "created_at"], name: "index_flow_executions_on_user_id_and_created_at"
+    t.index ["user_id"], name: "index_flow_executions_on_user_id"
   end
 
-  create_table "orchestrations", force: :cascade do |t|
+  create_table "flows", force: :cascade do |t|
     t.string "name", null: false
     t.string "status", default: "draft", null: false
     t.bigint "organization_id", null: false
@@ -308,8 +308,8 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_31_073750) do
     t.text "connections_data"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["organization_id"], name: "index_orchestrations_on_organization_id"
-    t.index ["status"], name: "index_orchestrations_on_status"
+    t.index ["organization_id"], name: "index_flows_on_organization_id"
+    t.index ["status"], name: "index_flows_on_status"
   end
 
   create_table "organization_assets", force: :cascade do |t|
@@ -576,10 +576,10 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_31_073750) do
   add_foreign_key "events", "calendars"
   add_foreign_key "events", "organizations"
   add_foreign_key "events", "users", column: "organizer_id"
-  add_foreign_key "orchestration_blocks", "orchestrations"
-  add_foreign_key "orchestration_executions", "orchestrations"
-  add_foreign_key "orchestration_executions", "users"
-  add_foreign_key "orchestrations", "organizations"
+  add_foreign_key "flow_blocks", "flows"
+  add_foreign_key "flow_executions", "flows"
+  add_foreign_key "flow_executions", "users"
+  add_foreign_key "flows", "organizations"
   add_foreign_key "organization_assets", "organizations"
   add_foreign_key "organization_users", "organizations"
   add_foreign_key "organization_users", "users"

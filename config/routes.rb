@@ -127,13 +127,13 @@ resources :organizations do
   resources :tasks, only: [:index, :new, :create, :edit, :update, :destroy, :show], controller: 'organization_tasks'
   resources :organization_assets, only: [:index, :create]
   
-  # Orchestrations
-  resources :orchestrations do
+  # Flows
+  resources :flows do
     member do
       get :builder
       post :execute
     end
-    resources :orchestration_blocks, only: [:index, :show, :create, :update, :destroy], controller: 'api/orchestration_blocks' do
+    resources :flow_blocks, only: [:index, :show, :create, :update, :destroy], controller: 'api/flow_blocks' do
       collection do
         post :reorder
       end

@@ -6,7 +6,7 @@ html, body {
   padding: 0;
 }
 /* --- Layout --- */
-.orchestration-builder-container {
+.flow-builder-container {
   height: calc(100vh - 91px);
   display: flex;
   flex-direction: column;
@@ -92,7 +92,7 @@ html, body {
   height: 2000px;
   /* pointer-events: none; */
 }
-#canvas-inner .orchestration-block {
+#canvas-inner .flow-block {
   position: absolute;
   pointer-events: auto;
   z-index: 10;
@@ -157,7 +157,7 @@ html, body {
 }
 
 /* --- Block Styles --- */
-.orchestration-block {
+  .flow-block {
   position: absolute;
   width: 200px;
   min-height: 80px;

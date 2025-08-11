@@ -1,5 +1,5 @@
-class OrchestrationExecution < ApplicationRecord
-  belongs_to :orchestration
+class FlowExecution < ApplicationRecord
+  belongs_to :flow
   belongs_to :user, optional: true
   
   validates :status, presence: true, inclusion: { in: %w[pending running completed failed cancelled] }

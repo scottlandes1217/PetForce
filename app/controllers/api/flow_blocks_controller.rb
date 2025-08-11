@@ -1,14 +1,14 @@
-class Api::OrchestrationBlocksController < ApplicationController
+class Api::FlowBlocksController < ApplicationController
   before_action :authenticate_user!
   before_action :set_organization
-  before_action :set_orchestration
+  before_action :set_flow
   before_action :set_block, only: [:show, :update, :destroy]
   before_action :ensure_user_belongs_to_organization
   skip_before_action :verify_authenticity_token, only: [:create, :update, :destroy]
 
   def index
-    @blocks = @orchestration.orchestration_blocks.order(:position_y, :position_x)
-    Rails.logger.info "Found #{@blocks.count} blocks for orchestration #{@orchestration.id}"
+    @blocks = @flow.flow_blocks.order(:position_y, :position_x)
+    Rails.logger.info "Found #{@blocks.count} blocks for flow #{@flow.id}"
     @blocks.each do |block|
       Rails.logger.info "Block: #{block.inspect}"
     end
@@ -20,7 +20,7 @@ class Api::OrchestrationBlocksController < ApplicationController
   end
 
   def create
-    @block = @orchestration.orchestration_blocks.build(block_params)
+    @block = @flow.flow_blocks.build(block_params)
     
     if @block.save
       render json: block_json(@block), status: :created
@@ -44,7 +44,7 @@ class Api::OrchestrationBlocksController < ApplicationController
 
   def reorder
     params[:blocks].each_with_index do |block_id, index|
-      block = @orchestration.orchestration_blocks.find(block_id)
+      block = @flow.flow_blocks.find(block_id)
       block.update(position_x: index * 200, position_y: 100)
     end
     render json: { message: 'Blocks reordered successfully' }
@@ -66,17 +66,17 @@ class Api::OrchestrationBlocksController < ApplicationController
     end
   end
 
-  def set_orchestration
-    # Find the orchestration within the current organization context
-    @orchestration = @organization.orchestrations.find(params[:orchestration_id])
+  def set_flow
+    # Find the flow within the current organization context
+    @flow = @organization.flows.find(params[:flow_id])
   end
 
   def set_block
-    @block = @orchestration.orchestration_blocks.find(params[:id])
+    @block = @flow.flow_blocks.find(params[:id])
   end
 
   def block_params
-    params.require(:orchestration_block).permit(:block_type, :name, :position_x, :position_y, config_data: {})
+    params.require(:flow_block).permit(:block_type, :name, :position_x, :position_y, config_data: {})
   end
 
   def block_json(block)
