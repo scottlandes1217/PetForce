@@ -1163,8 +1163,9 @@ class FlowBuilder {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  new FlowBuilder({
+function initFlowBuilder() {
+  if (window.flowBuilderInstance) return;
+  window.flowBuilderInstance = new FlowBuilder({
   canvasId: 'flow-canvas',
     svgId: 'connection-svg',
     paletteId: 'block-palette',
@@ -1179,5 +1180,21 @@ document.addEventListener('DOMContentLoaded', () => {
     saveUrl: '<%= organization_flow_path(@organization, @flow) %>',
     csrfToken: document.querySelector('meta[name="csrf-token"]').content
   });
-});
+}
+
+function destroyFlowBuilder() {
+  if (window.flowBuilderInstance) {
+    // Remove listeners by reloading the container contents
+    const canvas = document.getElementById('flow-canvas');
+    const inner = document.getElementById('canvas-inner');
+    if (inner) inner.innerHTML = '';
+    const svg = document.getElementById('connection-svg');
+    if (svg && svg.parentNode) svg.parentNode.removeChild(svg);
+    window.flowBuilderInstance = null;
+  }
+}
+
+document.addEventListener('turbo:before-cache', destroyFlowBuilder);
+document.addEventListener('turbo:load', function() { destroyFlowBuilder(); initFlowBuilder(); });
+document.addEventListener('DOMContentLoaded', function() { destroyFlowBuilder(); initFlowBuilder(); });
 </script> 

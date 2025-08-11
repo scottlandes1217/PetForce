@@ -1,0 +1,110 @@
+<%# Renders saved layout for a record by injecting values into placeholders %>
+<%# Locals: layout:, record:, table_type: %>
+
+<% html = layout.html.html_safe %>
+<% css = layout.css.html_safe %>
+<style><%= css %></style>
+
+<div class="record-layout-render">
+  <%= html %>
+</div>
+
+<%# Build values hash exposed to client for simple placeholder fill %>
+<%
+  values = {}
+  field_meta = record_layout_field_meta_map(@organization, table_type, @custom_object&.id)
+  options_map = record_layout_options_map(@organization, table_type)
+  case table_type
+  when 'Pet'
+    values = record.attributes.slice('name', 'breed', 'age', 'species', 'description', 'adopted')
+  when 'CustomObject'
+    values = record.field_values.merge('name' => record.name, 'external_id' => record.external_id)
+  else
+    values = {}
+  end
+%>
+<script type="application/json" id="record-values-json"><%= raw values.to_json %></script>
+<script>
+  (function() {
+    try {
+      const valuesEl = document.getElementById('record-values-json');
+      const values = valuesEl ? JSON.parse(valuesEl.textContent) : {};
+      document.querySelectorAll('[field-api-name]').forEach(function(el){
+        const api = el.getAttribute('field-api-name');
+        const label = el.getAttribute('field-label') || api;
+        let ftype = el.getAttribute('field-type') || 'text';
+        // Override with server meta when available
+        <%# Embed meta map as JSON %>
+        const metaMap = <%= raw field_meta.to_json %>;
+        if (metaMap[api] && metaMap[api]['type']) {
+          ftype = metaMap[api]['type'];
+        }
+        // Always set options at runtime from server options map when available
+        const serverOpts = (function(){ try { return (<%= raw options_map.to_json %>)[api] || []; } catch(e) { return []; } })();
+        if (serverOpts.length > 0) {
+          el.setAttribute('data-options', serverOpts.join('|'));
+          if (['picklist','multipicklist'].indexOf(ftype) === -1) {
+            // If options present but type not picklist, coerce to picklist (or multipicklist for known multi keys)
+            if (['breed','color','flags'].indexOf(api) !== -1) ftype = 'multipicklist'; else ftype = 'picklist';
+          }
+        }
+        // Explicitly treat certain keys as their expected types
+        if (api === 'breed') ftype = 'multipicklist';
+        const val = values && Object.prototype.hasOwnProperty.call(values, api) ? values[api] : '';
+        const safeVal = (val == null ? '' : String(val));
+        el.classList.add('field-container');
+        let inputHtml = '';
+        if (ftype === 'textarea') {
+          inputHtml = '<textarea class="edit-input form-control mt-2" data-field="' + api + '" data-edit-field-target="input" style="display:none;">' + safeVal.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</textarea>';
+        } else if (ftype === 'checkbox') {
+          const checked = (safeVal === 'true' || safeVal === '1') ? 'checked' : '';
+          inputHtml = '<div class="form-check mt-2" style="display:none;"><input type="checkbox" class="form-check-input edit-input" data-field="' + api + '" data-edit-field-target="input" ' + checked + ' /></div>';
+        } else if (ftype === 'date') {
+          inputHtml = '<input type="date" class="edit-input form-control mt-2" data-field="' + api + '" data-edit-field-target="input" value="' + safeVal + '" style="display:none;" />';
+        } else if (ftype === 'picklist') {
+          const opts = (el.getAttribute('data-options') || '').split('|').filter(Boolean);
+          if (opts.length === 0) {
+            opts.push('None');
+          }
+          inputHtml = '<select class="edit-input form-select mt-2" data-field="' + api + '" data-edit-field-target="input" style="display:none;">' + opts.map(function(o){ return '<option value="' + o.replace(/"/g,'&quot;') + '" ' + (o===safeVal?'selected':'') + '>' + o + '</option>'; }).join('') + '</select>';
+        } else if (ftype === 'multipicklist') {
+          const opts = (el.getAttribute('data-options') || '').split('|').filter(Boolean);
+          if (opts.length === 0) {
+            opts.push('None');
+          }
+          const selected = Array.isArray(val) ? val : String(safeVal).split(',').map(function(s){ return s.trim(); });
+          inputHtml = '<select multiple class="edit-input form-select mt-2" data-field="' + api + '" data-edit-field-target="input" style="display:none;">' + opts.map(function(o){ return '<option value="' + o.replace(/"/g,'&quot;') + '" ' + (selected.includes(o)?'selected':'') + '>' + o + '</option>'; }).join('') + '</select>';
+        } else {
+          inputHtml = '<input type="text" class="edit-input form-control mt-2" data-field="' + api + '" data-edit-field-target="input" value="' + safeVal.replace(/"/g, '&quot;') + '" style="display:none;" />';
+        }
+        el.innerHTML =
+          '<div class="d-flex justify-content-between align-items-start w-100">' +
+            '<div class="flex-grow-1">' +
+              '<strong>' + (label || '') + ':</strong> ' +
+              '<span class="value" data-edit-field-target="value" data-field="' + api + '">' + safeVal + '</span>' +
+            '</div>' +
+            '<button class="edit-button btn btn-link p-0 ms-2" data-field="' + api + '" data-edit-field-target="editButton" data-action="click->edit-field#edit" title="Edit ' + (label || api) + '"><i class="fas fa-pencil-alt"></i></button>' +
+          '</div>' +
+          inputHtml;
+      });
+
+      // Replace partial placeholders with known server-rendered partials
+      var partials = {};
+      <% if table_type == 'Pet' %>
+        partials['pets/pet_header'] = <%= raw((j render('pets/pet_header', pet: record))) %>;
+      <% end %>
+      document.querySelectorAll('[partial-name]').forEach(function(el){
+        var name = el.getAttribute('partial-name');
+        if (name && partials[name]) {
+          el.innerHTML = partials[name];
+        }
+      });
+    } catch(e) { console.warn('record values fill error', e); }
+  })();
+</script>
+
+<% if layout.js.present? %>
+  <script><%= layout.js.html_safe %></script>
+<% end %>
+
+

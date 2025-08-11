@@ -20,6 +20,7 @@ class PetsController < ApplicationController
   def show
     @posts = @pet.posts.includes(images_attachments: :blob)
     @is_pinned = current_user.pinned_tabs.exists?(tabable: @pet, tab_type: 'pet')
+    @record_layout = RecordLayout.find_by(organization: @organization, table_type: 'Pet')
   end
 
   def new

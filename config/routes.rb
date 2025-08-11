@@ -109,6 +109,11 @@ resources :organizations do
   # Unified object fields view
   get 'objects/:object_type/fields', to: 'object_fields#index', as: :organization_object_fields
   
+  # Record Layouts (builder per table)
+  resource :record_layout, only: [:update], controller: 'record_layouts' do
+    get :builder
+  end
+  
   resources :sites do
     member do
       get :builder

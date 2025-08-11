@@ -163,6 +163,27 @@
             <span>Sites</span>
           <% end %>
         </li>
+        <%# Edit Page button: only show on record pages (Pet, Task, CustomRecord) %>
+        <% begin
+             builder_params = nil
+             if defined?(@pet) && @pet.present?
+               builder_params = { table_type: 'Pet' }
+             elsif defined?(@task) && @task.present?
+               builder_params = { table_type: 'Task' }
+             elsif defined?(@custom_object) && @custom_object.present? && (defined?(@custom_record) && @custom_record.present?)
+               builder_params = { table_type: 'CustomObject', table_id: @custom_object.id }
+             end
+           %>
+          <% if builder_params %>
+            <li>
+              <%= link_to builder_organization_record_layout_path(@organization, **builder_params.merge(return_to: request.fullpath)), class: "dropdown-item d-flex align-items-center py-2" do %>
+                <i class="fas fa-pencil-ruler me-3 text-muted"></i>
+                <span>Edit Page</span>
+              <% end %>
+            </li>
+          <% end %>
+        <% rescue %>
+        <% end %>
         <% if current_user.shelter_staff? || current_user.admin? %>
           <% if @organization.present? %>
             <li>

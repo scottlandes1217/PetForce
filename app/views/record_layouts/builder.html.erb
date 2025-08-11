@@ -1,0 +1,490 @@
+<%= render 'shared/navbar_org' %>
+
+<div class="builder-container d-flex" style="height: calc(100vh - 87px);">
+  <div id="record-leftbar" class="border-end" style="width:300px; overflow:auto; background:#fff;"></div>
+  <div id="gjs" style="flex:1 1 auto;">
+    <div style="text-align: center; padding: 20px; color: #666;">Loading record page builder...</div>
+  </div>
+  <script type="application/json" id="record-layout-metadata">
+    <%= record_layout_metadata_json(@organization, @table_type, @table_id) %>
+  </script>
+  <script type="application/json" id="record-layout-preview">
+    <%= record_layout_preview_json(@organization, @table_type, @table_id) %>
+  </script>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/grapesjs@0.21.7/dist/css/grapes.min.css">
+<link rel="stylesheet" href="https://unpkg.com/grapesjs-preset-webpage@1.0.3/dist/grapesjs-preset-webpage.min.css">
+
+<script src="https://unpkg.com/grapesjs@0.21.7/dist/grapes.min.js"></script>
+<script src="https://unpkg.com/grapesjs-preset-webpage@1.0.3/dist/index.js"></script>
+
+<script>
+  function destroyRecordPageBuilder() {
+    if (window.rpEditorInstance) {
+      try {
+        window.rpEditorInstance.destroy();
+      } catch (e) {}
+      window.rpEditorInstance = null;
+      window.rpEditorInitialized = false;
+    }
+  }
+
+  function waitFor(conditionFn, cb, { attempts = 20, interval = 100 } = {}) {
+    if (conditionFn()) return cb();
+    let tries = 0;
+    const t = setInterval(() => {
+      tries += 1;
+      if (conditionFn()) {
+        clearInterval(t);
+        cb();
+      } else if (tries >= attempts) {
+        clearInterval(t);
+      }
+    }, interval);
+  }
+
+  function initRecordPageBuilder() {
+    if (window.rpEditorInitialized) return;
+    waitFor(() => !!window.grapesjs && document.getElementById('gjs'), () => {
+      if (window.rpEditorInitialized) return;
+      const editor = grapesjs.init({
+      container: '#gjs',
+      height: '100%',
+      width: 'auto',
+      storageManager: false,
+        plugins: ['grapesjs-preset-webpage'],
+        pluginsOpts: { 'grapesjs-preset-webpage': {} },
+        blockManager: { appendTo: null },
+        styleManager: { appendTo: null },
+        traitManager: { appendTo: null },
+        selectorManager: { appendTo: null },
+      canvas: {
+        styles: [
+          'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
+          'https://unpkg.com/grapesjs-preset-webpage@1.0.3/dist/grapesjs-preset-webpage.min.css'
+        ]
+      }
+      });
+
+      window.rpEditorInstance = editor;
+      window.rpEditorInitialized = true;
+
+    // Keep top buttons; we will only hide right-side managers via CSS and force canvas full-width
+
+    // Load existing HTML/CSS/JS if present
+    const initialHtml = <%= raw (@layout&.layout_html || "''").to_json %>;
+    const initialCss = <%= raw (@layout&.layout_css || "''").to_json %>;
+    if (initialHtml && initialHtml.length > 0) editor.setComponents(initialHtml);
+    if (initialCss && initialCss.length > 0) editor.setStyle(initialCss);
+
+    // Minimal block set: headings, text, image, two columns
+    editor.BlockManager.add('rp-heading', { label: 'Heading', category: 'Basic', content: '<h2>Heading</h2>' });
+    editor.BlockManager.add('rp-text', { label: 'Text', category: 'Basic', content: '<p>Text</p>' });
+    editor.BlockManager.add('rp-image', { label: 'Image', category: 'Basic', content: { type: 'image' } });
+    editor.BlockManager.add('rp-2col', { label: '2 Columns', category: 'Layout', content: '<div class="row"><div class="col-md-6"><p>Left</p></div><div class="col-md-6"><p>Right</p></div></div>' });
+
+    // Field component placeholder: will live-render using preview JSON in builder
+    editor.DomComponents.addType('record-field', {
+      model: {
+        defaults: {
+          'custom-name': 'Field',
+          'field-api-name': '',
+          'field-label': '',
+          'data-preview-locked': 'false',
+          tagName: 'div',
+          attributes: { class: 'record-field-placeholder border rounded p-2 mb-2' },
+          editable: false,
+          droppable: false,
+          highlightable: true,
+          components: `
+            <div class="rf-row d-flex align-items-start justify-content-between">
+              <div class="rf-content flex-grow-1">
+                <div class="mb-1 fw-semibold rf-label">Label</div>
+                <div class="rf-value">Value</div>
+              </div>
+              <button class="btn btn-sm btn-outline-secondary rf-edit" type="button" title="Edit"><i class="fas fa-pencil-alt"></i></button>
+            </div>
+            <div class="rf-edit-row mt-2 d-none">
+              <input type="text" class="form-control rf-input" />
+              <div class="text-end mt-2">
+                <button class="btn btn-sm btn-primary rf-save" type="button">Preview Save</button>
+                <button class="btn btn-sm btn-secondary rf-cancel" type="button">Cancel</button>
+              </div>
+            </div>
+          `,
+          traits: [
+            { type: 'text', name: 'field-api-name', label: 'Field API Name' },
+            { type: 'text', name: 'field-label', label: 'Label' }
+          ]
+        }
+      },
+      view: {
+        events: {
+          'click .rf-edit': 'onEdit',
+          'click .rf-save': 'onSave',
+          'click .rf-cancel': 'onCancel'
+        },
+        onEdit(e) {
+          e.preventDefault(); e.stopPropagation();
+          const row = this.el.querySelector('.rf-edit-row');
+          const valEl = this.el.querySelector('.rf-value');
+          const input = this.el.querySelector('.rf-input');
+          if (row && input && valEl) {
+            input.value = valEl.textContent.trim();
+            row.classList.remove('d-none');
+          }
+        },
+        onCancel(e) {
+          e.preventDefault(); e.stopPropagation();
+          const row = this.el.querySelector('.rf-edit-row');
+          if (row) row.classList.add('d-none');
+        },
+        onSave(e) {
+          e.preventDefault(); e.stopPropagation();
+          const input = this.el.querySelector('.rf-input');
+          const valEl = this.el.querySelector('.rf-value');
+          const row = this.el.querySelector('.rf-edit-row');
+          if (input && valEl) {
+            valEl.textContent = input.value;
+            this.model.addAttributes({ 'data-preview-locked': 'true' });
+          }
+          if (row) row.classList.add('d-none');
+        }
+      }
+    });
+    editor.BlockManager.add('rp-field', {
+      label: 'Field',
+      category: 'Fields',
+      media: '<i class="fa fa-tag"></i>',
+      content: { type: 'record-field' }
+    });
+
+    // Partial include placeholder: will live-render using preview HTML in builder
+    editor.DomComponents.addType('record-partial', {
+      model: {
+        defaults: {
+          'partial-name': '',
+          tagName: 'div',
+          attributes: { class: 'record-partial-placeholder border rounded p-2 mb-2 bg-light' },
+          components: [{ type: 'text', content: '' }],
+          traits: [{ type: 'text', name: 'partial-name', label: 'Partial name' }]
+        }
+      }
+    });
+    // Add top toolbar buttons (Undo, Redo, Save)
+    try {
+      editor.Panels.addButton('options', [
+        { id: 'undo', className: 'fa fa-undo', command: 'core:undo', attributes: { title: 'Undo' } },
+        { id: 'redo', className: 'fa fa-repeat', command: 'core:redo', attributes: { title: 'Redo' } },
+        { id: 'save-record-layout', className: 'fa fa-save', command: 'save-record-layout', attributes: { title: 'Save' } }
+      ]);
+    } catch (_) {}
+
+    // Build left UI and wire preview & DnD only after editor is fully loaded
+    editor.on('load', () => {
+      // Ensure options panel exists and add buttons (in case earlier add ran before panels)
+      try {
+        const optionsPanel = editor.Panels.getPanel('options') || editor.Panels.addPanel({ id: 'options' });
+        editor.Panels.addButton('options', [
+          { id: 'undo', className: 'fa fa-undo', command: 'core:undo', attributes: { title: 'Undo' } },
+          { id: 'redo', className: 'fa fa-repeat', command: 'core:redo', attributes: { title: 'Redo' } },
+          { id: 'save-record-layout', className: 'fa fa-save', command: 'save-record-layout', attributes: { title: 'Save' } }
+        ]);
+        const pnRoot = document.querySelector('.gjs-pn-panels');
+        if (pnRoot) pnRoot.style.display = 'flex';
+      } catch(_) {}
+
+      // Build left sidebar
+      const leftbar = document.getElementById('record-leftbar');
+      leftbar.innerHTML = '';
+      const header = document.createElement('div');
+      header.className = 'd-flex align-items-center justify-content-between p-2 border-bottom';
+      const leftGroup = document.createElement('div');
+      leftGroup.className = 'btn-group';
+      const backBtn = document.createElement('a');
+      backBtn.className = 'btn btn-sm btn-outline-secondary';
+      backBtn.textContent = 'Back';
+      backBtn.href = '<%= @return_path || organization_path(@organization) %>';
+      leftGroup.appendChild(backBtn);
+      const undoBtn = document.createElement('button');
+      undoBtn.className = 'btn btn-sm btn-outline-secondary';
+      undoBtn.textContent = 'Undo';
+      undoBtn.onclick = () => editor.runCommand('core:undo');
+      leftGroup.appendChild(undoBtn);
+      const redoBtn = document.createElement('button');
+      redoBtn.className = 'btn btn-sm btn-outline-secondary';
+      redoBtn.textContent = 'Redo';
+      redoBtn.onclick = () => editor.runCommand('core:redo');
+      leftGroup.appendChild(redoBtn);
+      header.appendChild(leftGroup);
+
+      const titleEl = document.createElement('strong');
+      titleEl.textContent = 'Record Builder';
+      header.appendChild(titleEl);
+
+      const saveBtn = document.createElement('button');
+      saveBtn.id = 'record-layout-save-btn';
+      saveBtn.className = 'btn btn-sm btn-primary';
+      saveBtn.textContent = 'Save';
+      saveBtn.onclick = () => editor.runCommand('save-record-layout');
+      header.appendChild(saveBtn);
+      leftbar.appendChild(header);
+
+      const listContainer = document.createElement('div');
+      listContainer.className = 'p-2';
+      const componentsTitle = document.createElement('div');
+      componentsTitle.className = 'text-muted small mt-2 mb-1';
+      componentsTitle.textContent = 'Components';
+      listContainer.appendChild(componentsTitle);
+      const componentsList = document.createElement('div');
+      componentsList.id = 'leftbar-components';
+      listContainer.appendChild(componentsList);
+      const fieldsTitle = document.createElement('div');
+      fieldsTitle.className = 'text-muted small mt-3 mb-1';
+      fieldsTitle.textContent = 'Fields';
+      listContainer.appendChild(fieldsTitle);
+      const fieldsList = document.createElement('div');
+      fieldsList.id = 'leftbar-fields';
+      listContainer.appendChild(fieldsList);
+      leftbar.appendChild(listContainer);
+
+      // Populate left lists
+      try {
+        const meta = JSON.parse(document.getElementById('record-layout-metadata').textContent);
+        const makeItem = (iconHtml, label) => {
+          const item = document.createElement('div');
+          item.className = 'leftbar-item d-flex align-items-center gap-2 p-2 rounded mb-1';
+          item.innerHTML = `${iconHtml}<span>${label}</span>`;
+          item.style.cursor = 'grab';
+          return item;
+        };
+        (meta.components || []).forEach(c => {
+          const item = makeItem('<i class="fas fa-puzzle-piece text-muted"></i>', c.label);
+          item.draggable = true;
+          item.addEventListener('dragstart', e => {
+            e.dataTransfer.setData('component-type', 'partial');
+            e.dataTransfer.setData('partial-name', c.partial);
+            e.dataTransfer.effectAllowed = 'copy';
+            window.rbDragPayload = { type: 'partial', partial: c.partial };
+          });
+          componentsList.appendChild(item);
+        });
+      (meta.fields || []).forEach(f => {
+          const item = makeItem('<i class="fas fa-tag text-muted"></i>', f.label);
+          item.draggable = true;
+          item.addEventListener('dragstart', e => {
+            e.dataTransfer.setData('component-type', 'field');
+            e.dataTransfer.setData('field-api-name', f.api_name);
+            e.dataTransfer.setData('field-label', f.label);
+          e.dataTransfer.setData('field-type', f.type || 'text');
+            e.dataTransfer.effectAllowed = 'copy';
+          window.rbDragPayload = { type: 'field', api: f.api_name, label: f.label, ftype: f.type || 'text', options: f.options || [] };
+          });
+          fieldsList.appendChild(item);
+        });
+
+        // Robust Canvas DnD + click-to-add
+        let dropLock = false;
+        const handleDrop = (e) => {
+          try { e.preventDefault(); } catch(_) {}
+          if (dropLock) return;
+          dropLock = true;
+          setTimeout(() => { dropLock = false; }, 150);
+          const dt = e.dataTransfer || {};
+          let type = dt.getData && dt.getData('component-type');
+          if (!type && window.rbDragPayload) type = window.rbDragPayload.type;
+          if (!type) return;
+          // Determine insertion index based on drop Y relative to existing children
+          const root = editor.DomComponents.getWrapper();
+          let insertAt = root.components().length;
+          try {
+            const dropY = e.clientY; // viewport coords
+            const children = root.components().models || [];
+            for (let i = 0; i < children.length; i += 1) {
+              const el = children[i].getEl && children[i].getEl();
+              if (!el) continue;
+              const rect = el.getBoundingClientRect();
+              if (dropY < rect.top + rect.height / 2) { insertAt = i; break; }
+            }
+          } catch(_) {}
+          if (type === 'partial') {
+            const partialName = (dt.getData && dt.getData('partial-name')) || (window.rbDragPayload && window.rbDragPayload.partial) || '';
+            if (!partialName) return;
+            const comp = editor.DomComponents.addComponent({ type: 'record-partial' }, { at: insertAt });
+            comp.addAttributes({ 'partial-name': partialName });
+          } else if (type === 'field') {
+            const api = (dt.getData && dt.getData('field-api-name')) || (window.rbDragPayload && window.rbDragPayload.api) || '';
+            const label = (dt.getData && dt.getData('field-label')) || (window.rbDragPayload && window.rbDragPayload.label) || api;
+            const ftype = (dt.getData && dt.getData('field-type')) || (window.rbDragPayload && window.rbDragPayload.ftype) || 'text';
+            const fopts = (window.rbDragPayload && window.rbDragPayload.options) || [];
+            if (!api) return;
+            const comp = editor.DomComponents.addComponent({ type: 'record-field' }, { at: insertAt });
+            // For picklists, store options on element for runtime renderer (data-options="val1|val2|...")
+            if (['picklist','multipicklist'].includes(ftype) && Array.isArray(fopts) && fopts.length > 0) {
+              comp.addAttributes({ 'data-options': fopts.join('|') });
+            }
+            comp.addAttributes({ 'field-api-name': api, 'field-label': label, 'field-type': ftype });
+            try {
+              const preview = JSON.parse(document.getElementById('record-layout-preview').textContent);
+              const values = preview.values || {};
+              const val = Object.prototype.hasOwnProperty.call(values, api) ? values[api] : '';
+              const base = `<div class=\"rf-row d-flex align-items-start justify-content-between\"><div class=\"rf-content flex-grow-1\"><div class=\"mb-1 fw-semibold rf-label\">${label || ''}</div><div class=\"rf-value\">${val == null ? '' : String(val)}</div></div><button class=\"btn btn-sm btn-outline-secondary rf-edit\" type=\"button\" title=\"Edit\"><i class=\"fas fa-pencil-alt\"></i></button></div>`;
+              let input = '';
+              if (ftype === 'textarea') {
+                input = `<textarea class=\"form-control rf-input mt-2\"></textarea>`;
+              } else if (ftype === 'checkbox') {
+                const checked = (String(val) === 'true' || String(val) === '1') ? 'checked' : '';
+                input = `<div class=\"form-check mt-2\"><input type=\"checkbox\" class=\"form-check-input rf-input\" ${checked} /></div>`;
+              } else if (ftype === 'date') {
+                input = `<input type=\"date\" class=\"form-control rf-input mt-2\" value=\"${val == null ? '' : String(val)}\" />`;
+              } else if (ftype === 'picklist') {
+                const opts = (fopts || []).map(o => `<option value=\"${String(o).replace(/"/g,'&quot;')}\" ${String(o)===String(val)?'selected':''}>${o}</option>`).join('');
+                input = `<select class=\"form-select rf-input mt-2\">${opts}</select>`;
+              } else if (ftype === 'multipicklist') {
+                const opts = (fopts || []).map(o => `<option value=\"${String(o).replace(/"/g,'&quot;')}\" ${Array.isArray(val)&&val.includes(o)?'selected':''}>${o}</option>`).join('');
+                input = `<select class=\"form-select rf-input mt-2\" multiple>${opts}</select>`;
+              } else {
+                input = `<input type=\"text\" class=\"form-control rf-input mt-2\" value=\"${val == null ? '' : String(val).replace(/"/g,'&quot;')}\" />`;
+              }
+              comp.components(base + `<div class=\"rf-edit-row mt-2 d-none\">${input}<div class=\"text-end mt-2\"><button class=\"btn btn-sm btn-primary rf-save\" type=\"button\">Preview Save</button><button class=\"btn btn-sm btn-secondary rf-cancel\" type=\"button\">Cancel</button></div></div>`);
+            } catch(_) {}
+          }
+          window.rbDragPayload = null;
+        };
+
+        // Bind to outer canvas container
+        const outerEl = document.getElementById('gjs');
+        if (outerEl) {
+          outerEl.addEventListener('dragover', e => { try { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } catch(_) {} });
+          outerEl.addEventListener('drop', handleDrop);
+        }
+        // Bind to iframe elements
+        const frameEl = editor.Canvas.getFrameEl();
+        if (frameEl) {
+          const bindFrame = () => {
+            const fdoc = frameEl.contentDocument;
+            if (!fdoc) return;
+            try {
+              fdoc.addEventListener('dragover', e => { try { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } catch(_) {} });
+              fdoc.addEventListener('drop', handleDrop);
+            } catch(_) {}
+            const fbody = fdoc.body;
+            if (fbody) {
+              try {
+                fbody.addEventListener('dragover', e => { try { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } catch(_) {} });
+                fbody.addEventListener('drop', handleDrop);
+              } catch(_) {}
+            }
+          };
+          // Bind now and after a short delay to catch when iframe is ready
+          bindFrame();
+          setTimeout(bindFrame, 200);
+        }
+
+        // Also hydrate when any record-field is added (regardless of source)
+        editor.on('component:add', m => {
+          try {
+            if (m && m.get && m.get('type') === 'record-field') {
+              const api = m.getAttributes()['field-api-name'];
+              const label = m.getAttributes()['field-label'] || api;
+              const preview = JSON.parse(document.getElementById('record-layout-preview').textContent);
+              const values = preview.values || {};
+              const val = Object.prototype.hasOwnProperty.call(values, api) ? values[api] : '';
+              const html = `<div class=\"rf-row d-flex align-items-start justify-content-between\"><div class=\"rf-content flex-grow-1\"><div class=\"mb-1 fw-semibold rf-label\">${label || ''}</div><div class=\"rf-value\">${val == null ? '' : String(val)}</div></div><button class=\"btn btn-sm btn-outline-secondary rf-edit\" type=\"button\" title=\"Edit\"><i class=\"fas fa-pencil-alt\"></i></button></div><div class=\"rf-edit-row mt-2 d-none\"><input type=\"text\" class=\"form-control rf-input\" /><div class=\"text-end mt-2\"><button class=\"btn btn-sm btn-primary rf-save\" type=\"button\">Preview Save</button><button class=\"btn btn-sm btn-secondary rf-cancel\" type=\"button\">Cancel</button></div></div>`;
+              m.components(html);
+              m.view && m.view.render && m.view.render();
+            }
+          } catch(_) {}
+        });
+        componentsList.addEventListener('click', e => {
+          const item = e.target.closest('.leftbar-item');
+          if (!item) return;
+          const label = item.querySelector('span')?.textContent || '';
+          const metaItem = (meta.components || []).find(c => c.label === label);
+          if (metaItem) {
+            const comp = editor.addComponents({ type: 'record-partial' })[0];
+            comp.addAttributes({ 'partial-name': metaItem.partial });
+          }
+        });
+        fieldsList.addEventListener('click', e => {
+          const item = e.target.closest('.leftbar-item');
+          if (!item) return;
+          const label = item.querySelector('span')?.textContent || '';
+          const metaItem = (meta.fields || []).find(f => f.label === label);
+          if (metaItem) {
+            const comp = editor.addComponents({ type: 'record-field' })[0];
+            comp.addAttributes({ 'field-api-name': metaItem.api_name, 'field-label': metaItem.label });
+          }
+        });
+      } catch (e) { console.warn('leftbar population error', e); }
+
+      // Live preview hydration (throttled)
+      try {
+        const preview = JSON.parse(document.getElementById('record-layout-preview').textContent);
+        const values = preview.values || {};
+        const partials = preview.partials || {};
+        let scheduled = false;
+        const hydrateAll = () => {
+          scheduled = false;
+          const dc = editor && editor.DomComponents;
+          if (!dc || typeof dc.getWrapper !== 'function') return;
+          const root = dc.getWrapper();
+          const fieldComps = root.find('[field-api-name]').slice(0, 200);
+          fieldComps.forEach(comp => {
+            try {
+              const api = comp.getAttributes()['field-api-name'];
+              const label = comp.getAttributes()['field-label'] || api;
+              const val = Object.prototype.hasOwnProperty.call(values, api) ? values[api] : '';
+              const el = comp.getEl();
+              if (el) {
+                const l = el.querySelector('.rf-label');
+                const v = el.querySelector('.rf-value');
+                if (l) l.textContent = (label || '');
+                if (v) v.textContent = (val == null ? '' : String(val));
+              }
+            } catch(_) {}
+          });
+          const partialComps = root.find('[partial-name]').slice(0, 100);
+          partialComps.forEach(comp => {
+            try {
+              const name = comp.getAttributes()['partial-name'];
+              const html = name && partials[name] ? partials[name] : '';
+              if (html) comp.components(html);
+            } catch(_) {}
+          });
+        };
+        const schedule = () => { if (!scheduled) { scheduled = true; setTimeout(hydrateAll, 80); } };
+        editor.on('component:add', schedule);
+        editor.on('component:update', schedule);
+        schedule();
+      } catch (e) { console.warn('preview hydration error', e); }
+    });
+
+    editor.Commands.add('save-record-layout', {
+      run(ed) {
+        const html = ed.getHtml();
+        const css = ed.getCss();
+        const js = ed.getJs();
+        fetch('<%= organization_record_layout_path(@organization, table_type: @table_type, table_id: @table_id, format: :json) %>', {
+          method: 'PATCH',
+          headers: {
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ record_layout: { layout_html: html, layout_css: css, layout_js: js } })
+        }).then(r => r.json()).then(data => {
+          if (data.success) { alert('Saved'); } else { alert('Error saving'); }
+        });
+      }
+    });
+    });
+  }
+
+  document.addEventListener('turbo:before-cache', destroyRecordPageBuilder);
+  document.addEventListener('turbo:load', function() { destroyRecordPageBuilder(); initRecordPageBuilder(); });
+  document.addEventListener('DOMContentLoaded', function() { destroyRecordPageBuilder(); initRecordPageBuilder(); });
+</script>
+
+

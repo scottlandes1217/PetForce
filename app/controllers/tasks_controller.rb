@@ -14,7 +14,8 @@ class TasksController < ApplicationController
     end
   
     def show
-      @task = Task.find(params[:id])
+    @task = Task.find(params[:id])
+    @record_layout = RecordLayout.find_by(organization: @organization, table_type: 'Task')
     end
   
     def create

@@ -9,6 +9,7 @@ class CustomRecordsController < ApplicationController
 
   def show
     @custom_fields = @custom_object.custom_fields.active.visible.order(:name)
+    @record_layout = RecordLayout.find_by(organization: @organization, table_type: 'CustomObject', table_id: @custom_object.id)
   end
 
   def new

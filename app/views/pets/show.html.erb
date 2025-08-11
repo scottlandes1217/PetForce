@@ -13,6 +13,10 @@
      data-pet-posts-url-value="<%= organization_pet_posts_path(@organization, @pet) %>"
      data-pet-gallery-url-value="<%= gallery_organization_pet_path(@organization, @pet) %>">
 
+  <% if @record_layout&.html.present? %>
+    <%= render partial: 'record_layouts/render', locals: { layout: @record_layout, record: @pet, table_type: 'Pet' } %>
+  <% else %>
+
   <%= turbo_frame_tag "pet_header_#{@pet.id}" do %>
     <%= render "pets/pet_header", pet: @pet %>
   <% end %>
@@ -70,6 +74,8 @@
     <%= link_to "Create Task", new_organization_pet_task_path(@organization, @pet), class: "btn btn-primary mb-3" %>
     <%= render partial: "tasks/tasks", locals: { tasks: @pet.tasks } %>
   </div>
+
+  <% end %>
 
   <!-- Modal for Selecting/Uploading Header Image -->
   <div id="imageModal" class="modal" data-pet-target="imageModal" style="display: none;">

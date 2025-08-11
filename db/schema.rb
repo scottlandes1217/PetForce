@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_08_11_061440) do
+ActiveRecord::Schema[7.1].define(version: 2025_08_11_080000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -423,6 +423,20 @@ ActiveRecord::Schema[7.1].define(version: 2025_08_11_061440) do
     t.index ["user_id"], name: "index_reactions_on_user_id"
   end
 
+  create_table "record_layouts", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.string "table_type", null: false
+    t.bigint "table_id"
+    t.text "layout_html"
+    t.text "layout_css"
+    t.text "layout_js"
+    t.jsonb "metadata", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["organization_id", "table_type", "table_id"], name: "index_record_layouts_on_org_and_table", unique: true
+    t.index ["organization_id"], name: "index_record_layouts_on_organization_id"
+  end
+
   create_table "site_submissions", force: :cascade do |t|
     t.bigint "site_id", null: false
     t.jsonb "data"
@@ -592,6 +606,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_08_11_061440) do
   add_foreign_key "posts", "users"
   add_foreign_key "reactions", "posts"
   add_foreign_key "reactions", "users"
+  add_foreign_key "record_layouts", "organizations"
   add_foreign_key "site_submissions", "sites"
   add_foreign_key "sites", "organizations"
   add_foreign_key "studio_blocks", "studios"

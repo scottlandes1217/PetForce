@@ -81,6 +81,37 @@ class ObjectFieldsController < ApplicationController
     @custom_object = @organization.custom_objects.find_or_create_by(api_name: object_config[:api_name]) do |obj|
       obj.assign_attributes(object_config)
     end
+    # Seed core picklist/multipicklist fields for built-in pets object so they appear in UI
+    if @object_type == 'pets'
+      required_fields = {
+        'species' => :picklist,
+        'breed' => :multipicklist,
+        'color' => :multipicklist,
+        'flags' => :multipicklist,
+        'sex' => :picklist,
+        'coat_type' => :picklist,
+        'location' => :picklist,
+        'unit' => :picklist
+      }
+      required_fields.each do |api_name, ftype|
+        cf = @custom_object.custom_fields.find_by(api_name: "pet_#{api_name}_field") ||
+             @custom_object.custom_fields.find_by(api_name: "pets_#{api_name}_field") ||
+             @custom_object.custom_fields.find_by(api_name: api_name)
+        next if cf
+        @custom_object.custom_fields.create!(
+          api_name: api_name,
+          name: api_name.titleize,
+          display_name: api_name.titleize,
+          field_type: CustomField.field_types[ftype],
+          required: false,
+          unique: false,
+          active: true,
+          hidden: false,
+          read_only: false,
+          picklist_values: (ftype == :picklist || ftype == :multipicklist ? ['None'] : nil)
+        )
+      end
+    end
   end
 
   def get_built_in_fields

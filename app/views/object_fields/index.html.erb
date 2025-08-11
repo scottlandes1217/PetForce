@@ -80,7 +80,14 @@
                         <% end %>
                       </td>
                       <td>
-                        <% if field.active? %>
+                        <% status_active = if field.respond_to?(:active?)
+                          field.active?
+                        elsif field.respond_to?(:active)
+                          field.active
+                        else
+                          true # treat built-in (OpenStruct) as active by default
+                        end %>
+                        <% if status_active %>
                           <span class="badge bg-success">Active</span>
                         <% else %>
                           <span class="badge bg-secondary">Inactive</span>
@@ -88,9 +95,9 @@
                       </td>
                       <td>
                         <% if field.respond_to?(:built_in) && field.built_in %>
-                          <span class="badge bg-primary">Built-in</span>
+                          <span class="badge bg-primary">Standard</span>
                         <% elsif field.respond_to?(:api_name) && built_in_field?(field) %>
-                          <span class="badge bg-primary">Built-in</span>
+                          <span class="badge bg-primary">Standard</span>
                         <% else %>
                           <span class="badge bg-success">Custom</span>
                         <% end %>

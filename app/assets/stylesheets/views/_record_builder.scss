@@ -1,0 +1,73 @@
+.record-field-placeholder {
+  background: #fff;
+}
+
+.record-partial-placeholder {
+  background: #f8f9fa;
+}
+
+// Hide drag hover UI and element tags on hover
+.gjs-selected,
+.gjs-hovered {
+  outline: none !important;
+}
+
+.gjs-selected .gjs-toolbar,
+.gjs-hovered .gjs-toolbar {
+  display: none !important;
+}
+
+.gjs-comp-selected,
+.gjs-comp-hover {
+  box-shadow: none !important;
+}
+
+.gjs-badge {
+  display: none !important;
+}
+
+// Hide built-in right-side panels completely
+.gjs-pn-views,
+.gjs-pn-views-container,
+.gjs-pn-options,
+.gjs-pn-views-container ~ .gjs-pn-panel,
+.gjs-pn-panel,
+.gjs-pn-panels,
+.gjs-pn-panel.gjs-pn-views,
+.gjs-pn-panel.gjs-pn-options,
+.gjs-pn-panel.gjs-pn-devices-c {
+  display: none !important;
+}
+
+.gjs-sm,
+.gjs-trt,
+.gjs-clm,
+.gjs-layer-manager {
+  display: none !important;
+}
+
+.gjs-editor,
+.gjs-cv-canvas {
+  height: 100% !important;
+  width: 100% !important;
+}
+
+.gjs-cv-canvas,
+.gjs-frame-wrapper,
+.gjs-frame,
+.gjs-canvas__frames {
+  width: 100% !important;
+}
+
+.gjs-pn-panels {
+  display: flex !important;
+}
+
+#record-leftbar .leftbar-item:hover {
+  background: #f8f9fa;
+}
+
+.gjs-one-bg {
+  background-color: #ffffff !important;
+}
+
