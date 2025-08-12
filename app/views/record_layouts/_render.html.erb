@@ -4,6 +4,27 @@
 <% html = layout.html.html_safe %>
 <% css = layout.css.html_safe %>
 <style><%= css %></style>
+<style>
+  /* Runtime overrides: disable builder-only behaviors on real pages */
+  .record-layout-render .record-field-placeholder,
+  .record-layout-render .record-partial-placeholder {
+    pointer-events: auto !important;
+    cursor: default !important;
+  }
+  .record-layout-render .record-field-placeholder *,
+  .record-layout-render .record-partial-placeholder * {
+    pointer-events: auto !important;
+  }
+  .record-layout-render .record-field-placeholder:hover,
+  .record-layout-render .record-partial-placeholder:hover {
+    outline: none !important;
+  }
+  .record-layout-render .edit-button,
+  .record-layout-render .name-field-header .edit-button {
+    pointer-events: auto !important;
+    cursor: pointer;
+  }
+</style>
 
 <div class="record-layout-render">
   <%= html %>
@@ -99,6 +120,64 @@
           el.innerHTML = partials[name];
         }
       });
+      // Fallback: If saved layout lacks partial-name attribute, aggressively replace any header snapshot
+      // with the live-rendered header to avoid stale text.
+      try {
+        if (partials['pets/pet_header']) {
+          const candidates = new Set();
+          document.querySelectorAll('.pet-header, [id^="pet_header_"]').forEach(n => candidates.add(n));
+          document.querySelectorAll('.name-field-header').forEach(n => {
+            const header = n.closest('.pet-header');
+            candidates.add(header || n);
+          });
+          candidates.forEach(function(node){
+            if (!node || !node.parentNode) return;
+            const temp = document.createElement('div');
+            temp.innerHTML = partials['pets/pet_header'];
+            const fresh = temp.firstElementChild;
+            if (fresh) node.parentNode.replaceChild(fresh, node);
+          });
+        }
+      } catch(_e) {}
+
+      // Strip builder-only wrappers if any leaked into runtime HTML (initial + future mutations)
+      (function(){
+        const scrub = () => {
+          try {
+            document.querySelectorAll('.partial-content-wrapper').forEach(function(node){
+              // Defensive: remove volatile id to avoid churn in observers/analytics
+              try { node.removeAttribute('id'); } catch(_) {}
+              const parent = node.parentNode;
+              if (!parent) return;
+              while (node.firstChild) parent.insertBefore(node.firstChild, node);
+              parent.removeChild(node);
+            });
+          } catch(_) {}
+        };
+        // Run now and also watch for future insertions briefly
+        scrub();
+        try {
+          const container = document.querySelector('.record-layout-render') || document;
+          const mo = new MutationObserver(() => scrub());
+          mo.observe(container, { childList: true, subtree: true });
+          setTimeout(() => { try { mo.disconnect(); } catch(_) {} }, 3000);
+        } catch(_) {}
+      })();
+
+      // Ensure header name text matches server value regardless of how the layout was saved
+      try {
+        const nameVal = (values && typeof values.name === 'string') ? values.name : '';
+        if (nameVal) {
+          const nameTargets = [
+            '.name-field-header [data-field="name"][data-edit-field-target="value"]',
+            '.pet-header [data-field="name"][data-edit-field-target="value"]',
+            '[field-api-name="name"] .rf-value'
+          ];
+          document.querySelectorAll(nameTargets.join(',')).forEach(function(el){
+            try { el.textContent = nameVal; } catch(_) {}
+          });
+        }
+      } catch(_) {}
     } catch(e) { console.warn('record values fill error', e); }
   })();
 </script>

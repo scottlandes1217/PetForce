@@ -1,5 +1,5 @@
 <!-- Header Section -->
-<div class="pet-header">
+<div class="pet-header" <%= (local_assigns[:with_id] == false) ? '' : "id=\"pet_header_#{pet.id}\"" %>>
   <!-- Pet Photo -->
   <div class="pet-photo-container" data-action="click->pet#openImageModal">
     <% if pet.photo.attached? %>

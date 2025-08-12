@@ -12,7 +12,7 @@ export default class extends Controller {
   ];
 
   connect() {
-    console.log("Connecting EditFieldController...");
+    console.log("[EditField] connect", { el: this.element, targets: this.constructor.targets });
 
     // Prevent re-initializing on the same element
     if (this.initialized) {
@@ -38,6 +38,31 @@ export default class extends Controller {
       }
     });
 
+    // Canonicalize from server-provided values when available to avoid stale snapshots
+    try {
+      const valuesEl = document.getElementById('record-values-json');
+      if (valuesEl && valuesEl.textContent) {
+        const values = JSON.parse(valuesEl.textContent);
+        if (values && typeof values.name === 'string' && values.name.trim()) {
+          this.currentValues.set('name', values.name.trim());
+          // Normalize all name inputs to server value to prevent stale overrides
+          this.inputTargets
+            .filter((i) => i.dataset.field === 'name')
+            .forEach((i) => { try { i.value = values.name.trim(); } catch(_) {} });
+        }
+      }
+    } catch(_) {}
+    // Fallback to data attribute
+    if (!this.currentValues.get('name')) {
+      const serverName = this.element && this.element.dataset && this.element.dataset.petName;
+      if (serverName) {
+        this.currentValues.set('name', serverName);
+        this.inputTargets
+          .filter((i) => i.dataset.field === 'name')
+          .forEach((i) => { try { i.value = serverName; } catch(_) {} });
+      }
+    }
+
     // Redraw UI on initial load to ensure
     // "Estimated" or other dynamic text is displayed
     this.updateUI();
@@ -46,12 +71,13 @@ export default class extends Controller {
 /* ------------------------------------------------------------
  * EDIT
  * ------------------------------------------------------------ */
-edit(event) {
+  edit(event) {
   event.preventDefault();
   event.stopPropagation();
 
   // Use event.currentTarget so we always get the button's data attributes
   const button = event.currentTarget;
+  console.log('[EditField] edit click', { button, dataset: { field: button?.dataset?.field, group: button?.dataset?.group } });
   const group = button.dataset.group;
   const field = button.dataset.field;
   console.log("[edit] Clicked edit button:", { group, field });
@@ -290,6 +316,16 @@ edit(event) {
       })
       .then((json) => {
         console.log("Pet updated successfully:", json);
+        // If a name was updated, reflect immediately in visible header name
+        if (json && json.pet && json.pet.name) {
+          try {
+            const headerName = document.querySelector('.name-field-header .value, .pet-header .value');
+            if (headerName) headerName.textContent = json.pet.name;
+            // Keep container dataset in sync for refreshes and pinned tabs
+            const petContainer = document.querySelector('[data-controller~="pet"]');
+            if (petContainer) petContainer.dataset.petName = json.pet.name;
+          } catch(_) {}
+        }
         this.showSuccessMessage(
           json.success_message || "Pet details updated successfully!"
         );
@@ -408,15 +444,9 @@ edit(event) {
 
         // Single select
         else if (input.tagName === "SELECT" && !input.multiple) {
-          // Grab the text from the selected <option>
           const selectedOption = input.selectedOptions[0];
-          if (selectedOption) {
-            // e.g. "female" -> "Female"
-            displayVal = selectedOption.textContent.trim();
-          }
-          if (!displayVal) {
-            displayVal = "Not Set";
-          }
+          if (selectedOption) displayVal = selectedOption.textContent.trim();
+          if (!displayVal) displayVal = "Not Set";
         }
 
         // Checkbox
@@ -426,15 +456,11 @@ edit(event) {
 
         // Everything else (text/date)
         else {
-          const val = input.value;
+          const val = (this.currentValues.has(field) ? this.currentValues.get(field) : input.value);
           displayVal = val || "Not Set";
         }
 
-        // OPTIONAL: Humanize if desired
-        // For enumerations like "male", "female", "unknown", etc.
-        // Or strings that have underscores
-        // Remove underscore => space, capitalize words
-        displayVal = this.humanizeString(displayVal);
+        // Do not change capitalization; render exactly as stored
 
         // Assign the final text
         valueEl.textContent = displayVal;

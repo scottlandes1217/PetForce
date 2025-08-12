@@ -12,9 +12,14 @@
   outline: none !important;
 }
 
+// Hide GrapesJS toolbar to prevent jumping; we use inline controls
+.gjs-toolbar,
 .gjs-selected .gjs-toolbar,
-.gjs-hovered .gjs-toolbar {
+.gjs-hovered .gjs-toolbar,
+[data-gjs-toolbar] {
   display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
 }
 
 .gjs-comp-selected,
@@ -24,6 +29,77 @@
 
 .gjs-badge {
   display: none !important;
+}
+
+// Hide GrapesJS selection indicators on inner elements
+.gjs-selected .rf-row,
+.gjs-selected .rf-content,
+.gjs-selected .rf-label,
+.gjs-selected .rf-value,
+.gjs-selected .rf-icon,
+.gjs-selected .partial-content-wrapper,
+.gjs-selected .partial-content-wrapper * {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+// Ensure proper selection behavior for record components
+.record-field-placeholder,
+.record-partial-placeholder {
+  position: relative;
+  /* Only the builder canvas should use pointer; real pages should not. */
+  cursor: default;
+}
+
+/* These rules should only apply in the builder iframe; move to injected canvas CSS. */
+/* Intentionally left empty to avoid affecting real pages */
+
+// Inline delete control
+.record-field-placeholder .rb-del,
+.record-partial-placeholder .rb-del {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+  border-radius: 12px;
+  width: 22px;
+  height: 22px;
+  display: none; /* shown only when selected */
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 12px;
+  pointer-events: auto !important;
+  z-index: 9999;
+}
+
+/* Ensure clicks on icon elements also trigger the button */
+.rb-del,
+.rb-del * {
+  pointer-events: auto !important;
+}
+
+.record-field-placeholder .rb-del:hover,
+.record-partial-placeholder .rb-del:hover {
+  background: rgba(220,53,69,0.9);
+}
+
+/* Show delete only for the selected/hovered wrapper itself */
+.record-field-placeholder.gjs-selected > .rb-del,
+.record-partial-placeholder.gjs-selected > .rb-del,
+.record-field-placeholder:hover > .rb-del,
+.record-partial-placeholder:hover > .rb-del { display: inline-flex !important; }
+
+/* Intentionally disabled globally; builder injects its own hover outline */
+
+// Prevent inner element selection
+/* Intentionally disabled globally; builder injects pointer-event restrictions */
+
+// Ensure the wrapper is selectable
+.record-field-placeholder,
+.record-partial-placeholder {
+  pointer-events: auto !important;
 }
 
 // Hide built-in right-side panels completely
@@ -48,7 +124,7 @@
 
 .gjs-editor,
 .gjs-cv-canvas {
-  height: 100% !important;
+  height: calc(100vh - 127px) !important;
   width: 100% !important;
 }
 
@@ -59,9 +135,7 @@
   width: 100% !important;
 }
 
-.gjs-pn-panels {
-  display: flex !important;
-}
+/* Hide panels globally only affected inside builder via iframe; no global styling here. */
 
 #record-leftbar .leftbar-item:hover {
   background: #f8f9fa;
@@ -71,3 +145,14 @@
   background-color: #ffffff !important;
 }
 
+[data-gjs-type="wrapper"] {
+  padding: 5px !important;
+}
+
+// Make GrapesJS toolbar stick to the selected wrapper by hiding inner toolbars
+.gjs-toolbar-item {
+  pointer-events: auto !important;
+}
+
+// Keep badge hidden to reduce noise, but show toolbar
+.gjs-badge { display: none !important; }

@@ -21,6 +21,7 @@ class PetsController < ApplicationController
     @posts = @pet.posts.includes(images_attachments: :blob)
     @is_pinned = current_user.pinned_tabs.exists?(tabable: @pet, tab_type: 'pet')
     @record_layout = RecordLayout.find_by(organization: @organization, table_type: 'Pet')
+    Rails.logger.info "[Pet show] id=#{@pet.id} name=\"#{@pet.name}\""
   end
 
   def new
@@ -84,13 +85,25 @@ class PetsController < ApplicationController
 
     # 3) Handle normal field updates (dob_estimated, breed, location, etc.)
     if @pet.update(pet_params)
+      @pet.reload
       Rails.logger.info "Pet updated successfully: #{@pet.inspect}"
+      # Broadcast live header refresh so any open views (and tabs) show the latest name immediately
+      begin
+        Turbo::StreamsChannel.broadcast_replace_to(
+          "pet_#{@pet.id}",
+          target: "pet_header_#{@pet.id}",
+          partial: "pets/pet_header",
+          locals: { pet: @pet }
+        )
+      rescue => e
+        Rails.logger.warn("Pet header broadcast failed: #{e.message}")
+      end
       respond_to do |format|
         format.html do
           redirect_to organization_pet_path(@organization, @pet), notice: 'Pet was successfully updated.'
         end
         format.json do
-          render json: { success_message: "Pet updated successfully!" }, status: :ok
+          render json: { success_message: "Pet updated successfully!", pet: @pet.slice(:id, :name, :species, :description) }, status: :ok
         end
       end
     else

@@ -15,6 +15,33 @@
 
 <link rel="stylesheet" href="https://unpkg.com/grapesjs@0.21.7/dist/css/grapes.min.css">
 <link rel="stylesheet" href="https://unpkg.com/grapesjs-preset-webpage@1.0.3/dist/grapesjs-preset-webpage.min.css">
+<%= stylesheet_link_tag 'record_builder', media: 'all' %>
+
+<style>
+  /* Force GrapesJS overlays to be minimal and avoid inner selection */
+  .gjs-badge { display: none !important; }
+  .gjs-comp-selected, .gjs-comp-hover { box-shadow: none !important; outline: none !important; }
+  .gjs-selected .gjs-toolbar { display: block !important; }
+  /* Hide outer-document overlays immediately to avoid initial flicker */
+  .gjs-toolbar,
+  [data-gjs-toolbar],
+  [class*='gjs-toolbar'],
+  .gjs-highlighter,
+  .gjs-highlighter-sel,
+  .gjs-resizer,
+  .gjs-selection,
+  .gjs-ghost,
+  .gjs-dashed,
+  .gjs-badge,
+  .gjs-offset-v,
+  .gjs-offset-h { display: none !important; visibility: hidden !important; opacity: 0 !important; }
+  /* Never show hover/selection for the root wrapper */
+  [data-gjs-type="wrapper"] { outline: none !important; }
+  .gjs-selected[data-gjs-type="wrapper"] { outline: none !important; box-shadow: none !important; }
+  /* Visual hover outline is handled inside the iframe via injected CSS */
+  .builder-title { font-size: 1.25rem; text-align: center; }
+  .builder-btn-row { margin-left: 25% !important; }
+</style>
 
 <script src="https://unpkg.com/grapesjs@0.21.7/dist/grapes.min.js"></script>
 <script src="https://unpkg.com/grapesjs-preset-webpage@1.0.3/dist/index.js"></script>
@@ -62,13 +89,127 @@
       canvas: {
         styles: [
           'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
-          'https://unpkg.com/grapesjs-preset-webpage@1.0.3/dist/grapesjs-preset-webpage.min.css'
+          'https://unpkg.com/grapesjs-preset-webpage@1.0.3/dist/grapesjs-preset-webpage.min.css',
+          'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css',
+          '<%= asset_path "application.css" %>',
+          '<%= asset_path "record_builder.css" %>'
         ]
       }
       });
 
       window.rpEditorInstance = editor;
       window.rpEditorInitialized = true;
+
+    // Aggressively suppress GrapesJS floating overlays (toolbar/highlighters) inside iframe
+    const suppressGrapesOverlays = () => {
+      try {
+        const fdoc = editor.Canvas.getDocument();
+        if (!fdoc) return;
+        const selectors = [
+          '.gjs-toolbar',
+          "[data-gjs-toolbar]",
+          "[class*='gjs-toolbar']",
+          '.gjs-highlighter',
+          '.gjs-highlighter-sel',
+          '.gjs-resizer',
+          '.gjs-selection',
+          '.gjs-ghost',
+          '.gjs-dashed',
+          '.gjs-badge',
+          '.gjs-offset-v',
+          '.gjs-offset-h'
+        ];
+        selectors.forEach(sel => {
+          fdoc.querySelectorAll(sel).forEach(el => {
+            try {
+              el.style.setProperty('display', 'none', 'important');
+              el.style.setProperty('visibility', 'hidden', 'important');
+              el.style.setProperty('opacity', '0', 'important');
+              el.classList.add('pf-hidden');
+              // Do NOT remove nodes; removing triggers GrapesJS to recreate them and causes DOM churn
+            } catch (_) {}
+          });
+        });
+      } catch (_) {}
+    };
+
+    const observeOverlays = () => {
+      try {
+        const fdoc = editor.Canvas.getDocument();
+        if (!fdoc || !fdoc.body) return;
+        suppressGrapesOverlays();
+        if (window.__pfMo) { try { window.__pfMo.disconnect(); } catch (_) {} }
+        const mo = new MutationObserver(() => suppressGrapesOverlays());
+        mo.observe(fdoc.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+        window.__pfMo = mo;
+        // Avoid periodic DOM removals; just hide via CSS when mutations occur
+      } catch (_) {}
+    };
+
+    // Guard to only allow wrapper selection/hover
+      const isWrapperComp = (comp) => {
+      try { const a = comp && comp.getAttributes ? comp.getAttributes() : {}; return !!(a && (a['field-api-name'] || a['partial-name'])); } catch (_) { return false; }
+    };
+    const selectWrapperIfInner = (comp) => {
+      try {
+        if (!comp) return;
+        if (isWrapperComp(comp)) return;
+        const parent = comp.parent && comp.parent();
+        if (parent && isWrapperComp(parent)) { editor.select(parent); }
+      } catch (_) {}
+    };
+      editor.on('component:selected', comp => {
+        try { comp && comp.set && comp.set('toolbar', []); } catch(_) {}
+        // If root wrapper is selected, immediately shift selection to first real wrapper
+        try {
+          const a = comp && comp.getAttributes ? comp.getAttributes() : {};
+          if (a && a['data-gjs-type'] === 'wrapper') {
+            const root = editor.DomComponents.getWrapper();
+            const first = (root && root.find && root.find('[field-api-name], [partial-name]')) || [];
+            if (first && first[0]) { editor.select(first[0]); return; }
+          }
+        } catch(_) {}
+        selectWrapperIfInner(comp);
+      });
+    editor.on('component:hovered', selectWrapperIfInner);
+    editor.on('component:hover', selectWrapperIfInner);
+
+    // Defer canvas CSS injection until editor load to ensure it is inside iframe
+      const injectCanvasCss = () => {
+      const css = `
+        .record-field-placeholder, .record-partial-placeholder { position: relative; cursor: pointer; background: #fff; }
+        .record-partial-placeholder { background: #f8f9fa; }
+        .record-field-placeholder *, .record-partial-placeholder * { pointer-events: none; }
+          .record-field-placeholder:hover, .record-partial-placeholder:hover { outline: 1px solid #0d6efd !important; }
+        .partial-content-wrapper, .partial-content-wrapper * { pointer-events: none; user-select: none; }
+        .rf-label { margin-bottom: 2px; font-weight: 600; }
+        .edit-button { margin-left: 8px; color: #6c757d; flex: 0 0 auto; border: 0; background: transparent; padding: 2px; }
+        .edit-button .fas { color: #6c757d; }
+        .rf-edit, .rf-edit-row { display: none !important; }
+        .gjs-badge { display: none !important; }
+        /* Hide GrapesJS toolbar to avoid jumping; we render inline controls */
+        .gjs-toolbar, .gjs-toolbar * { display: none !important; visibility: hidden !important; opacity: 0 !important; }
+        /* Keep other visual overlays hidden to avoid jumping */
+          .gjs-highlighter, .gjs-highlighter-sel, .gjs-resizer, .gjs-selection, .gjs-ghost, .gjs-dashed { display: none !important; visibility: hidden !important; opacity: 0 !important; }
+          /* Also hide default wrapper hover outline to avoid initial hover flash */
+          [data-gjs-type="wrapper"].gjs-hovered { outline: none !important; box-shadow: none !important; }
+        .rb-del { position: absolute; top: 4px; right: 6px; background: rgba(0,0,0,0.6); color: #fff; border-radius: 10px; width: 18px; height: 18px; line-height: 18px; text-align: center; font-size: 12px; pointer-events: auto !important; cursor: pointer; z-index: 9999; }
+        .rb-del * { pointer-events: auto !important; }
+        .rb-del:hover { background: rgba(220,53,69,0.9); }
+          /* Never outline or show selection for the root wrapper */
+          .gjs-selected[data-gjs-type="wrapper"] { outline: none !important; box-shadow: none !important; }
+      `;
+      try { editor.addStyle(css); } catch (_) {}
+      try {
+        const fdoc = editor.Canvas.getDocument();
+        if (fdoc && fdoc.head) {
+          const style = fdoc.createElement('style');
+          style.type = 'text/css';
+          style.appendChild(fdoc.createTextNode(css));
+          fdoc.head.appendChild(style);
+        }
+      } catch (_) {}
+    };
 
     // Keep top buttons; we will only hide right-side managers via CSS and force canvas full-width
 
@@ -94,25 +235,25 @@
           'data-preview-locked': 'false',
           tagName: 'div',
           attributes: { class: 'record-field-placeholder border rounded p-2 mb-2' },
-          editable: false,
-          droppable: false,
-          highlightable: true,
-          components: `
-            <div class="rf-row d-flex align-items-start justify-content-between">
-              <div class="rf-content flex-grow-1">
-                <div class="mb-1 fw-semibold rf-label">Label</div>
-                <div class="rf-value">Value</div>
+            editable: false,
+            droppable: false,
+            highlightable: true,
+            hoverable: true,
+            selectable: true,
+            badgable: false,
+            toolbar: [],
+            components: `
+              <span class="rb-del" title="Delete" data-role="rb-del" aria-label="Delete">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 448 512" fill="currentColor" aria-hidden="true"><path d="M135.2 17.7C140.6 7.2 151.7 0 164 0h120c12.3 0 23.4 7.2 28.8 17.7L328 32H432c8.8 0 16 7.2 16 16s-7.2 16-16 16H16C7.2 64 0 56.8 0 48S7.2 32 16 32H120l15.2-14.3zM32 96H416l-21.2 371.6c-1.8 31.3-27.7 56.4-59.1 56.4H112.3c-31.4 0-57.3-25.1-59.1-56.4L32 96zm112 80c-8.8 0-16 7.2-16 16V416c0 8.8 7.2 16 16 16s16-7.2 16-16V192c0-8.8-7.2-16-16-16zm80 0c-8.8 0-16 7.2-16 16V416c0 8.8 7.2 16 16 16s16-7.2 16-16V192c0-8.8-7.2-16-16-16zm80 0c-8.8 0-16 7.2-16 16V416c0 8.8 7.2 16 16 16s16-7.2 16-16V192c0-8.8-7.2-16-16-16z"/></svg>
+              </span>
+              <div class="rf-row d-flex align-items-start justify-content-between">
+                <div class="rf-content flex-grow-1">
+                  <div class="rf-label">Label</div>
+                  <div class="rf-value">Value</div>
+                </div>
+                <button class="edit-button" type="button" title="Edit"><i class="fas fa-pencil-alt" aria-hidden="true"></i></button>
               </div>
-              <button class="btn btn-sm btn-outline-secondary rf-edit" type="button" title="Edit"><i class="fas fa-pencil-alt"></i></button>
-            </div>
-            <div class="rf-edit-row mt-2 d-none">
-              <input type="text" class="form-control rf-input" />
-              <div class="text-end mt-2">
-                <button class="btn btn-sm btn-primary rf-save" type="button">Preview Save</button>
-                <button class="btn btn-sm btn-secondary rf-cancel" type="button">Cancel</button>
-              </div>
-            </div>
-          `,
+            `,
           traits: [
             { type: 'text', name: 'field-api-name', label: 'Field API Name' },
             { type: 'text', name: 'field-label', label: 'Label' }
@@ -120,37 +261,8 @@
         }
       },
       view: {
-        events: {
-          'click .rf-edit': 'onEdit',
-          'click .rf-save': 'onSave',
-          'click .rf-cancel': 'onCancel'
-        },
-        onEdit(e) {
-          e.preventDefault(); e.stopPropagation();
-          const row = this.el.querySelector('.rf-edit-row');
-          const valEl = this.el.querySelector('.rf-value');
-          const input = this.el.querySelector('.rf-input');
-          if (row && input && valEl) {
-            input.value = valEl.textContent.trim();
-            row.classList.remove('d-none');
-          }
-        },
-        onCancel(e) {
-          e.preventDefault(); e.stopPropagation();
-          const row = this.el.querySelector('.rf-edit-row');
-          if (row) row.classList.add('d-none');
-        },
-        onSave(e) {
-          e.preventDefault(); e.stopPropagation();
-          const input = this.el.querySelector('.rf-input');
-          const valEl = this.el.querySelector('.rf-value');
-          const row = this.el.querySelector('.rf-edit-row');
-          if (input && valEl) {
-            valEl.textContent = input.value;
-            this.model.addAttributes({ 'data-preview-locked': 'true' });
-          }
-          if (row) row.classList.add('d-none');
-        }
+        events: { 'click .rb-del': 'onDelete' },
+        onDelete(e) { e.preventDefault(); e.stopPropagation(); try { this.model.remove(); } catch (_) {} }
       }
     });
     editor.BlockManager.add('rp-field', {
@@ -167,9 +279,24 @@
           'partial-name': '',
           tagName: 'div',
           attributes: { class: 'record-partial-placeholder border rounded p-2 mb-2 bg-light' },
-          components: [{ type: 'text', content: '' }],
+          editable: false,
+          droppable: false,
+          selectable: true,
+          hoverable: true,
+          highlightable: true,
+          badgable: false,
+          toolbar: [],
+          components: [
+            { tagName: 'span', attributes: { class: 'rb-del', title: 'Delete', 'data-role': 'rb-del', 'aria-label': 'Delete' }, content: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 448 512" fill="currentColor" aria-hidden="true"><path d="M135.2 17.7C140.6 7.2 151.7 0 164 0h120c12.3 0 23.4 7.2 28.8 17.7L328 32H432c8.8 0 16 7.2 16 16s-7.2 16-16 16H16C7.2 64 0 56.8 0 48S7.2 32 16 32H120l15.2-14.3zM32 96H416l-21.2 371.6c-1.8 31.3-27.7 56.4-59.1 56.4H112.3c-31.4 0-57.3-25.1-59.1-56.4L32 96zm112 80c-8.8 0-16 7.2-16 16V416c0 8.8 7.2 16 16 16s16-7.2 16-16V192c0-8.8-7.2-16-16-16zm80 0c-8.8 0-16 7.2-16 16V416c0 8.8 7.2 16 16 16s16-7.2 16-16V192c0-8.8-7.2-16-16-16zm80 0c-8.8 0-16 7.2-16 16V416c0 8.8 7.2 16 16 16s16-7.2 16-16V192c0-8.8-7.2-16-16-16z"/></svg>' },
+            { type: 'text', content: '' }
+          ],
           traits: [{ type: 'text', name: 'partial-name', label: 'Partial name' }]
         }
+      }
+    ,
+      view: {
+        events: { 'click [data-role="rb-del"]': 'onDelete' },
+        onDelete(e) { e.preventDefault(); e.stopPropagation(); try { this.model.remove(); } catch (_) {} }
       }
     });
     // Add top toolbar buttons (Undo, Redo, Save)
@@ -195,40 +322,120 @@
         if (pnRoot) pnRoot.style.display = 'flex';
       } catch(_) {}
 
+      // Command to delete a component by id from anywhere
+      try {
+        editor.Commands.add('pf:delete-by-id', (ed, opts = {}) => {
+          try {
+            const id = opts && opts.id;
+            const root = ed.DomComponents.getWrapper();
+            if (!id) { console.warn('[PF] delete-by-id: missing id', opts); return; }
+            const found = root.find(`[data-comp-id="${id}"]`);
+            const comp = found && found[0];
+            console.log('[PF] delete-by-id run', { id, foundCount: (found && found.length) || 0, comp });
+            if (comp) {
+              try { comp.remove(); console.log('[PF] comp.remove() success'); } catch (e) { console.warn('[PF] comp.remove() error', e); }
+            } else {
+              console.warn('[PF] delete-by-id: no component matched', { id });
+            }
+          } catch (e) { console.warn('[PF] delete-by-id outer error', e); }
+        });
+      } catch(e) { console.warn('[PF] add command error', e); }
+
+      // Helpers (hoisted so they are available to all inner scopes)
+      const lockInnerComponents = (comp) => {
+        try {
+          const stack = Array.isArray(comp) ? comp.slice() : [comp];
+          while (stack.length) {
+            const node = stack.pop();
+            if (!node || !node.components) continue;
+            const children = node.components().models || [];
+            children.forEach(ch => {
+              ch.set({ selectable: false, hoverable: false, draggable: false, droppable: false, editable: false, copyable: false, highlightable: false, badgable: false, layerable: false });
+              if (ch.components && ch.components().length) stack.push(ch);
+            });
+          }
+        } catch (_) {}
+      };
+
+      const enforceWrapperOnlySelection = () => {
+        try {
+          const root = editor.DomComponents.getWrapper();
+          // First make everything non-interactive
+          const all = root.find('*').slice(0, 4000);
+          all.forEach(c => c.set({ selectable: false, hoverable: false, highlightable: false }));
+          // Only wrappers are interactive
+          const wrappers = root.find('[field-api-name], [partial-name]').slice(0, 1000);
+          wrappers.forEach(c => c.set({ selectable: true, hoverable: true, highlightable: true }));
+          // Ensure the real document body/background is never selectable
+          try {
+            const fdoc = editor.Canvas.getDocument();
+            if (fdoc && fdoc.body) {
+              fdoc.body.style.userSelect = 'none';
+              fdoc.body.style.pointerEvents = 'auto';
+              // Disable GrapesJS default highlighter around entire canvas by faking selection root
+              const frameView = editor.Canvas.getFrameView && editor.Canvas.getFrameView();
+              if (frameView && frameView._highlighter) {
+                try { frameView._highlighter.hide(); } catch(_) {}
+              }
+            }
+          } catch(_) {}
+        } catch (_) {}
+      };
+
+      // Ensure canvas CSS exists (also after a short delay in case frame is late)
+      injectCanvasCss();
+      setTimeout(injectCanvasCss, 150);
+      // Start suppression of overlays
+      observeOverlays();
+      setTimeout(observeOverlays, 200);
+      editor.on('canvas:frame:load', () => { injectCanvasCss(); observeOverlays(); enforceWrapperOnlySelection(); });
+
       // Build left sidebar
       const leftbar = document.getElementById('record-leftbar');
       leftbar.innerHTML = '';
       const header = document.createElement('div');
-      header.className = 'd-flex align-items-center justify-content-between p-2 border-bottom';
-      const leftGroup = document.createElement('div');
-      leftGroup.className = 'btn-group';
-      const backBtn = document.createElement('a');
-      backBtn.className = 'btn btn-sm btn-outline-secondary';
-      backBtn.textContent = 'Back';
-      backBtn.href = '<%= @return_path || organization_path(@organization) %>';
-      leftGroup.appendChild(backBtn);
-      const undoBtn = document.createElement('button');
-      undoBtn.className = 'btn btn-sm btn-outline-secondary';
-      undoBtn.textContent = 'Undo';
-      undoBtn.onclick = () => editor.runCommand('core:undo');
-      leftGroup.appendChild(undoBtn);
-      const redoBtn = document.createElement('button');
-      redoBtn.className = 'btn btn-sm btn-outline-secondary';
-      redoBtn.textContent = 'Redo';
-      redoBtn.onclick = () => editor.runCommand('core:redo');
-      leftGroup.appendChild(redoBtn);
-      header.appendChild(leftGroup);
+      header.className = 'p-2 border-bottom';
 
-      const titleEl = document.createElement('strong');
-      titleEl.textContent = 'Record Builder';
-      header.appendChild(titleEl);
+      // Title row
+      const titleRow = document.createElement('div');
+      titleRow.className = 'fw-semibold text-muted builder-title';
+      titleRow.textContent = 'Record Page Builder';
+      header.appendChild(titleRow);
+
+      // Icon buttons row
+      const btnRow = document.createElement('div');
+      btnRow.className = 'd-flex align-items-center mt-1 gap-2 builder-btn-row';
+
+      const backBtn = document.createElement('a');
+      backBtn.className = 'btn btn-lg btn-link text-secondary p-0';
+      backBtn.href = '<%= @return_path || organization_path(@organization) %>';
+      backBtn.title = 'Back';
+      backBtn.innerHTML = '<i class="fas fa-arrow-left"></i>';
+      btnRow.appendChild(backBtn);
+
+      const undoBtn = document.createElement('button');
+      undoBtn.className = 'btn btn-lg btn-link text-secondary p-0';
+      undoBtn.title = 'Undo';
+      undoBtn.innerHTML = '<i class="fas fa-undo"></i>';
+      undoBtn.onclick = () => editor.runCommand('core:undo');
+      btnRow.appendChild(undoBtn);
+
+      const redoBtn = document.createElement('button');
+      redoBtn.className = 'btn btn-lg btn-link text-secondary p-0';
+      redoBtn.title = 'Redo';
+      redoBtn.innerHTML = '<i class="fas fa-redo"></i>';
+      redoBtn.onclick = () => editor.runCommand('core:redo');
+      btnRow.appendChild(redoBtn);
 
       const saveBtn = document.createElement('button');
       saveBtn.id = 'record-layout-save-btn';
-      saveBtn.className = 'btn btn-sm btn-primary';
-      saveBtn.textContent = 'Save';
+      saveBtn.className = 'btn btn-lg btn-link text-primary p-0';
+      saveBtn.title = 'Save';
+      saveBtn.innerHTML = '<i class="fas fa-save"></i>';
       saveBtn.onclick = () => editor.runCommand('save-record-layout');
-      header.appendChild(saveBtn);
+      btnRow.appendChild(saveBtn);
+
+      header.appendChild(btnRow);
       leftbar.appendChild(header);
 
       const listContainer = document.createElement('div');
@@ -312,7 +519,15 @@
             const partialName = (dt.getData && dt.getData('partial-name')) || (window.rbDragPayload && window.rbDragPayload.partial) || '';
             if (!partialName) return;
             const comp = editor.DomComponents.addComponent({ type: 'record-partial' }, { at: insertAt });
-            comp.addAttributes({ 'partial-name': partialName });
+            comp.addAttributes({ 'partial-name': partialName, 'data-comp-id': `c_${Date.now()}_${Math.random().toString(36).slice(2,8)}` });
+            try {
+              const preview = JSON.parse(document.getElementById('record-layout-preview').textContent);
+              const parts = preview.partials || {};
+              const html = parts[partialName] || '';
+                 if (html) comp.components(`<span class=\"rb-del\" title=\"Delete\" data-role=\"rb-del\" data-comp-id=\"${comp.getAttributes()['data-comp-id']}\">×</span>${html}`);
+            } catch(_) {}
+            lockInnerComponents(comp);
+            enforceWrapperOnlySelection();
           } else if (type === 'field') {
             const api = (dt.getData && dt.getData('field-api-name')) || (window.rbDragPayload && window.rbDragPayload.api) || '';
             const label = (dt.getData && dt.getData('field-label')) || (window.rbDragPayload && window.rbDragPayload.label) || api;
@@ -320,35 +535,16 @@
             const fopts = (window.rbDragPayload && window.rbDragPayload.options) || [];
             if (!api) return;
             const comp = editor.DomComponents.addComponent({ type: 'record-field' }, { at: insertAt });
-            // For picklists, store options on element for runtime renderer (data-options="val1|val2|...")
-            if (['picklist','multipicklist'].includes(ftype) && Array.isArray(fopts) && fopts.length > 0) {
-              comp.addAttributes({ 'data-options': fopts.join('|') });
-            }
-            comp.addAttributes({ 'field-api-name': api, 'field-label': label, 'field-type': ftype });
+            comp.addAttributes({ 'field-api-name': api, 'field-label': label, 'field-type': ftype, 'data-comp-id': `c_${Date.now()}_${Math.random().toString(36).slice(2,8)}` });
             try {
               const preview = JSON.parse(document.getElementById('record-layout-preview').textContent);
               const values = preview.values || {};
               const val = Object.prototype.hasOwnProperty.call(values, api) ? values[api] : '';
-              const base = `<div class=\"rf-row d-flex align-items-start justify-content-between\"><div class=\"rf-content flex-grow-1\"><div class=\"mb-1 fw-semibold rf-label\">${label || ''}</div><div class=\"rf-value\">${val == null ? '' : String(val)}</div></div><button class=\"btn btn-sm btn-outline-secondary rf-edit\" type=\"button\" title=\"Edit\"><i class=\"fas fa-pencil-alt\"></i></button></div>`;
-              let input = '';
-              if (ftype === 'textarea') {
-                input = `<textarea class=\"form-control rf-input mt-2\"></textarea>`;
-              } else if (ftype === 'checkbox') {
-                const checked = (String(val) === 'true' || String(val) === '1') ? 'checked' : '';
-                input = `<div class=\"form-check mt-2\"><input type=\"checkbox\" class=\"form-check-input rf-input\" ${checked} /></div>`;
-              } else if (ftype === 'date') {
-                input = `<input type=\"date\" class=\"form-control rf-input mt-2\" value=\"${val == null ? '' : String(val)}\" />`;
-              } else if (ftype === 'picklist') {
-                const opts = (fopts || []).map(o => `<option value=\"${String(o).replace(/"/g,'&quot;')}\" ${String(o)===String(val)?'selected':''}>${o}</option>`).join('');
-                input = `<select class=\"form-select rf-input mt-2\">${opts}</select>`;
-              } else if (ftype === 'multipicklist') {
-                const opts = (fopts || []).map(o => `<option value=\"${String(o).replace(/"/g,'&quot;')}\" ${Array.isArray(val)&&val.includes(o)?'selected':''}>${o}</option>`).join('');
-                input = `<select class=\"form-select rf-input mt-2\" multiple>${opts}</select>`;
-              } else {
-                input = `<input type=\"text\" class=\"form-control rf-input mt-2\" value=\"${val == null ? '' : String(val).replace(/"/g,'&quot;')}\" />`;
-              }
-              comp.components(base + `<div class=\"rf-edit-row mt-2 d-none\">${input}<div class=\"text-end mt-2\"><button class=\"btn btn-sm btn-primary rf-save\" type=\"button\">Preview Save</button><button class=\"btn btn-sm btn-secondary rf-cancel\" type=\"button\">Cancel</button></div></div>`);
+              const base = `<div class=\"rf-row d-flex align-items-start justify-content-between\"><div class=\"rf-content flex-grow-1\"><div class=\"rf-label\">${label || ''}</div><div class=\"rf-value\">${val == null ? '' : String(val)}</div></div><i class=\"fas fa-pencil-alt\" aria-hidden=\"true\" style=\"color:#000; margin-left:8px;\"></i></div>`;
+              comp.components(base);
             } catch(_) {}
+            lockInnerComponents(comp);
+            enforceWrapperOnlySelection();
           }
           window.rbDragPayload = null;
         };
@@ -375,6 +571,43 @@
                 fbody.addEventListener('dragover', e => { try { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } catch(_) {} });
                 fbody.addEventListener('drop', handleDrop);
               } catch(_) {}
+              // Global delete handler for inline trash button
+              try {
+                fbody.addEventListener('mousedown', e => {
+                  const del = e.target.closest && e.target.closest('[data-role="rb-del"]');
+                  if (!del) return;
+                  e.preventDefault();
+                  e.stopPropagation();
+                  let targetCompId = del.getAttribute('data-comp-id');
+                  console.log('[PF] rb-del mousedown', { target: e.target, compId: targetCompId, time: Date.now() });
+                  // If no comp id on button, resolve by wrapper mapping and attach id
+                  if (!targetCompId) {
+                    try {
+                      const wrapper = del.closest('.record-partial-placeholder, .record-field-placeholder, [partial-name], [field-api-name]');
+                      const root = editor.DomComponents.getWrapper();
+                      let comp = null;
+                      if (wrapper) {
+                        let comps = root.find('[partial-name]').slice(0, 2000);
+                        comp = comps.find && comps.find(c => c && c.getEl && c.getEl() === wrapper);
+                        if (!comp) {
+                          comps = root.find('[field-api-name]').slice(0, 2000);
+                          comp = comps.find && comps.find(c => c && c.getEl && c.getEl() === wrapper);
+                        }
+                      }
+                      const cid = comp && comp.getAttributes && comp.getAttributes()['data-comp-id'];
+                      if (cid) {
+                        del.setAttribute('data-comp-id', cid);
+                        targetCompId = cid;
+                        console.log('[PF] resolved compId from wrapper', cid);
+                      }
+                      if (comp) {
+                        try { comp.remove(); console.log('[PF] fallback comp.remove()'); return; } catch(_) {}
+                      }
+                    } catch (err) { console.warn('[PF] wrapper resolution error', err); }
+                  }
+                  try { editor.runCommand('pf:delete-by-id', { id: targetCompId }); } catch (err) { console.warn('[PF] runCommand error', err); }
+                }, true);
+              } catch(_) {}
             }
           };
           // Bind now and after a short delay to catch when iframe is ready
@@ -391,11 +624,13 @@
               const preview = JSON.parse(document.getElementById('record-layout-preview').textContent);
               const values = preview.values || {};
               const val = Object.prototype.hasOwnProperty.call(values, api) ? values[api] : '';
-              const html = `<div class=\"rf-row d-flex align-items-start justify-content-between\"><div class=\"rf-content flex-grow-1\"><div class=\"mb-1 fw-semibold rf-label\">${label || ''}</div><div class=\"rf-value\">${val == null ? '' : String(val)}</div></div><button class=\"btn btn-sm btn-outline-secondary rf-edit\" type=\"button\" title=\"Edit\"><i class=\"fas fa-pencil-alt\"></i></button></div><div class=\"rf-edit-row mt-2 d-none\"><input type=\"text\" class=\"form-control rf-input\" /><div class=\"text-end mt-2\"><button class=\"btn btn-sm btn-primary rf-save\" type=\"button\">Preview Save</button><button class=\"btn btn-sm btn-secondary rf-cancel\" type=\"button\">Cancel</button></div></div>`;
+              const html = `<div class=\"rf-row d-flex align-items-start justify-content-between\"><div class=\"rf-content flex-grow-1\"><div class=\"rf-label\">${label || ''}</div><div class=\"rf-value\">${val == null ? '' : String(val)}</div></div><i class=\"fas fa-pencil-alt\" aria-hidden=\"true\" style=\"color:#000; margin-left:8px;\"></i></div>`;
               m.components(html);
               m.view && m.view.render && m.view.render();
+              lockInnerComponents(m);
             }
           } catch(_) {}
+          enforceWrapperOnlySelection();
         });
         componentsList.addEventListener('click', e => {
           const item = e.target.closest('.leftbar-item');
@@ -404,7 +639,15 @@
           const metaItem = (meta.components || []).find(c => c.label === label);
           if (metaItem) {
             const comp = editor.addComponents({ type: 'record-partial' })[0];
-            comp.addAttributes({ 'partial-name': metaItem.partial });
+            comp.addAttributes({ 'partial-name': metaItem.partial, 'data-comp-id': `c_${Date.now()}_${Math.random().toString(36).slice(2,8)}` });
+            try {
+              const preview = JSON.parse(document.getElementById('record-layout-preview').textContent);
+              const parts = preview.partials || {};
+              const html = parts[metaItem.partial] || '';
+              if (html) comp.components(`<span class=\"rb-del\" title=\"Delete\" data-role=\"rb-del\" data-comp-id=\"${comp.getAttributes()['data-comp-id']}\">×</span>${html}`);
+            } catch(_) {}
+            lockInnerComponents(comp);
+            enforceWrapperOnlySelection();
           }
         });
         fieldsList.addEventListener('click', e => {
@@ -414,7 +657,7 @@
           const metaItem = (meta.fields || []).find(f => f.label === label);
           if (metaItem) {
             const comp = editor.addComponents({ type: 'record-field' })[0];
-            comp.addAttributes({ 'field-api-name': metaItem.api_name, 'field-label': metaItem.label });
+            comp.addAttributes({ 'field-api-name': metaItem.api_name, 'field-label': metaItem.label, 'data-comp-id': `c_${Date.now()}_${Math.random().toString(36).slice(2,8)}` });
           }
         });
       } catch (e) { console.warn('leftbar population error', e); }
@@ -430,6 +673,20 @@
           const dc = editor && editor.DomComponents;
           if (!dc || typeof dc.getWrapper !== 'function') return;
           const root = dc.getWrapper();
+          const forceSelectWrapper = (comp) => {
+            try {
+              const attrs = comp && comp.getAttributes ? comp.getAttributes() : {};
+              if (!attrs) return;
+              const isWrapper = attrs['field-api-name'] || attrs['partial-name'];
+              if (!isWrapper && comp && comp.parent) {
+                const parent = comp.parent();
+                const pAttrs = parent && parent.getAttributes ? parent.getAttributes() : {};
+                if (pAttrs && (pAttrs['field-api-name'] || pAttrs['partial-name'])) {
+                  editor.select(parent);
+                }
+              }
+            } catch (_) {}
+          };
           const fieldComps = root.find('[field-api-name]').slice(0, 200);
           fieldComps.forEach(comp => {
             try {
@@ -438,11 +695,37 @@
               const val = Object.prototype.hasOwnProperty.call(values, api) ? values[api] : '';
               const el = comp.getEl();
               if (el) {
+                // Ensure inline delete exists (idempotent)
+                if (!el.querySelector('[data-role="rb-del"]')) {
+                  const del = el.ownerDocument.createElement('span');
+                  del.className = 'rb-del';
+                  del.setAttribute('data-role', 'rb-del');
+                  del.setAttribute('aria-label', 'Delete');
+                  del.title = 'Delete';
+                  del.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 448 512" fill="currentColor" aria-hidden="true"><path d="M135.2 17.7C140.6 7.2 151.7 0 164 0h120c12.3 0 23.4 7.2 28.8 17.7L328 32H432c8.8 0 16 7.2 16 16s-7.2 16-16 16H16C7.2 64 0 56.8 0 48S7.2 32 16 32H120l15.2-14.3zM32 96H416l-21.2 371.6c-1.8 31.3-27.7 56.4-59.1 56.4H112.3c-31.4 0-57.3-25.1-59.1-56.4L32 96zm112 80c-8.8 0-16 7.2-16 16V416c0 8.8 7.2 16 16 16s16-7.2 16-16V192c0-8.8-7.2-16-16-16zm80 0c-8.8 0-16 7.2-16 16V416c0 8.8 7.2 16 16 16s16-7.2 16-16V192c0-8.8-7.2-16-16-16zm80 0c-8.8 0-16 7.2-16 16V416c0 8.8 7.2 16 16 16s16-7.2 16-16V192c0-8.8-7.2-16-16-16z"/></svg>';
+                  // Attach component id to DOM for reliable lookup
+                  const compId = (comp && comp.getAttributes && comp.getAttributes()['data-comp-id']) || '';
+                  if (compId) del.setAttribute('data-comp-id', compId);
+                  el.insertBefore(del, el.firstChild);
+                }
                 const l = el.querySelector('.rf-label');
                 const v = el.querySelector('.rf-value');
                 if (l) l.textContent = (label || '');
                 if (v) v.textContent = (val == null ? '' : String(val));
+                // ensure only one black pencil icon, remove legacy buttons/icons
+                el.querySelectorAll('.rf-icon, .edit-button').forEach(n => n.remove());
+                const row = el.querySelector('.rf-row');
+                if (row && !row.querySelector('.fa-pencil-alt')) {
+                  const pencil = el.ownerDocument.createElement('i');
+                  pencil.className = 'fas fa-pencil-alt';
+                  pencil.setAttribute('aria-hidden', 'true');
+                  pencil.style.color = '#000';
+                  pencil.style.marginLeft = '8px';
+                  row.appendChild(pencil);
+                }
               }
+              // lock internals
+              try { (comp.components().models || []).forEach(ch => ch.set({ selectable: false, hoverable: false, draggable: false, droppable: false, editable: false, copyable: false, highlightable: false, badgable: false, layerable: false })); } catch (_) {}
             } catch(_) {}
           });
           const partialComps = root.find('[partial-name]').slice(0, 100);
@@ -450,20 +733,85 @@
             try {
               const name = comp.getAttributes()['partial-name'];
               const html = name && partials[name] ? partials[name] : '';
-              if (html) comp.components(html);
+              if (html) {
+                const el = comp.getEl();
+                const currentHtml = (el && el.innerHTML) ? el.innerHTML.trim() : '';
+                if (currentHtml !== html.trim()) {
+                  comp.components(html);
+                  try { (comp.components().models || []).forEach(ch => ch.set({ selectable: false, hoverable: false, draggable: false, droppable: false, editable: false, copyable: false, highlightable: false, badgable: false, layerable: false })); } catch (_) {}
+                }
+              }
+              const el2 = comp.getEl();
+              if (el2 && !el2.querySelector('[data-role="rb-del"]')) {
+                const del = el2.ownerDocument.createElement('span');
+                del.className = 'rb-del';
+                del.setAttribute('data-role', 'rb-del');
+                del.setAttribute('aria-label', 'Delete');
+                del.title = 'Delete';
+                del.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 448 512" fill="currentColor" aria-hidden="true"><path d="M135.2 17.7C140.6 7.2 151.7 0 164 0h120c12.3 0 23.4 7.2 28.8 17.7L328 32H432c8.8 0 16 7.2 16 16s-7.2 16-16 16H16C7.2 64 0 56.8 0 48S7.2 32 16 32H120l15.2-14.3zM32 96H416l-21.2 371.6c-1.8 31.3-27.7 56.4-59.1 56.4H112.3c-31.4 0-57.3-25.1-59.1-56.4L32 96zm112 80c-8.8 0-16 7.2-16 16V416c0 8.8 7.2 16 16 16s16-7.2 16-16V192c0-8.8-7.2-16-16-16zm80 0c-8.8 0-16 7.2-16 16V416c0 8.8 7.2 16 16 16s16-7.2 16-16V192c0-8.8-7.2-16-16-16zm80 0c-8.8 0-16 7.2-16 16V416c0 8.8 7.2 16 16 16s16-7.2 16-16V192c0-8.8-7.2-16-16-16z"/></svg>';
+                const compId = (comp && comp.getAttributes && comp.getAttributes()['data-comp-id']) || comp.getAttributes && comp.getAttributes()['data-comp-id'] || '';
+                if (compId) del.setAttribute('data-comp-id', compId);
+                el2.insertBefore(del, el2.firstChild);
+              }
             } catch(_) {}
           });
+          // Re-apply app CSS into iframe after hydration to ensure partials style correctly
+          try {
+            const fdoc = editor.Canvas.getDocument();
+            if (fdoc && fdoc.head && !fdoc.getElementById('pf-app-css')) {
+              const link = fdoc.createElement('link');
+              link.id = 'pf-app-css';
+              link.rel = 'stylesheet';
+              link.href = '<%= asset_path "application.css" %>';
+              fdoc.head.appendChild(link);
+            }
+          } catch (_) {}
+      // enforce selection on wrappers only
+      editor.on('component:selected', c => { forceSelectWrapper(c); enforceWrapperOnlySelection(); });
+      editor.on('component:hovered', c => { forceSelectWrapper(c); });
+      enforceWrapperOnlySelection();
+          observeOverlays();
         };
         const schedule = () => { if (!scheduled) { scheduled = true; setTimeout(hydrateAll, 80); } };
         editor.on('component:add', schedule);
         editor.on('component:update', schedule);
         schedule();
+        // Ensure wrapper itself has no toolbar
+        try { const wrap = editor.DomComponents.getWrapper(); wrap && wrap.set && wrap.set('toolbar', []); } catch (_) {}
       } catch (e) { console.warn('preview hydration error', e); }
     });
+      // Sanitize layout HTML before saving so builder-only wrappers don't leak to runtime
+      function sanitizeLayoutHtml(html) {
+        try {
+          const temp = document.createElement('div');
+          temp.innerHTML = html;
+          // Unwrap partial-content-wrapper
+          temp.querySelectorAll('.partial-content-wrapper').forEach(node => {
+            const parent = node.parentNode;
+            if (!parent) return;
+            while (node.firstChild) parent.insertBefore(node.firstChild, node);
+            parent.removeChild(node);
+          });
+          // Remove inline delete buttons
+          temp.querySelectorAll('[data-role="rb-del"], .rb-del').forEach(n => n.parentNode && n.parentNode.removeChild(n));
+          // Strip volatile ids and builder-only data attrs
+          temp.querySelectorAll('[id], [data-comp-id], [data-role], [data-gjs-type], [data-gjs-toolbar]').forEach(n => {
+            try { n.removeAttribute('id'); } catch(_) {}
+            try { n.removeAttribute('data-comp-id'); } catch(_) {}
+            try { n.removeAttribute('data-role'); } catch(_) {}
+            try { n.removeAttribute('data-gjs-type'); } catch(_) {}
+            try { n.removeAttribute('data-gjs-toolbar'); } catch(_) {}
+          });
+          return temp.innerHTML;
+        } catch(_) {
+          return html;
+        }
+      }
 
     editor.Commands.add('save-record-layout', {
       run(ed) {
-        const html = ed.getHtml();
+        let html = ed.getHtml();
+        html = sanitizeLayoutHtml(html);
         const css = ed.getCss();
         const js = ed.getJs();
         fetch('<%= organization_record_layout_path(@organization, table_type: @table_type, table_id: @table_id, format: :json) %>', {

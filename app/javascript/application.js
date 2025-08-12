@@ -88,47 +88,87 @@ document.addEventListener("turbo:load", () => {
   if (petContainer) {
     const petId = petContainer.dataset.petId;
     const petUrl = petContainer.dataset.petUrlValue;
-    
-    // Try multiple selectors to find the pet name
-    let petName = "Pet";
-    const petNameSelectors = [
-      'h1',
-      '.pet-name', 
-      '[data-pet-name]',
-      '[data-field="name"]',
-      '.name-field-header .value',
-      '.pet-header .value'
-    ];
-    
-    for (const selector of petNameSelectors) {
-      const petNameElement = document.querySelector(selector);
-      if (petNameElement && petNameElement.textContent.trim()) {
-        petName = petNameElement.textContent.trim();
-        console.log(`Found pet name "${petName}" using selector: ${selector}`);
-        break;
-      }
-    }
-    
-    // Check if we've already dispatched an event for this pet on this page load
-    const lastDispatchedPet = sessionStorage.getItem('lastDispatchedPet');
-    if (lastDispatchedPet === petId) {
-      console.log(`Already dispatched pet:opened event for pet ${petId} on this page load, skipping`);
-      return;
-    }
-    
-    console.log(`Dispatching pet:opened event for pet: ${petName} (ID: ${petId})`);
-    
-    // Add a small delay to ensure the tabbed navigation controller is connected
+
+    // Defer name resolution slightly so any runtime DOM replacements (e.g., record layout hydration)
+    // have completed. Prefer the reliable data attribute from the server.
     setTimeout(() => {
+      let petName = petContainer.dataset.petName || "";
+
+      // Fallback 1: record-values JSON embedded on record pages
+      if (!petName || petName === "") {
+        try {
+          const valuesEl = document.getElementById('record-values-json');
+          if (valuesEl && valuesEl.textContent) {
+            const values = JSON.parse(valuesEl.textContent);
+            if (values && typeof values.name === 'string' && values.name.trim()) {
+              petName = values.name.trim();
+              console.log('Using pet name from record-values-json:', petName);
+            }
+          }
+        } catch(_) {}
+      }
+
+      // Fallbacks: attempt to read visible DOM if dataset missing
+      if (!petName || petName === "") {
+        const petNameSelectors = [
+          '.name-field-header .value',
+          '.pet-header .value',
+          '[data-field="name"]',
+          '.pet-name',
+          'h1'
+        ];
+        for (const selector of petNameSelectors) {
+          const el = document.querySelector(selector);
+          if (el && el.textContent.trim()) {
+            petName = el.textContent.trim();
+            console.log(`Found pet name "${petName}" using selector: ${selector}`);
+            break;
+          }
+        }
+      }
+
+      // Check if we've already dispatched an event for this pet on this page load
+      const lastDispatchedPet = sessionStorage.getItem('lastDispatchedPet');
+      if (lastDispatchedPet === petId) {
+        console.log(`Already dispatched pet:opened event for pet ${petId} on this page load, skipping`);
+        return;
+      }
+
+      const resolvedName = petName || 'Pet';
+      console.log(`Dispatching pet:opened event for pet: ${resolvedName} (ID: ${petId})`);
+
+      // Ensure visible header text reflects the server name (guard against stale builder snapshots)
+      const applyHeaderName = () => {
+        try {
+          // Only update the value span, never the edit button
+          const headerSpan = document.querySelector('.name-field-header [data-field="name"][data-edit-field-target="value"]');
+          if (headerSpan) headerSpan.textContent = resolvedName;
+          // If some earlier script injected text into the edit button, restore the pencil icon
+          const editBtn = document.querySelector('.name-field-header [data-field="name"][data-edit-field-target="editButton"]');
+          if (editBtn && editBtn.querySelector('i.fas.fa-pencil-alt') == null) {
+            editBtn.innerHTML = '<i class="fas fa-pencil-alt" aria-hidden="true"></i>';
+          }
+        } catch(_) {}
+      };
+      applyHeaderName();
+      // Guard against late DOM replacements by record layout hydration
+      try {
+        const container = document.querySelector('.record-layout-render') || document.body;
+        const mo = new MutationObserver(() => applyHeaderName());
+        mo.observe(container, { childList: true, subtree: true });
+        // Auto-disconnect after a short window to avoid overhead
+        setTimeout(() => { try { mo.disconnect(); } catch(_) {} }, 2000);
+      } catch(_) {}
+
       // Dispatch the pet:opened event
       document.dispatchEvent(new CustomEvent('pet:opened', {
-        detail: { petId, petName, petUrl }
+        detail: { petId, petName: resolvedName, petUrl }
       }));
-      
+
       // Don't automatically store in sessionStorage - only store if explicitly unpinned
       sessionStorage.setItem('lastDispatchedPet', petId);
-      console.log(`Dispatched pet:opened event for: ${petName} (ID: ${petId})`);
-    }, 100); // 100ms delay
+      console.log(`Dispatched pet:opened event for: ${resolvedName} (ID: ${petId})`);
+    }, 120); // Slightly longer to ensure hydration
   } else {
     const existingTab = sessionStorage.getItem('currentUnpinnedPetTab');
     if (existingTab) {
